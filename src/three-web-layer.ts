@@ -519,6 +519,8 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   private _updateBoundingRect() {
+    if (this.needsRemoval) return
+
     const boundingRect = (this.boundingRect = this.element.getBoundingClientRect() as DOMRect)
     const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS
 
