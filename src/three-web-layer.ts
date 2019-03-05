@@ -613,6 +613,7 @@ export default class WebLayer3D extends THREE.Object3D {
     const material = mesh.material as THREE.MeshBasicMaterial
     material.map = texture
     material.needsUpdate = true
+    mesh.renderOrder = this.level
   }
 }
 
