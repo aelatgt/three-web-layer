@@ -34,7 +34,7 @@
     "lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts'",
     "prebuild": "rimraf dist && rimraf docs",
     "build.library": "tsc --module commonjs && rollup -c rollup.config.ts ",
-    "build.example": "parcel build src/example/index.html --no-content-hash -d docs",
+    "build.example": "parcel build src/example/index.html --no-content-hash -d docs --public-url /three-web-layer/",
     "build": "npm run build.library && npm run build.example",
     "start": "npm run prebuild && parcel src/example/index.html --https -d docs",
     "commit": "git-cz",
@@ -118,7 +118,7 @@
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
       "pre-commit": "lint-staged",
-      "pre-push": "npm run lint && npm run build"
+      "pre-push": "npm run build"
     }
   }
 }

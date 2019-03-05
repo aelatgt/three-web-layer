@@ -36,7 +36,7 @@ todoLayer.element.parentElement!.style.pointerEvents = 'auto'
 
 // handle routing
 function onHashChange() {
-  var visibility = window.location.hash.replace(/#\/?/, '')
+  const visibility = window.location.hash.replace(/#\/?/, '')
   if (filters[visibility]) {
     todoVue.visibility = visibility as any
   } else {
@@ -48,8 +48,8 @@ function onHashChange() {
 window.addEventListener('hashchange', onHashChange)
 onHashChange()
 
-var windowHalfX = window.innerWidth / 2
-var windowHalfY = window.innerHeight / 2
+let windowHalfX = window.innerWidth / 2
+let windowHalfY = window.innerHeight / 2
 let mouseX = 0,
   mouseY = 0
 

@@ -15253,53 +15253,53 @@ cuid.fingerprint = fingerprint;
 var cuid_1 = cuid;
 
 /**
-* Transform a DOM tree into 3D layers.
-*
-* When an instance is created, a `layer` data-attribute is set on the
-* the passed DOM element to match this instance's Object3D id.
-* If the passed DOM element has an `id` attribute, this instance's Object3D name
-* will be set to match the element id.
-*
-* Child WebLayer3D instances can be specified with an empty `layer` data-attribute,
-* which will be set when the child WebLayer3D instance is created automatically.
-* The data-attribute can be specified added in HTML or dynamically:
-*  - `<div data-layer></div>`
-*  - `element.dataset.layer = ''`
-*
-* Additionally, the pixel ratio can be adjusted on each layer, individually:
-*  - `<div data-layer data-layer-pixel-ratio="0.5"></div>`
-*  - `element.dataset.layerPixelRatio = '0.5'`
-*
-* Finally, each layer can prerender multipe states specified as CSS classes delimited by spaces:
-*  - `<div data-layer data-layer-states="near far"></div>`
-*  - `element.dataset.layerStates = 'near far'`
-*
-* Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
-* Every layer has a `default` state. The texture can be changed with `layer.setState(state)`,
-* without requiring the DOM to be re-rendered. Setting a state on a parent layer does
-* not affect the state of a child layer.
-*
-* Default dimensions: 1px = 0.001 world dimensions = 1mm (assuming meters)
-*     e.g., 500px width means 0.5meters
-*/
+ * Transform a DOM tree into 3D layers.
+ *
+ * When an instance is created, a `layer` data-attribute is set on the
+ * the passed DOM element to match this instance's Object3D id.
+ * If the passed DOM element has an `id` attribute, this instance's Object3D name
+ * will be set to match the element id.
+ *
+ * Child WebLayer3D instances can be specified with an empty `layer` data-attribute,
+ * which will be set when the child WebLayer3D instance is created automatically.
+ * The data-attribute can be specified added in HTML or dynamically:
+ *  - `<div data-layer></div>`
+ *  - `element.dataset.layer = ''`
+ *
+ * Additionally, the pixel ratio can be adjusted on each layer, individually:
+ *  - `<div data-layer data-layer-pixel-ratio="0.5"></div>`
+ *  - `element.dataset.layerPixelRatio = '0.5'`
+ *
+ * Finally, each layer can prerender multipe states specified as CSS classes delimited by spaces:
+ *  - `<div data-layer data-layer-states="near far"></div>`
+ *  - `element.dataset.layerStates = 'near far'`
+ *
+ * Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
+ * Every layer has a `default` state. The texture can be changed with `layer.setState(state)`,
+ * without requiring the DOM to be re-rendered. Setting a state on a parent layer does
+ * not affect the state of a child layer.
+ *
+ * Default dimensions: 1px = 0.001 world dimensions = 1mm (assuming meters)
+ *     e.g., 500px width means 0.5meters
+ */
 class WebLayer3D extends Object3D {
     constructor(element, options = {}, rootLayer = undefined, level = 0) {
         super();
         this.options = options;
         this.rootLayer = rootLayer;
         this.level = level;
-        this.content = new Object3D;
+        this.content = new Object3D();
         this.mesh = new Mesh(WebLayer3D.GEOMETRY, new MeshBasicMaterial({
             transparent: true,
             opacity: 0,
             side: DoubleSide
         }));
         this.childLayers = [];
-        this.boundingRect = new DOMRect;
+        this.boundingRect = new DOMRect();
         this.defaultContentPosition = new Vector3();
         this.defaultContentScale = new Vector3();
         this.textures = {
-            default: new Texture(document.createElement('canvas')),
+            default: new Texture(document.createElement('canvas'))
         };
         this._needsRemoval = false;
         this._pixelRatio = 1;
@@ -15313,7 +15313,7 @@ class WebLayer3D extends Object3D {
             this._logger = new Logger(false);
             this._resourceLoader = new ResourceLoader({
                 imageTimeout: 15000,
-                allowTaint: options.allowTaint || false,
+                allowTaint: options.allowTaint || false
             }, this._logger, window);
         }
         if (!document.contains(element)) {
@@ -15326,7 +15326,7 @@ class WebLayer3D extends Object3D {
             const getClosestLayer = (target) => {
                 const closestLayerElement = target.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`);
                 const id = parseInt(closestLayerElement.getAttribute(WebLayer3D.LAYER_ATTRIBUTE) || '', 10);
-                return (this.id === id) ? this : this.getObjectById(id);
+                return this.id === id ? this : this.getObjectById(id);
             };
             const refreshOnChange = (e) => {
                 if (!this._updateTargetInClonedDocument(e.target)) {
@@ -15341,17 +15341,24 @@ class WebLayer3D extends Object3D {
             const layersToRefresh = new Set();
             this._mutationObserver = new MutationObserver((records, observer) => {
                 for (const record of records) {
-                    const target = record.target.nodeType === Node.ELEMENT_NODE ?
-                        record.target : record.target.parentElement;
-                    if (record.type === 'attributes' && target.getAttribute(record.attributeName) === record.oldValue)
+                    const target = record.target.nodeType === Node.ELEMENT_NODE
+                        ? record.target
+                        : record.target.parentElement;
+                    if (record.type === 'attributes' &&
+                        target.getAttribute(record.attributeName) === record.oldValue)
                         continue;
-                    if (record.type === 'characterData' && record.target.data === record.oldValue)
+                    if (record.type === 'characterData' &&
+                        record.target.data === record.oldValue)
                         continue;
                     const addedItem = record.addedNodes.item(0);
-                    if (addedItem && addedItem.classList && addedItem.classList.contains('html2canvas-container'))
+                    if (addedItem &&
+                        addedItem.classList &&
+                        addedItem.classList.contains('html2canvas-container'))
                         continue;
                     const removedItem = record.removedNodes.item(0);
-                    if (removedItem && removedItem.classList && removedItem.classList.contains('html2canvas-container'))
+                    if (removedItem &&
+                        removedItem.classList &&
+                        removedItem.classList.contains('html2canvas-container'))
                         continue;
                     if (record.type === 'childList') {
                         return this.refresh(true);
@@ -15372,7 +15379,7 @@ class WebLayer3D extends Object3D {
                 attributes: true,
                 attributeOldValue: true,
                 childList: true,
-                subtree: true,
+                subtree: true
             });
         }
         this._resizeObserver = new index((records, observer) => {
@@ -15387,20 +15394,20 @@ class WebLayer3D extends Object3D {
         return this._needsRemoval;
     }
     /**
-    * Change the texture state.
-    * Note: if a state is not available, the `default` state will be rendered.
-    */
+     * Change the texture state.
+     * Note: if a state is not available, the `default` state will be rendered.
+     */
     setState(state) {
         this._currentState = state;
         this._updateMesh();
     }
     /**
-    * Update the pose and opacity of this layer (does not rerender the DOM)
-    *
-    * @param alpha lerp value
-    * @param transition transition function (by default, this is WebLayer3D.TRANSITION_DEFAULT)
-    * @param children if true, also update child layers
-    */
+     * Update the pose and opacity of this layer (does not rerender the DOM)
+     *
+     * @param alpha lerp value
+     * @param transition transition function (by default, this is WebLayer3D.TRANSITION_DEFAULT)
+     * @param children if true, also update child layers
+     */
     update(alpha = 1, transition = WebLayer3D.TRANSITION_DEFAULT, children = true) {
         transition(this, alpha);
         if (children)
@@ -15448,13 +15455,18 @@ class WebLayer3D extends Object3D {
         const element = this.element;
         const options = this.options;
         const window = element.ownerDocument.defaultView;
-        const pixelRatioDefault = options.pixelRatio && options.pixelRatio > 0 ?
-            options.pixelRatio : window.devicePixelRatio || 1;
+        const pixelRatioDefault = options.pixelRatio && options.pixelRatio > 0
+            ? options.pixelRatio
+            : window.devicePixelRatio || 1;
         const pixelRatioAttribute = parseFloat(element.getAttribute(WebLayer3D.PIXEL_RATIO_ATTRIBUTE) || '1');
-        const pixelRatio = isFinite(pixelRatioAttribute) && pixelRatioAttribute > 0 ?
-            pixelRatioAttribute * pixelRatioDefault : pixelRatioDefault;
+        const pixelRatio = isFinite(pixelRatioAttribute) && pixelRatioAttribute > 0
+            ? pixelRatioAttribute * pixelRatioDefault
+            : pixelRatioDefault;
         this._pixelRatio = Math.max(pixelRatio, 10e-6);
-        this._states = (element.getAttribute(WebLayer3D.STATES_ATTRIBUTE) || '').trim().split(/\s+/).filter(Boolean);
+        this._states = (element.getAttribute(WebLayer3D.STATES_ATTRIBUTE) || '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
         this._states.push('default');
         for (const state of this._states) {
             if (!this.textures[state]) {
@@ -15471,7 +15483,7 @@ class WebLayer3D extends Object3D {
             }
             this._clonedDocument = undefined;
             const boundingRect = this.boundingRect;
-            const clonedPromise = this._clonedDocumentPromise = new Promise((resolve, reject) => {
+            const clonedPromise = (this._clonedDocumentPromise = new Promise((resolve, reject) => {
                 let cloned;
                 html2canvas(element, {
                     logging: false,
@@ -15484,13 +15496,13 @@ class WebLayer3D extends Object3D {
                     backgroundColor: null,
                     allowTaint: options.allowTaint || false,
                     onclone: (document) => {
-                        const clonedRootEl = document
-                            .querySelector(`[${WebLayer3D.LAYER_ATTRIBUTE}="${this.rootLayer.id}"]`);
+                        const clonedRootEl = document.querySelector(`[${WebLayer3D.LAYER_ATTRIBUTE}="${this.rootLayer.id}"]`);
                         clonedRootEl.style.visibility = 'visible';
                         this._hideChildLayers(document);
                         cloned = document;
                     }
-                }).then(([canvas]) => {
+                })
+                    .then(([canvas]) => {
                     this._showChildLayers(cloned);
                     this._updateTexture(canvas, 'default');
                     if (clonedPromise !== this._clonedDocumentPromise && cloned.defaultView) {
@@ -15501,17 +15513,19 @@ class WebLayer3D extends Object3D {
                         this._clonedDocumentPromise = undefined;
                     }
                     resolve(cloned);
-                }).catch(reject);
-            });
+                })
+                    .catch(reject);
+            }));
         }
         // if cloned document is not attached to the DOM, the root element was refreshed,
         // so wait for the next cloned document
         let clonedDocument = this.rootLayer._clonedDocument;
         while (!clonedDocument || clonedDocument.defaultView === null) {
-            clonedDocument = this.rootLayer._clonedDocument || await this.rootLayer._clonedDocumentPromise;
+            clonedDocument =
+                this.rootLayer._clonedDocument || (await this.rootLayer._clonedDocumentPromise);
         }
         const childrenRefreshing = [];
-        this.traverseLayers((child) => {
+        this.traverseLayers(child => {
             childrenRefreshing.push(child.refresh());
         });
         await this._renderTextures(clonedDocument, forceClone ? { ...this.textures, default: null } : this.textures);
@@ -15623,13 +15637,13 @@ class WebLayer3D extends Object3D {
             y: boundingRect.top,
             width: boundingRect.width,
             height: boundingRect.height,
-            allowTaint: this.options.allowTaint || false,
+            allowTaint: this.options.allowTaint || false
         };
         for (const render of renderFunctions)
             render();
     }
     _updateBoundingRect() {
-        const boundingRect = this.boundingRect = this.element.getBoundingClientRect();
+        const boundingRect = (this.boundingRect = this.element.getBoundingClientRect());
         const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS;
         if (this.rootLayer !== this) {
             const layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
@@ -15654,13 +15668,16 @@ class WebLayer3D extends Object3D {
     _updateTargetInClonedDocument(target, updateTextContent = false) {
         if (!target)
             return false;
-        const targetElement = target.nodeType === Node.ELEMENT_NODE ?
-            target : target.parentElement;
+        const targetElement = target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement;
         if (!targetElement)
             return false;
         const clonedTarget = this._getClonedElement(targetElement);
         const document = clonedTarget && clonedTarget.ownerDocument;
-        if (clonedTarget && clonedTarget.parentNode && document && document.defaultView && targetElement.style) {
+        if (clonedTarget &&
+            clonedTarget.parentNode &&
+            document &&
+            document.defaultView &&
+            targetElement.style) {
             for (const id of Object.keys(targetElement.attributes)) {
                 const attr = targetElement.attributes[id];
                 clonedTarget.setAttribute(attr.name, attr.value);
@@ -15731,7 +15748,9 @@ function ensureElementIsInDocument(element, options) {
     container.style.top = '0';
     container.style.left = '0';
     container.appendChild(element);
-    document.body ? document.body.appendChild(container) : document.documentElement.appendChild(container);
+    document.body
+        ? document.body.appendChild(container)
+        : document.documentElement.appendChild(container);
     return element;
 }
 function traverseDOM(node, each, bind) {

@@ -19,18 +19,18 @@ renderer.domElement.style.top = '0';
 renderer.domElement.style.left = '0';
 renderer.setClearColor(new THREE.Color(0x333333));
 document.body.appendChild(renderer.domElement);
-const todoVue = window.todoVue = new TodoMVC_1.default().$mount();
-const todoLayer = window.todoLayer = new three_web_layer_1.default(todoVue.$el, {
+const todoVue = (window.todoVue = new TodoMVC_1.default().$mount());
+const todoLayer = (window.todoLayer = new three_web_layer_1.default(todoVue.$el, {
     windowWidth: 500,
     layerSeparation: 0.05,
     pixelRatio: window.devicePixelRatio * 2
-});
+}));
 scene.add(todoLayer);
 todoLayer.element.parentElement.style.opacity = '1';
 todoLayer.element.parentElement.style.pointerEvents = 'auto';
 // handle routing
 function onHashChange() {
-    var visibility = window.location.hash.replace(/#\/?/, '');
+    const visibility = window.location.hash.replace(/#\/?/, '');
     if (TodoMVC_1.filters[visibility]) {
         todoVue.visibility = visibility;
     }
@@ -41,8 +41,8 @@ function onHashChange() {
 }
 window.addEventListener('hashchange', onHashChange);
 onHashChange();
-var windowHalfX = window.innerWidth / 2;
-var windowHalfY = window.innerHeight / 2;
+let windowHalfX = window.innerWidth / 2;
+let windowHalfY = window.innerHeight / 2;
 let mouseX = 0, mouseY = 0;
 document.addEventListener('mousemove', onDocumentMouseMove, false);
 document.addEventListener('touchstart', onDocumentTouchStart, false);
