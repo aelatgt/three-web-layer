@@ -134,19 +134,11 @@ export default class WebLayer3D extends THREE.Object3D {
     if (this.rootLayer === this) {
       this.refresh(true)
 
-      const getClosestLayer = (target: HTMLElement) => {
-        const closestLayerElement = target.closest(
-          `[${WebLayer3D.LAYER_ATTRIBUTE}]`
-        )! as HTMLElement
-        const id = parseInt(closestLayerElement.getAttribute(WebLayer3D.LAYER_ATTRIBUTE) || '', 10)
-        return this.id === id ? this : (this.getObjectById(id) as WebLayer3D)
-      }
-
       const refreshOnChange = (e: Event) => {
         if (!this._updateTargetInClonedDocument(e.target as any)) {
           return this.refresh(true)
         }
-        getClosestLayer(e.target as any).refresh()
+        this.getLayerForElement(e.target as any)!.refresh()
       }
       element.addEventListener('input', refreshOnChange, { capture: true })
       element.addEventListener('change', refreshOnChange, { capture: true })
@@ -190,6 +182,8 @@ export default class WebLayer3D extends THREE.Object3D {
             continue
 
           if (record.type === 'childList') {
+            const layer = this.getLayerForElement(target)!
+            layer._updateChildLayers()
             return this.refresh(true)
           }
 
@@ -197,7 +191,7 @@ export default class WebLayer3D extends THREE.Object3D {
             return this.refresh(true)
           }
 
-          layersToRefresh.add(getClosestLayer(target))
+          layersToRefresh.add(this.getLayerForElement(target)!)
         }
         for (const layer of layersToRefresh) {
           layer.refresh()
@@ -280,6 +274,21 @@ export default class WebLayer3D extends THREE.Object3D {
       }
     }
     return params
+  }
+
+  getLayerForQuery(selector: string) {
+    const element = this.element.querySelector(selector)
+    if (element) {
+      return this.getLayerForElement(element)
+    }
+    return undefined
+  }
+
+  getLayerForElement(element: Element) {
+    const closestLayerElement = element.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`) as HTMLElement
+    if (!closestLayerElement) return undefined
+    const id = parseInt(closestLayerElement.getAttribute(WebLayer3D.LAYER_ATTRIBUTE) || '', 10)
+    return this.id === id ? this : (this.getObjectById(id) as WebLayer3D)
   }
 
   async refresh(forceClone = false): Promise<void> {
