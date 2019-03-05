@@ -10,8 +10,54 @@ const layer = new WebLayer3D(domElement, {
     windowWidth, 300, // optional
     windowHeight, 150, // optional
 })
+
 // in update loop
-layer.update(deltaTime)  // pass a lerp value
+function animate() {
+    // ...
+    const alpha = deltaTime * 5 // set a lerp value
+
+    // NOTE: all of the following are equivalent, at various levels of abstraction
+
+    // update with linear interpolation
+    rootLayer.update(alpha) // lerp value defaults to 1 if ommited
+
+    // update with a specified transition and recursion to update child layers
+    rootLayer.update(alpha, WebLayer3D.TRANSITION_DEFAULT, true) // these are all default
+
+    // manually update layers
+    const transitionFunction = (layer, alpha) => { 
+        layer.transitionLayout(alpha) // transition to default content layout
+        layer.transitionEntryExit(alpha) // transition entry/exit of layers
+    }
+    transitionFunction(rootLayer, alpha) // transition the rootLayer
+    rootLayer.traverseLayers(transitionFunction, alpha) // do the same for child layers
+
+    // more manual update (advanced use case)
+    const transitionFunction = (layer, alpha) => { 
+        // transition to default content layout
+        this.content.position.lerp(this.defaultContentPosition, alpha)
+        this.content.scale.lerp(this.defaultContentScale, alpha)
+        // transition the entry and exit
+        const material = layer.mesh.material
+        if (layer.needsRemoval) {
+            if ('opacity' in material && material.opacity > 0.001) {
+                material.opacity = THREE.Math.lerp(material.opacity, 0, alpha)
+                material.needsUpdate = true
+            } else {
+                if (layer.parent) layer.parent.remove(layer)
+                layer.dispose()
+            }
+        } else {
+            if ('opacity' in material && material.opacity < 1) {
+                material.opacity = Math.min(THREE.Math.lerp(material.opacity, 1, alpha), 1)
+                material.needsUpdate = true
+            }
+        }
+    }
+    transitionFunction(rootLayer, alpha) // transition the rootLayer
+    rootLayer.traverseLayers(transitionFunction, alpha) // do the same for child layers
+
+}
 ```
 
 When an instance is created, a `layer` data-attribute is set on
@@ -48,5 +94,6 @@ Default dimensions:
 
 - Avoid adding and removing DOM Elements, as this forces the tree to be recloned (updating attributes and/or classes should be fast)
 - Relies on html2canvas, which means many CSS styles may not render correctly. YMMV. 
-- Rendering may vary on platforms. 
-- Mutation observers and event listeneres are attached to the given element in order to automatically refresh the texture when changes are detected. To trigger a refresh manually, call ``refresh()`. 
+- Anything not withing the bounds of the passed element will be clipped 
+- Rendering may vary on different browsers
+- Mutation observers and event listeners are attached to the element in order to automatically refresh the texture when changes are detected. To trigger a refresh manually, call ``refresh()`. 
