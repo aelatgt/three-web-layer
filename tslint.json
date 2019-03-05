@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json.schemastore.org/tslint",
+  "extends": [
+    "tslint-config-standard",
+    "tslint-config-prettier"
+  ],
+  "rules": {
+    "semicolon": [true, "never"]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "esnext",
+    "module":"esnext",
+    "lib": ["esnext", "dom"],
+    "strict": true,
+    "sourceMap": true,
+    "jsx": "preserve",
+    "declaration": true,
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declarationDir": "dist/types",
+    "outDir": "dist/lib",
+    "baseUrl": "",
+    "paths": {
+      "three": ["node_modules/three/src/Three"]
+    }
+  },
+  "include": [
+    "src",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+  ]
+}
