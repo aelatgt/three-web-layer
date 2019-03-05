@@ -3,7 +3,7 @@
     "moduleResolution": "node",
     "target": "esnext",
     "module":"esnext",
-    "lib": ["esnext", "dom"],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "strict": true,
     "sourceMap": true,
     "jsx": "preserve",
