@@ -266,7 +266,7 @@ export default class WebLayer3D extends THREE.Object3D {
       }
     } else {
       if ('opacity' in material && material.opacity < 1) {
-        material.opacity = THREE.Math.lerp(material.opacity, 1, alpha)
+        material.opacity = Math.min(THREE.Math.lerp(material.opacity, 1, alpha), 1)
         material.needsUpdate = true
       }
     }
