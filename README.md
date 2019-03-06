@@ -22,15 +22,13 @@ function animate() {
     rootLayer.update(alpha) // lerp value defaults to 1 if ommited
 
     // update with a specified transition and recursion to update child layers
-    rootLayer.update(alpha, WebLayer3D.TRANSITION_DEFAULT, true) // these are all default
+    rootLayer.update(alpha, WebLayer3D.TRANSITION_DEFAULT, true) // recursion is true by default
 
-    // manually update layers
-    const transitionFunction = (layer, alpha) => { 
+    // manually transition each layer
+    rootLayer.update(alpha, (layer, alpha) => { 
         layer.transitionLayout(alpha) // transition to default content layout
         layer.transitionEntryExit(alpha) // transition entry/exit of layers
-    }
-    transitionFunction(rootLayer, alpha) // transition the rootLayer
-    rootLayer.traverseLayers(transitionFunction, alpha) // do the same for child layers
+    }) // do the same for child layers
 
     // more manual update (advanced use case)
     const transitionFunction = (layer, alpha) => { 
@@ -54,8 +52,7 @@ function animate() {
             }
         }
     }
-    transitionFunction(rootLayer, alpha) // transition the rootLayer
-    rootLayer.traverseLayers(transitionFunction, alpha) // do the same for child layers
+    rootLayer.update(transitionFunction, alpha) // do the same for child layers
 
 }
 ```

@@ -147,7 +147,7 @@ export default Vue.extend({
     return <div class="container">
         <section data-layer class="todoapp">
         <header data-layer class="header">
-            <h1>todos</h1>
+            <h1 data-layer>todos</h1>
             <input class="new-todo"
             autofocus autocomplete="off"
             placeholder="What needs to be done?"
@@ -160,13 +160,13 @@ export default Vue.extend({
             <input id="toggle-all" class="toggle-all" type="checkbox" v-model={this.allDone} />
             <label for="toggle-all">Mark all as complete</label>
             <ul class="todo-list">{
-              this.filteredTodos.map(todo => {
+              this.todos.map(todo => {
                 const classes = [] as string[]
                 if (todo.completed) classes.push('completed')
                 if (todo === this.editedTodo) classes.push('editing')
-                return  <li data-layer class={`todo ${classes.join(' ')}`} key={todo.id}>
+                return  <li data-layer class={`todo ${classes.join(' ')}`} key={todo.id} v-show={this.filteredTodos.includes(todo)}>
                         <div class="view">
-                          <input class="toggle" type="checkbox" v-model={todo.completed} />
+                          <input data-layer class="toggle" type="checkbox" v-model={todo.completed} />
                           <label ondblclick={() => this.editTodo(todo)}>{ todo.title }</label>
                           <button class="destroy" onclick={() => this.removeTodo(todo)}></button>
                         </div>
@@ -187,11 +187,11 @@ export default Vue.extend({
             <strong>{ this.remaining }</strong> { this.$options.filters!.pluralize(this.remaining) } left
             </span>
             <ul class="filters">
-            <li><a href="#/all" class={this.visibility == 'all' ? 'selected' : ''}>All</a></li>
-            <li><a href="#/active" class={this.visibility == 'active' ? 'selected' : ''}>Active</a></li>
-            <li><a href="#/completed" class={this.visibility == 'completed' ? 'selected' : ''}>Completed</a></li>
+            <li><a data-layer href="#/all" class={this.visibility == 'all' ? 'selected' : ''}>All</a></li>
+            <li><a data-layer href="#/active" class={this.visibility == 'active' ? 'selected' : ''}>Active</a></li>
+            <li><a data-layer href="#/completed" class={this.visibility == 'completed' ? 'selected' : ''}>Completed</a></li>
             </ul>
-            <button class="clear-completed" onclick={this.removeCompleted} v-show={this.todos.length > this.remaining}>
+            <button data-layer class="clear-completed" onclick={this.removeCompleted} v-show={this.todos.length > this.remaining}>
             Clear completed
             </button>
         </footer>

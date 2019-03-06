@@ -10,6 +10,8 @@ import Renderer from '@speigg/html2canvas/dist/npm/Renderer'
 import ResourceLoader from '@speigg/html2canvas/dist/npm/ResourceLoader'
 import { FontMetrics } from '@speigg/html2canvas/dist/npm/Font'
 import cuid from 'cuid'
+import { filter } from 'minimatch'
+import { MeshBasicMaterial } from 'three'
 
 export interface WebLayer3DOptions {
   pixelRatio?: number
@@ -17,6 +19,7 @@ export interface WebLayer3DOptions {
   windowWidth?: number
   windowHeight?: number
   allowTaint?: boolean
+  onLayerCreate?(layer: WebLayer3D): void
 }
 
 /**
@@ -65,38 +68,63 @@ export default class WebLayer3D extends THREE.Object3D {
     layer.transitionEntryExit(alpha)
   }
 
+  private static _UPDATE_INTERACTION = function(
+    layer: WebLayer3D,
+    interactions: Map<WebLayer3D, { point: THREE.Vector3 }>
+  ) {
+    const interaction = interactions.get(layer)
+    if (interaction) {
+      layer._hover = true
+      layer.cursor.position.copy(interaction.point)
+      layer.worldToLocal(layer.cursor.position)
+      layer.add(layer.cursor)
+      layer._updateMesh()
+    } else {
+      layer._hover = false
+      layer.remove(layer.cursor)
+      layer._updateMesh()
+    }
+  }
+
   element: HTMLElement
   content = new THREE.Object3D()
+  textures: { [state: string]: THREE.Texture } = {
+    default: new THREE.Texture(document.createElement('canvas'))
+  }
   mesh = new THREE.Mesh(
     WebLayer3D.GEOMETRY,
     new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      map: this.textures.default
     })
   )
 
   childLayers: WebLayer3D[] = []
   boundingRect: DOMRect = new DOMRect()
   defaultContentPosition = new THREE.Vector3()
-  defaultContentScale = new THREE.Vector3()
+  defaultContentScale = new THREE.Vector3(1, 1, 1)
+  cursor = new THREE.Object3D()
 
-  textures: { [state: string]: THREE.Texture } = {
-    default: new THREE.Texture(document.createElement('canvas'))
-  }
-
+  private _hover = false
   private _needsRemoval = false
   private _states!: string[]
   private _pixelRatio = 1
-  private _currentState = 'default'
+  private _state = 'default'
   private _resizeObserver: ResizeObserver
+  private _raycaster = new THREE.Raycaster()
+  private _hitIntersections = this._raycaster.intersectObjects([]) // for type inference
 
-  // the following properties are only set on the root layer
+  // the following properties are meant to be accessed on the root layer
   private _mutationObserver?: MutationObserver
   private _clonedDocument?: Document
   private _clonedDocumentPromise?: Promise<Document>
   private _resourceLoader?: any
   private _logger?: any
+  private _meshMap = new WeakMap<THREE.Mesh, WebLayer3D>()
+  private _interactionRays?: THREE.Ray[] | null
+  private _interactionMap = new Map<WebLayer3D, { point: THREE.Vector3 }>()
 
   constructor(
     element: Element,
@@ -130,6 +158,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
     this.add(this.content)
     this.mesh.visible = false
+    this.rootLayer._meshMap!.set(this.mesh, this)
 
     if (this.rootLayer === this) {
       this.refresh(true)
@@ -143,7 +172,7 @@ export default class WebLayer3D extends THREE.Object3D {
       element.addEventListener('input', refreshOnChange, { capture: true })
       element.addEventListener('change', refreshOnChange, { capture: true })
       element.addEventListener('focus', refreshOnChange, { capture: true })
-      element.addEventListener('blue', refreshOnChange, { capture: true })
+      element.addEventListener('transitionend', refreshOnChange, { capture: true })
 
       const layersToRefresh = new Set<WebLayer3D>()
       this._mutationObserver = new MutationObserver((records, observer) => {
@@ -212,35 +241,61 @@ export default class WebLayer3D extends THREE.Object3D {
       this.refresh()
     })
     this._resizeObserver.observe(element)
-  }
 
-  get currentState() {
-    return this._currentState
-  }
-
-  get needsRemoval() {
-    return this._needsRemoval
+    if (this.options.onLayerCreate) this.options.onLayerCreate(this)
   }
 
   /**
    * Change the texture state.
    * Note: if a state is not available, the `default` state will be rendered.
    */
-  setState(state: string) {
-    this._currentState = state
+  set state(state: string) {
+    this._state = state
     this._updateMesh()
+  }
+  get state() {
+    return this._state
   }
 
   /**
-   * Update the pose and opacity of this layer (does not rerender the DOM)
+   * A list of Rays to be used for interaction.
+   * Can only be set on a root WebLayer3D instance.
+   * @param rays
+   */
+  set interactionRays(rays: THREE.Ray[] | undefined | null) {
+    this._checkRoot()
+    this._interactionRays = rays
+  }
+
+  get interactionRays() {
+    return this._interactionRays
+  }
+
+  /**
+   * Get the hover state
+   */
+  get hover() {
+    return this._hover
+  }
+
+  /** If true, this layer needs to be removed from the scene */
+  get needsRemoval() {
+    return this._needsRemoval
+  }
+
+  /**
+   * Update the pose and opacity of this layer (does not rerender the DOM).
+   * This should be called each frame, and can only be called on a root WebLayer3D instance.
    *
    * @param alpha lerp value
    * @param transition transition function (by default, this is WebLayer3D.TRANSITION_DEFAULT)
    * @param children if true, also update child layers
    */
   update(alpha = 1, transition = WebLayer3D.TRANSITION_DEFAULT, children = true) {
-    transition(this, alpha)
+    this._checkRoot()
+    this._updateInteractions()
     if (children) this.traverseLayers(transition, alpha)
+    else transition(this, alpha)
   }
 
   transitionLayout(alpha: number) {
@@ -267,11 +322,16 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   traverseLayers<T extends any[]>(each: (layer: WebLayer3D, ...params: T) => void, ...params: T) {
+    each(this, ...params)
+    this.traverseChildLayers(each, ...params)
+  }
+
+  traverseChildLayers<T extends any[]>(
+    each: (layer: WebLayer3D, ...params: T) => void,
+    ...params: T
+  ) {
     for (const child of this.children) {
-      if (child instanceof WebLayer3D) {
-        each(child, ...params)
-        child.traverseLayers(each, ...params)
-      }
+      if (child instanceof WebLayer3D) child.traverseLayers(each, ...params)
     }
     return params
   }
@@ -289,6 +349,17 @@ export default class WebLayer3D extends THREE.Object3D {
     if (!closestLayerElement) return undefined
     const id = parseInt(closestLayerElement.getAttribute(WebLayer3D.LAYER_ATTRIBUTE) || '', 10)
     return this.id === id ? this : (this.getObjectById(id) as WebLayer3D)
+  }
+
+  getLayerForRay(ray: THREE.Ray) {
+    this._raycaster.ray.copy(ray)
+    this._hitIntersections.length = 0
+    const intersections = this._raycaster.intersectObject(this, true, this._hitIntersections)
+    for (const intersection of intersections) {
+      const layer = this.rootLayer._meshMap!.get(intersection.object as any)
+      if (layer) return layer
+    }
+    return undefined
   }
 
   async refresh(forceClone = false): Promise<void> {
@@ -318,9 +389,13 @@ export default class WebLayer3D extends THREE.Object3D {
       .split(/\s+/)
       .filter(Boolean)
     this._states.push('default')
+    for (const state of this._states.slice()) {
+      this._states.push(state + ' hover')
+    }
     for (const state of this._states) {
       if (!this.textures[state]) {
-        this.textures[state] = new THREE.Texture(document.createElement('canvas'))
+        const canvas = document.createElement('canvas')
+        this.textures[state] = new THREE.Texture(canvas)
       }
     }
 
@@ -371,26 +446,15 @@ export default class WebLayer3D extends THREE.Object3D {
       }))
     }
 
-    // if cloned document is not attached to the DOM, the root element was refreshed,
-    // so wait for the next cloned document
-    let clonedDocument = this.rootLayer._clonedDocument!
-    while (!clonedDocument || clonedDocument.defaultView === null) {
-      clonedDocument =
-        this.rootLayer._clonedDocument || (await this.rootLayer._clonedDocumentPromise!)
-    }
-
     const childrenRefreshing = [] as Promise<void>[]
-    this.traverseLayers(child => {
+    this.traverseChildLayers(child => {
       childrenRefreshing.push(child.refresh())
     })
 
-    await this._renderTextures(
-      clonedDocument,
-      forceClone ? { ...this.textures, default: null as any } : this.textures
-    )
+    await this._renderTextures()
 
     this._updateMesh()
-    if (!this.mesh.parent) {
+    if (!this.mesh.parent && (this.mesh.material as MeshBasicMaterial).map) {
       this.mesh.visible = true
       this.content.position.copy(this.defaultContentPosition)
       this.content.scale.copy(this.defaultContentScale)
@@ -404,6 +468,32 @@ export default class WebLayer3D extends THREE.Object3D {
     if (this._mutationObserver) this._mutationObserver.disconnect()
     if (this._resizeObserver) this._resizeObserver.disconnect()
     for (const child of this.childLayers) child.dispose()
+  }
+
+  private _checkRoot() {
+    if (this.rootLayer !== this) throw new Error('Only call `update` on a root WebLayer3D instance')
+  }
+
+  private _updateInteractions() {
+    const interactionMap = this._interactionMap!
+    interactionMap.clear()
+    if (!this._interactionRays || this._interactionRays.length === 0) {
+      this.traverseLayers(WebLayer3D._UPDATE_INTERACTION, interactionMap)
+      return
+    }
+    interactions: for (const ray of this._interactionRays) {
+      this._hitIntersections.length = 0
+      this._raycaster.ray.copy(ray)
+      this._raycaster.intersectObject(this, true, this._hitIntersections)
+      for (const intersection of this._hitIntersections) {
+        const layer = this._meshMap!.get(intersection.object as any)
+        if (layer) {
+          interactionMap.set(layer, { point: intersection.point })
+          continue interactions
+        }
+      }
+    }
+    this.traverseLayers(WebLayer3D._UPDATE_INTERACTION, interactionMap)
   }
 
   private _hideChildLayers(clonedDocument: Document) {
@@ -464,14 +554,14 @@ export default class WebLayer3D extends THREE.Object3D {
     return false
   }
 
-  private async _renderTextures(
-    clonedDocument: Document,
-    textures: typeof WebLayer3D.prototype.textures
-  ) {
-    if (Object.keys(textures).length === 0) {
-      return
+  private async _renderTextures() {
+    // if cloned document is not attached to the DOM, the root element was refreshed,
+    // so wait for the next cloned document
+    let clonedDocument = this.rootLayer._clonedDocument!
+    while (!clonedDocument || clonedDocument.defaultView === null) {
+      clonedDocument =
+        this.rootLayer._clonedDocument || (await this.rootLayer._clonedDocumentPromise!)
     }
-
     const clonedElement = clonedDocument.querySelector(
       `[${WebLayer3D.LAYER_ATTRIBUTE}="${this.id}"]`
     )!
@@ -479,6 +569,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
     this._hideChildLayers(clonedDocument)
 
+    const textures = this.textures
     const renderFunctions = [] as Function[]
     for (const state in textures) {
       const texture = textures[state]
@@ -486,14 +577,14 @@ export default class WebLayer3D extends THREE.Object3D {
         continue
       }
 
-      clonedElement.classList.add(state)
+      const classes = state.split(' ')
+      clonedElement.classList.add(...classes)
       const stack = NodeParser(
         clonedElement,
         this.rootLayer._resourceLoader,
         this.rootLayer._logger
       )
-      // stack.container.style.background.backgroundColor = TRANSPARENT
-      clonedElement.classList.remove(state)
+      clonedElement.classList.remove(...classes)
 
       renderFunctions.push(() => {
         const canvas = texture.image as HTMLCanvasElement
@@ -529,6 +620,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private _updateBoundingRect() {
     if (this.needsRemoval) return
+    if (getComputedStyle(this.element).display === 'none') return
 
     const boundingRect = (this.boundingRect = this.element.getBoundingClientRect() as DOMRect)
     const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS
@@ -565,6 +657,14 @@ export default class WebLayer3D extends THREE.Object3D {
     stateTexture.image = canvas
     stateTexture.minFilter = THREE.LinearFilter
     stateTexture.needsUpdate = true
+    const material = this.mesh.material as MeshBasicMaterial
+    if (material.map && material.map.image === canvas) {
+      if (!canvas.width || !canvas.height) {
+        material.map = null
+        material.needsUpdate = true
+        this.mesh.visible = false
+      }
+    }
   }
 
   _updateTargetInClonedDocument(target: HTMLElement, updateTextContent = false): boolean {
@@ -620,15 +720,22 @@ export default class WebLayer3D extends THREE.Object3D {
       }
     }
     const mesh = this.mesh
-    const texture = this.textures[this._currentState] || this.textures.default
+    const hover = this.hover ? ' hover' : ''
+    const texture = this.textures[this.state + hover] || this.textures['default' + hover]
     const material = mesh.material as THREE.MeshBasicMaterial
-    material.map = texture
-    material.needsUpdate = true
+
+    if (!texture.image.width || !texture.image.height) {
+      material.map = null
+      material.needsUpdate = true
+    } else if (material.map !== texture) {
+      material.map = texture
+      material.needsUpdate = true
+    }
     mesh.renderOrder = this.level
   }
 }
 
-function ensureElementIsInDocument(element: Element, options: WebLayer3DOptions): Element {
+function ensureElementIsInDocument(element: Element, options?: WebLayer3DOptions): Element {
   const document = element.ownerDocument!
   if (document.contains(element)) {
     return element
@@ -639,8 +746,9 @@ function ensureElementIsInDocument(element: Element, options: WebLayer3DOptions)
   container.style.opacity = '0'
   container.style.pointerEvents = 'none'
   container.style.position = 'absolute'
-  container.style.width = 'windowWidth' in options ? options.windowWidth + 'px' : '550px'
-  container.style.height = 'windowHeight' in options ? options.windowHeight + 'px' : '150px'
+  container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '550px'
+  container.style.height =
+    options && 'windowHeight' in options ? options.windowHeight + 'px' : '150px'
   container.style.top = '0'
   container.style.left = '0'
 

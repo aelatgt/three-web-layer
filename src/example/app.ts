@@ -1,17 +1,32 @@
 import * as THREE from 'three'
 import WebLayer3D from '../three-web-layer'
 import TodoMVC, { filters } from './TodoMVC'
+import dat from 'dat.gui'
 
+// reload on changes during development
 if (module.hot) {
   module.hot.dispose(() => {
     window.location.reload()
   })
 }
 
+// controls
+const Controls = {
+  showDOM: false,
+  layerSeparation: 0.001
+}
+const gui = new dat.GUI()
+gui.add(Controls, 'showDOM', false)
+gui.add(Controls, 'layerSeparation', 0.001, 0.1)
+gui.domElement.style.border = '0'
+gui.domElement.parentElement!.style.zIndex = '1'
+
+// basic setup
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10)
 camera.position.z = 0.5
 
 const scene = new THREE.Scene()
+const clock = new THREE.Clock()
 
 const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.domElement.style.width = '100vw'
@@ -19,22 +34,65 @@ renderer.domElement.style.height = '100vh'
 renderer.domElement.style.position = 'fixed'
 renderer.domElement.style.top = '0'
 renderer.domElement.style.left = '0'
-renderer.setClearColor(new THREE.Color(0x333333))
+renderer.setClearColor(new THREE.Color(0xcccccc))
+renderer.setPixelRatio(window.devicePixelRatio)
+document.body.insertBefore(renderer.domElement, document.body.firstChild)
 
-document.body.appendChild(renderer.domElement)
+// setup interaction
+const raycaster = new THREE.Raycaster()
+var mouse = new THREE.Vector2()
+document.addEventListener('mousemove', onDocumentMouseMove, false)
+document.addEventListener('touchstart', onDocumentTouchStart, false)
+document.addEventListener('touchmove', onDocumentTouchMove, false)
+renderer.domElement.addEventListener('click', onCanvasClick, false)
 
+function updateMouse(clientX, clientY) {
+  mouse.x = (clientX / window.innerWidth) * 2 - 1
+  mouse.y = -(clientY / window.innerHeight) * 2 + 1
+}
+
+function onDocumentMouseMove(event) {
+  updateMouse(event.clientX, event.clientY)
+}
+function onDocumentTouchStart(event) {
+  if (event.touches.length === 1) {
+    event.preventDefault()
+    updateMouse(event.touches[0].clientX, event.touches[0].clientY)
+  }
+}
+function onDocumentTouchMove(event) {
+  if (event.touches.length === 1) {
+    event.preventDefault()
+    updateMouse(event.touches[0].clientX, event.touches[0].clientY)
+  }
+}
+
+function onCanvasClick(event) {
+  if (event.target === renderer.domElement) {
+    raycaster.setFromCamera(mouse, camera)
+    const layer = todoLayer.getLayerForRay(raycaster.ray)
+    if (layer) {
+      layer.element.click()
+      layer.element.focus()
+    }
+  }
+}
+
+function onCanvasDoubleClick(event) {
+  if (event.target === renderer.domElement) {
+    raycaster.setFromCamera(mouse, camera)
+    const layer = todoLayer.getLayerForRay(raycaster.ray)
+    if (layer) {
+      layer.element.click()
+      layer.element.focus()
+    }
+  }
+}
+
+// create and mount Vue instance (without attaching to DOM)
 const todoVue = ((window as any).todoVue = new TodoMVC().$mount())
-const todoLayer = ((window as any).todoLayer = new WebLayer3D(todoVue.$el, {
-  windowWidth: 500,
-  layerSeparation: 0.05,
-  pixelRatio: window.devicePixelRatio * 2
-}))
-scene.add(todoLayer)
 
-todoLayer.element.parentElement!.style.opacity = '1'
-todoLayer.element.parentElement!.style.pointerEvents = 'auto'
-
-// handle routing
+// handle routing (use Vue's reactive properties to update the DOM)
 function onHashChange() {
   const visibility = window.location.hash.replace(/#\/?/, '')
   if (filters[visibility]) {
@@ -44,48 +102,32 @@ function onHashChange() {
     todoVue.visibility = 'all'
   }
 }
-
 window.addEventListener('hashchange', onHashChange)
 onHashChange()
 
-let windowHalfX = window.innerWidth / 2
-let windowHalfY = window.innerHeight / 2
-let mouseX = 0,
-  mouseY = 0
+const cursorGeometry = new THREE.SphereGeometry(0.01)
 
-document.addEventListener('mousemove', onDocumentMouseMove, false)
-document.addEventListener('touchstart', onDocumentTouchStart, false)
-document.addEventListener('touchmove', onDocumentTouchMove, false)
-
-function onDocumentMouseMove(event) {
-  mouseX = event.clientX - windowHalfX
-  mouseY = event.clientY - windowHalfY
-}
-function onDocumentTouchStart(event) {
-  if (event.touches.length === 1) {
-    event.preventDefault()
-    mouseX = event.touches[0].pageX - windowHalfX
-    mouseY = event.touches[0].pageY - windowHalfY
+// create WebLayer3D instance with HTMLElement
+// (element will be mounted in a hidden and non-interactive container if not already in DOM)
+const todoLayer = ((window as any).todoLayer = new WebLayer3D(todoVue.$el, {
+  windowWidth: 500,
+  layerSeparation: 0.001,
+  pixelRatio: window.devicePixelRatio * 1.5,
+  onLayerCreate(layer) {
+    // do something every time a layer is created
+    layer.cursor.add(new THREE.Mesh(cursorGeometry))
   }
-}
-function onDocumentTouchMove(event) {
-  if (event.touches.length === 1) {
-    event.preventDefault()
-    mouseX = event.touches[0].pageX - windowHalfX
-    mouseY = event.touches[0].pageY - windowHalfY
-  }
-}
-
-const clock = new THREE.Clock()
+}))
+// in this case, we actually want the container to be visible and interactive
+todoLayer.element.parentElement!.style.opacity = '1'
+todoLayer.element.parentElement!.style.pointerEvents = 'auto'
+todoLayer.interactionRays = [raycaster.ray] // enable hover-state rendering
+scene.add(todoLayer)
 
 function animate() {
   requestAnimationFrame(animate)
 
   const deltaTime = clock.getDelta()
-  todoLayer.update(deltaTime * 5)
-
-  windowHalfX = window.innerWidth / 2
-  windowHalfY = window.innerHeight / 2
 
   const width = window.innerWidth
   const height = window.innerHeight
@@ -93,12 +135,28 @@ function animate() {
   camera.aspect = aspect
   camera.updateProjectionMatrix()
 
-  camera.position.x += (mouseX * 0.001 - camera.position.x) * 0.05
-  camera.position.y += (-mouseY * 0.001 - camera.position.y) * 0.05
+  camera.position.x += (mouse.x * 0.3 - camera.position.x) * 0.05
+  camera.position.y += (-mouse.y * 0.3 - camera.position.y) * 0.05
   camera.lookAt(scene.position)
+
+  raycaster.setFromCamera(mouse, camera)
+
+  todoLayer.traverseLayers(layer => {
+    layer.defaultContentPosition.z = Controls.layerSeparation * layer.level
+  })
+
+  todoLayer.update(deltaTime * 5)
 
   renderer.setSize(width, height, false)
   renderer.render(scene, camera)
+
+  if (Controls.showDOM) {
+    todoLayer.element.parentElement!.style.opacity = '1'
+    todoLayer.element.parentElement!.style.pointerEvents = 'auto'
+  } else {
+    todoLayer.element.parentElement!.style.opacity = '0'
+    todoLayer.element.parentElement!.style.pointerEvents = 'none'
+  }
 }
 
 animate()

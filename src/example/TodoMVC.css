@@ -33,7 +33,6 @@ button {
 
 body {
 	font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
-	line-height: 1.4em;
 	background: #f5f5f5;
 	color: #4d4d4d;
 	min-width: 230px;
@@ -63,13 +62,13 @@ body {
 .todoapp input:placeholder-shown {
 	font-style: italic;
 	font-weight: 300;
-	color: #e6e6e6;
+	color: #aaaaaa;
 	caret-color: black;
 }
 
 .todoapp h1 {
 	position: absolute;
-	top: -155px;
+	top: -200px;
 	width: 100%;
 	font-size: 100px;
 	font-weight: 100;
@@ -88,7 +87,6 @@ body {
 	font-size: 24px;
 	font-family: inherit;
 	font-weight: inherit;
-	line-height: 1.4em;
 	border: 0;
 	color: inherit;
 	padding: 6px;
@@ -251,7 +249,7 @@ body {
 	transition: color 0.2s ease-out;
 }
 
-.todo-list li .destroy:hover {
+.todo-list li .destroy:hover, .todo-list li .destroy.hover {
 	color: #af5b5e;
 }
 
@@ -259,7 +257,7 @@ body {
 	content: '×';
 }
 
-.todo-list li:hover .destroy {
+.todo-list li:hover .destroy, .todo-list li.hover .destroy {
 	display: block;
 }
 
@@ -325,7 +323,7 @@ body {
 	border-radius: 3px;
 }
 
-.filters li a:hover {
+.filters li a:hover, .filters li a.hover {
 	border-color: rgba(175, 47, 47, 0.1);
 }
 
@@ -342,7 +340,7 @@ html .clear-completed:active {
 	cursor: pointer;
 }
 
-.clear-completed:hover {
+.clear-completed:hover, .clear-completed.hover {
 	text-decoration: underline;
 }
 
@@ -365,7 +363,7 @@ html .clear-completed:active {
 	font-weight: 400;
 }
 
-.info a:hover {
+.info a:hover, .info a.hover {
 	text-decoration: underline;
 }
 
