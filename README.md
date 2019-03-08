@@ -1,18 +1,52 @@
 # three-web-layer
 A handy tool for rendering DOM layouts in three.js, built on html2canvas
 
+## DEMO
+
+[TodoMVC running in WebGL! Built with Vuejs, JSX, and WebLayer3D](http://argonjs.github.io/three-web-layer/)
+
+## Installation
+
+```bash
+npm i three-web-layer
+```
+
 ## API
 
 ```js
-const layer = new WebLayer3D(domElement, {
-    pixelRatio: window.devicePixelRatio, // optional
-    layerSeparation: 0.001, // optional 
-    windowWidth, 300, // optional
-    windowHeight, 150, // optional
+// create a root WebLayer3D instance. 
+const rootLayer = new WebLayer3D(domElement, {
+    // these options are all optional
+    pixelRatio: window.devicePixelRatio,
+    layerSeparation: 0.001, 
+    windowWidth, 300,
+    windowHeight, 150,
+    onLayerCreate: (layer) => {
+        // do something every time a layer is created
+        // eg., attach a cursor
+        layer.cursor.add(new THREE.Mesh(cursorGeometry))
+    }
 })
+
+// optionally setup interaction rays for hover effects
+rootLayer.interactionRays = [mouseRay] 
+
+// hit testing
+renderer.domElement.addEventListener('click', redirectEvent)
+renderer.domElement.addEventListener('dblclick', redirectEvent)
+function redirectEvent(event) {
+    const hit = rootLayer.hitTest(mouseRay)
+    if (hit) {
+        hit.target.dispatchEvent(new event.constructor(event.type, event))
+    }
+}
 
 // in update loop
 function animate() {
+
+    // If using interaction rays, update them first
+    updateMouseRay() // app code
+
     // ...
     const alpha = deltaTime * 5 // set a lerp value
 
@@ -21,21 +55,21 @@ function animate() {
     // update with linear interpolation
     rootLayer.update(alpha) // lerp value defaults to 1 if ommited
 
-    // update with a specified transition and recursion to update child layers
-    rootLayer.update(alpha, WebLayer3D.TRANSITION_DEFAULT, true) // recursion is true by default
+    // update with a specified transition 
+    rootLayer.update(alpha, WebLayer3D.TRANSITION_DEFAULT)
 
-    // manually transition each layer
-    rootLayer.update(alpha, (layer, alpha) => { 
+    // manually transition each layer using provided transition functions
+    rootLayer.update(alpha, (layer, alpha) => { // NOTE: ideally, save and reuse the same function
         layer.transitionLayout(alpha) // transition to default content layout
-        layer.transitionEntryExit(alpha) // transition entry/exit of layers
-    }) // do the same for child layers
+        layer.transitionVisibility(alpha) // transition entry/exit of layers
+    })
 
-    // more manual update (advanced use case)
-    const transitionFunction = (layer, alpha) => { 
-        // transition to default content layout
+    // custom layer transition logic 
+    const customTransition = (layer, alpha) => { 
+        // transition the layout
         this.content.position.lerp(this.defaultContentPosition, alpha)
         this.content.scale.lerp(this.defaultContentScale, alpha)
-        // transition the entry and exit
+        // transition the visibility
         const material = layer.mesh.material
         if (layer.needsRemoval) {
             if ('opacity' in material && material.opacity > 0.001) {
@@ -47,15 +81,18 @@ function animate() {
             }
         } else {
             if ('opacity' in material && material.opacity < 1) {
+                const opacity = layer.needsHiding ? 0 : 1
                 material.opacity = Math.min(THREE.Math.lerp(material.opacity, 1, alpha), 1)
                 material.needsUpdate = true
             }
         }
     }
-    rootLayer.update(transitionFunction, alpha) // do the same for child layers
+    rootLayer.update(alpha, customTransition)
 
 }
 ```
+
+    Note: See the example source code for more details, which roughly follows the above setup while presenting web content built with Vue.js and JSX (just an example, the only dependencies of WebLayer3D are threejs, WebGL, and DOM).
 
 When an instance is created, a `layer` data-attribute is set on
 the passed DOM element to match this instance's Object3D id.
@@ -89,8 +126,9 @@ Default dimensions:
 
 ## Limitations:
 
-- Avoid adding and removing DOM Elements, as this forces the tree to be recloned (updating attributes and/or classes should be fast)
+- Avoid adding and removing DOM Elements, as this forces the DOM tree to be recloned (updating attributes and/or classes should be fast)
 - Relies on html2canvas, which means many CSS styles may not render correctly. YMMV. 
-- Anything not withing the bounds of the passed element will be clipped 
-- Rendering may vary on different browsers
-- Mutation observers and event listeners are attached to the element in order to automatically refresh the texture when changes are detected. To trigger a refresh manually, call ``refresh()`. 
+- Avoid tainting the canvas with cross-origin resources
+- Anything not within the bounds of the passed element will be clipped. If you want to render an element that is outside of the bounds of a container element, the descendent element must be wrapped in a WebLayer3D instance (by adding a `data-layer` attribute)
+- DOM rendering may vary on different platforms, based on browser-supported CSS classes, variability between browser vendors, and html2canvas capabilties
+- Mutation observers and event listeners are attached to the root element in order to automatically refresh textures when changes are detected. It's possible this may miss certain changes to the DOM. To trigger a refresh manually, call ``layer.refresh()` (this works on any layer, root or child)

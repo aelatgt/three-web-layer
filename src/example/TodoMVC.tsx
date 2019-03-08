@@ -144,17 +144,20 @@ export default Vue.extend({
   },
 
   render() {
-    return <div class="container">
-        <section data-layer class="todoapp">
-        <header data-layer class="header">
+    return <div class="container" data-layer-pixel-ratio="0.5">
+        <section data-layer data-layer-pixel-ratio="0.5" class="todoapp">
+        <header class="header">
             <h1 data-layer>todos</h1>
-            <input class="new-todo"
-            autofocus autocomplete="off"
-            placeholder="What needs to be done?"
-            v-model={this.newTodo}
-            onkeyup={(e:KeyboardEvent) => {
-              if (e.key === 'Enter') this.addTodo()
-            }}/>
+            <div data-layer>
+              <input class="new-todo"
+              spellcheck="false"
+              autofocus autocomplete="off"
+              placeholder="What needs to be done?"
+              v-model={this.newTodo}
+              onkeyup={(e:KeyboardEvent) => {
+                if (e.key === 'Enter') this.addTodo()
+              }}/>
+            </div>
         </header>
         <section class="main" v-show={this.todos.length}>
             <input id="toggle-all" class="toggle-all" type="checkbox" v-model={this.allDone} />
@@ -164,26 +167,29 @@ export default Vue.extend({
                 const classes = [] as string[]
                 if (todo.completed) classes.push('completed')
                 if (todo === this.editedTodo) classes.push('editing')
-                return  <li data-layer class={`todo ${classes.join(' ')}`} key={todo.id} v-show={this.filteredTodos.includes(todo)}>
-                        <div class="view">
-                          <input data-layer class="toggle" type="checkbox" v-model={todo.completed} />
-                          <label ondblclick={() => this.editTodo(todo)}>{ todo.title }</label>
-                          <button class="destroy" onclick={() => this.removeTodo(todo)}></button>
+                return  <li class={`todo ${classes.join(' ')}`} key={todo.id} v-show={this.filteredTodos.includes(todo)}>
+                        <div data-layer>
+                          <div class="view">
+                            <input class="toggle" type="checkbox" v-model={todo.completed} />
+                            <label onclick={()=>this.editTodo(todo)}>{ todo.title }</label>
+                            <button data-layer class="destroy" onclick={() => this.removeTodo(todo)}></button>
+                          </div>
+                          <input class="edit" type="text"
+                            spellcheck="false"
+                            v-model={todo.title}
+                            v-todo-focus="todo == editedTodo"
+                            onblur={ () => this.doneEdit(todo) }
+                            onkeyup={ (event:KeyboardEvent) => {
+                              if (event.key === 'Enter') this.doneEdit(todo)
+                              if (event.key === 'Escape') this.cancelEdit(todo)
+                            }}/>
                         </div>
-                        <input class="edit" type="text"
-                          v-model={todo.title}
-                          v-todo-focus="todo == editedTodo"
-                          onblur={ () => this.doneEdit(todo) }
-                          onkeyup={ (event:KeyboardEvent) => {
-                            if (event.key === 'Enter') this.doneEdit(todo)
-                            if (event.key === 'Escape') this.cancelEdit(todo)
-                          }}/>
                         </li>
                 })
               }</ul>
         </section>
-        <footer data-layer class="footer" v-show={this.todos.length}>
-            <span class="todo-count">
+        <footer class="footer" v-show={this.todos.length}>
+            <span data-layer class="todo-count">
             <strong>{ this.remaining }</strong> { this.$options.filters!.pluralize(this.remaining) } left
             </span>
             <ul class="filters">
@@ -196,10 +202,10 @@ export default Vue.extend({
             </button>
         </footer>
         </section>
-        <footer class="info">
-        <p>Double-click to edit a todo</p>
-        <p>Written by <a href="http://ael.gatech.edu/lab/author/gheric/">Gheric Speiginer</a></p>
-        <p>Part of <a href="http://todomvc.com">TodoMVC</a></p>
+        <footer data-layer class="info">
+        <p>Click to edit a todo</p>
+        <p>Written by <a data-layer href="http://ael.gatech.edu/lab/author/gheric/">&nbsp;Gheric Speiginer</a></p>
+        <p>Part of <a data-layer href="http://todomvc.com">TodoMVC</a></p>
         </footer>
     </div>
   }
