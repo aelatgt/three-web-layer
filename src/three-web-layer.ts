@@ -61,6 +61,7 @@ export default class WebLayer3D extends THREE.Object3D {
   static LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container'
   static PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio'
   static STATES_ATTRIBUTE = 'data-layer-states'
+  private static DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms'
 
   static DEFAULT_LAYER_SEPARATION = 0.005
   static DEFAULT_PIXEL_DIMENSIONS = 0.001
@@ -72,8 +73,8 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   static transitionLayout(layer: WebLayer3D, alpha: number) {
-    layer.content.position.lerp(layer.defaultContentPosition, alpha)
-    layer.content.scale.lerp(layer.defaultContentScale, alpha)
+    layer.content.position.lerp(layer.targetContentPosition, alpha)
+    layer.content.scale.lerp(layer.targetContentScale, alpha)
   }
 
   static transitionVisibility(layer: WebLayer3D, alpha: number) {
@@ -95,7 +96,7 @@ export default class WebLayer3D extends THREE.Object3D {
     }
   }
 
-  private static _UPDATE_INTERACTION = function(
+  private static _updateInteraction = function(
     layer: WebLayer3D,
     interactions: Map<WebLayer3D, { point: THREE.Vector3 }>
   ) {
@@ -110,6 +111,8 @@ export default class WebLayer3D extends THREE.Object3D {
       layer.remove(layer.cursor)
     }
   }
+
+  private static _didInstallStyleSheet = false
 
   element: HTMLElement
   content = new THREE.Object3D()
@@ -127,11 +130,15 @@ export default class WebLayer3D extends THREE.Object3D {
   } as any)
 
   childLayers: WebLayer3D[] = []
-  defaultContentPosition = new THREE.Vector3()
-  defaultContentScale = new THREE.Vector3(1, 1, 1)
+  targetContentPosition = new THREE.Vector3()
+  targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
+  boundingRect = { left: 0, top: 0, width: 0, height: 0 }
   cursor = new THREE.Object3D()
+  needsRefresh = true
 
-  private _needsRefresh = true
+  private _lastTargetContentPosition = new THREE.Vector3()
+  private _lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
+
   private _isRefreshing = false
   private _isUpdating = false
   private _needsRemoval = false
@@ -172,6 +179,20 @@ export default class WebLayer3D extends THREE.Object3D {
       ensureElementIsInDocument(element, options)
     }
 
+    if (!WebLayer3D._didInstallStyleSheet) {
+      const style = document.createElement('style')
+      document.head.append(style)
+      addCSSRule(
+        style.sheet as CSSStyleSheet,
+        `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}], [${
+          WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE
+        }] *`,
+        'transform: none !important;',
+        0
+      )
+      WebLayer3D._didInstallStyleSheet = true
+    }
+
     this.add(this.content)
     this.mesh.renderOrder = this.level
     this.mesh.visible = false
@@ -182,13 +203,13 @@ export default class WebLayer3D extends THREE.Object3D {
       this._triggerRefresh = (e: Event) => {
         const layer = this.getLayerForElement(e.target as any)!
         if (layer) {
-          layer.refresh(true)
-          // setTimeout(() => layer.refresh(true), 1000) // catch any late updates
+          layer.needsRefresh = true
+          layer.refresh()
         }
       }
-
+      const setLayerNeedsRefresh = layer => (layer.needsRefresh = true)
       this._processMutations = (records: MutationRecord[]) => {
-        let needsForceRefresh = false
+        if (this._isUpdating) return
         for (const record of records) {
           if (
             record.type === 'attributes' &&
@@ -205,16 +226,16 @@ export default class WebLayer3D extends THREE.Object3D {
               ? (record.target as HTMLElement)
               : record.target.parentElement
           if (!target) {
-            needsForceRefresh = true
-            break
+            continue
           }
           const layer = this.getLayerForElement(target)
-          if (layer && layer._isRefreshing === false && this._isUpdating === false) {
-            layer._needsRefresh = true
-            // setTimeout(() => layer._markForRefresh(), 1000) // catch any late updates
+          if (layer) {
+            if (record.type === 'childList') {
+              layer.traverse(setLayerNeedsRefresh)
+            } else layer.needsRefresh = true
           }
         }
-        this.refresh(needsForceRefresh)
+        this.refresh()
       }
 
       element.addEventListener('input', this._triggerRefresh, { capture: true })
@@ -235,7 +256,7 @@ export default class WebLayer3D extends THREE.Object3D {
       this._resizeObserver = new ResizeObserver((records, observer) => {
         for (const record of records) {
           const target = this.getLayerForElement(record.target)!
-          target._needsRefresh = true
+          target.needsRefresh = true
         }
         this.refresh()
       })
@@ -363,14 +384,15 @@ export default class WebLayer3D extends THREE.Object3D {
     for (const intersection of intersections) {
       const layer = this.rootLayer._meshMap!.get(intersection.object as any)
       if (!layer) continue
-      const layerBoundingRect = layer.element.getBoundingClientRect()
+      const layerBoundingRect = layer.boundingRect
       if (!layerBoundingRect.width || !layerBoundingRect.height) continue
       let target = layer.element
       const clientX = intersection.uv!.x * layerBoundingRect.width
       const clientY = (1 - intersection.uv!.y) * layerBoundingRect.height
+      this._disableTransforms(true)
       traverseDOM(layer.element, el => {
         if (!target.contains(el)) return false
-        const elementBoundingRect = el.getBoundingClientRect()
+        const elementBoundingRect = parseBounds(el, window.pageXOffset, window.pageYOffset)
         const offsetLeft = elementBoundingRect.left - layerBoundingRect.left
         const offsetTop = elementBoundingRect.top - layerBoundingRect.top
         const { width, height } = elementBoundingRect
@@ -387,31 +409,33 @@ export default class WebLayer3D extends THREE.Object3D {
         }
         return false // stop traversal down this path
       })
+      this._disableTransforms(false)
       return { layer, intersection, target }
     }
     return undefined
   }
 
   async refresh(force = false): Promise<void> {
-    if (force) this._needsRefresh = true
+    if (force) this.needsRefresh = true
     this._updateState()
     this._updateChildLayers()
     this._updateDefaultLayout()
-    this._updateMesh()
 
-    const childrenRefreshing = [] as Promise<void>[]
+    const refreshes = [] as Promise<void>[]
     for (const child of this.children) {
-      if (child instanceof WebLayer3D) childrenRefreshing.push(child.refresh(force))
+      if (child instanceof WebLayer3D) refreshes.push(child.refresh(force))
     }
-
-    if (this._needsRefresh && !this._isRefreshing) {
+    if (this.needsRefresh && !this._isRefreshing) {
       this._isRefreshing = true
-      this._needsRefresh = false
+      this.needsRefresh = false
       await this._renderTextures()
       this._isRefreshing = false
+      this._updateDefaultLayout()
     }
 
-    await Promise.all(childrenRefreshing)
+    this._updateMesh()
+
+    await Promise.all(refreshes)
     return
   }
 
@@ -454,8 +478,8 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   private _updateDefaultLayout() {
-    this.defaultContentPosition.set(0, 0, 0)
-    this.defaultContentScale.set(0.1, 0.1, 0.1)
+    this.targetContentPosition.copy(this._lastTargetContentPosition)
+    this.targetContentScale.copy(this._lastTargetContentScale)
 
     if (this.needsRemoval) {
       this._needsHiding = true
@@ -463,10 +487,14 @@ export default class WebLayer3D extends THREE.Object3D {
     }
 
     this._needsHiding = false
-    const rootBoundingRect = this.rootLayer.element.getBoundingClientRect() as DOMRect
-    const boundingRect = this.element.getBoundingClientRect() as DOMRect
+    const rootBoundingRect = this.rootLayer.boundingRect
+    const boundingRect = this.boundingRect
 
-    if (boundingRect.width === 0 || boundingRect.height === 0) {
+    if (
+      boundingRect.width === 0 ||
+      boundingRect.height === 0 ||
+      (this.parent instanceof WebLayer3D && this.parent._needsHiding)
+    ) {
       this._needsHiding = true
       return
     }
@@ -484,18 +512,21 @@ export default class WebLayer3D extends THREE.Object3D {
       const myLeft = pixelSize * (left + boundingRect.width / 2)
       const myTop = pixelSize * (top + boundingRect.height / 2)
 
-      this.defaultContentPosition.set(
+      this.targetContentPosition.set(
         rootOriginX + myLeft,
         rootOriginY - myTop,
         layerSeparation * this.level
       )
     }
 
-    this.defaultContentScale.set(
+    this.targetContentScale.set(
       Math.max(pixelSize * boundingRect.width, 10e-6),
       Math.max(pixelSize * boundingRect.height, 10e-6),
       1
     )
+
+    this._lastTargetContentPosition.copy(this.targetContentPosition)
+    this._lastTargetContentScale.copy(this.targetContentScale)
   }
 
   private _updateMesh() {
@@ -525,7 +556,7 @@ export default class WebLayer3D extends THREE.Object3D {
       this.content.add(mesh)
       this._updateDefaultLayout()
       // this.content.position.copy(this.defaultContentPosition)
-      this.content.scale.copy(this.defaultContentScale)
+      this.content.scale.copy(this.targetContentScale)
     }
 
     if (this.needsHiding && (mesh.material as THREE.MeshBasicMaterial).opacity < 0.05) {
@@ -539,7 +570,7 @@ export default class WebLayer3D extends THREE.Object3D {
     const interactionMap = this._interactionMap!
     interactionMap.clear()
     if (!this._interactionRays || this._interactionRays.length === 0) {
-      this.traverseLayers(WebLayer3D._UPDATE_INTERACTION, interactionMap)
+      this.traverseLayers(WebLayer3D._updateInteraction, interactionMap)
       return
     }
     interactions: for (const ray of this._interactionRays) {
@@ -554,7 +585,7 @@ export default class WebLayer3D extends THREE.Object3D {
         }
       }
     }
-    this.traverseLayers(WebLayer3D._UPDATE_INTERACTION, interactionMap)
+    this.traverseLayers(WebLayer3D._updateInteraction, interactionMap)
   }
 
   private _showChildLayers(show: boolean) {
@@ -564,6 +595,12 @@ export default class WebLayer3D extends THREE.Object3D {
         childEl.style.opacity = show ? '1' : '0'
       }
     }
+  }
+
+  private _disableTransforms(disabled: boolean) {
+    const rootParent = this.rootLayer.element.parentElement!
+    if (disabled) rootParent.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '')
+    else rootParent.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE)
   }
 
   // private _markForRefresh() {
@@ -612,16 +649,16 @@ export default class WebLayer3D extends THREE.Object3D {
     const textures = this.textures
     const renderFunctions = [] as Function[]
 
-    // let el = this.element
-    // do {
-    //   el.style.transform
-    // }
-
-    const scrollX = window.pageXOffset
-    const scrollY = window.pageYOffset
-    const bounds = parseBounds(element, scrollX, scrollY)
-
-    if (!bounds.width || !bounds.height) return
+    this._disableTransforms(true)
+    const bounds = (this.boundingRect = parseBounds(
+      element,
+      window.pageXOffset,
+      window.pageYOffset
+    ))
+    if (!bounds.width || !bounds.height) {
+      this._disableTransforms(false)
+      return
+    }
 
     this._showChildLayers(false)
 
@@ -657,11 +694,11 @@ export default class WebLayer3D extends THREE.Object3D {
     }
 
     this._showChildLayers(true)
+    this._disableTransforms(false)
     this.rootLayer._processMutations(this.rootLayer._mutationObserver!.takeRecords())
 
     const imageStore = await this.rootLayer._resourceLoader.ready()
 
-    // const boundingRect = element.getBoundingClientRect()
     const renderOptions = {
       backgroundColor: null,
       fontMetrics: this.rootLayer._fontMetrics,
@@ -712,5 +749,13 @@ function traverseDOM(node: Node, each: (node: HTMLElement) => boolean, bind?: an
         traverseDOM(el, each, bind)
       }
     }
+  }
+}
+
+function addCSSRule(sheet, selector, rules, index) {
+  if ('insertRule' in sheet) {
+    sheet.insertRule(selector + '{' + rules + '}', index)
+  } else if ('addRule' in sheet) {
+    sheet.addRule(selector, rules, index)
   }
 }

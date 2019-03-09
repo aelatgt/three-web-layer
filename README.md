@@ -67,8 +67,8 @@ function animate() {
     // custom layer transition logic 
     const customTransition = (layer, alpha) => { 
         // transition the layout
-        this.content.position.lerp(this.defaultContentPosition, alpha)
-        this.content.scale.lerp(this.defaultContentScale, alpha)
+        this.content.position.lerp(this.targetContentPosition, alpha)
+        this.content.scale.lerp(this.targetContentScale, alpha)
         // transition the visibility
         const material = layer.mesh.material
         if (layer.needsRemoval) {
@@ -126,9 +126,7 @@ Default dimensions:
 
 ## Limitations:
 
-- Avoid adding and removing DOM Elements, as this forces the DOM tree to be recloned (updating attributes and/or classes should be fast)
-- Relies on html2canvas, which means many CSS styles may not render correctly. YMMV. 
-- Avoid tainting the canvas with cross-origin resources
-- Anything not within the bounds of the passed element will be clipped. If you want to render an element that is outside of the bounds of a container element, the descendent element must be wrapped in a WebLayer3D instance (by adding a `data-layer` attribute)
-- DOM rendering may vary on different platforms, based on browser-supported CSS classes, variability between browser vendors, and html2canvas capabilties
-- Mutation observers and event listeners are attached to the root element in order to automatically refresh textures when changes are detected. It's possible this may miss certain changes to the DOM. To trigger a refresh manually, call ``layer.refresh()` (this works on any layer, root or child)
+- Relies on html2canvas, which means many CSS styles may not render correctly. 
+- Tainting the canvas will prevent the layer from rendering. This includes cross-origin resources loaded without CORS, and (in Safari) data-urls for images
+- Anything not within the bounds of the passed element will be clipped. If you want to render a child element that is outside of the bounds of a parent layer element, the descendent element must also be made into a WebLayer3D instance (by adding a `data-layer` attribute)
+- Mutation observers, resize observers, and event listeners are attached to the root element in order to automatically refresh textures when changes are detected. It's possible that some changes to the DOM can be missed (e.g., stylesheets can be changed). To manually trigger a forced refresh on a layer and it's descendent layers, call ``layer.refresh(true)`. Alternatively, set `layer.needsRefresh = true` on every layer that needs a refresh, and then call `refresh()` on the root layer to refresh only the layers that are marked as needing a refresh. 

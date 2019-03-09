@@ -48806,10 +48806,18 @@ function (_THREE$Object3D) {
       alphaTest: 0.5
     });
     _this.childLayers = [];
-    _this.defaultContentPosition = new THREE.Vector3();
-    _this.defaultContentScale = new THREE.Vector3(1, 1, 1);
+    _this.targetContentPosition = new THREE.Vector3();
+    _this.targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
+    _this.boundingRect = {
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 0
+    };
     _this.cursor = new THREE.Object3D();
-    _this._needsRefresh = true;
+    _this.needsRefresh = true;
+    _this._lastTargetContentPosition = new THREE.Vector3();
+    _this._lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
     _this._isRefreshing = false;
     _this._isUpdating = false;
     _this._needsRemoval = false;
@@ -48833,6 +48841,13 @@ function (_THREE$Object3D) {
       ensureElementIsInDocument(element, options);
     }
 
+    if (!WebLayer3D._didInstallStyleSheet) {
+      var style = document.createElement('style');
+      document.head.append(style);
+      addCSSRule(style.sheet, "[".concat(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, "], [").concat(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, "] *"), 'transform: none !important;', 0);
+      WebLayer3D._didInstallStyleSheet = true;
+    }
+
     _this.add(_this.content);
 
     _this.mesh.renderOrder = _this.level;
@@ -48846,12 +48861,17 @@ function (_THREE$Object3D) {
         var layer = _this.getLayerForElement(e.target);
 
         if (layer) {
-          layer.refresh(true); // setTimeout(() => layer.refresh(true), 1000) // catch any late updates
+          layer.needsRefresh = true;
+          layer.refresh();
         }
       };
 
+      var setLayerNeedsRefresh = function setLayerNeedsRefresh(layer) {
+        return layer.needsRefresh = true;
+      };
+
       _this._processMutations = function (records) {
-        var needsForceRefresh = false;
+        if (_this._isUpdating) return;
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -48864,14 +48884,15 @@ function (_THREE$Object3D) {
             var target = record.target.nodeType === Node.ELEMENT_NODE ? record.target : record.target.parentElement;
 
             if (!target) {
-              needsForceRefresh = true;
-              break;
+              continue;
             }
 
             var layer = _this.getLayerForElement(target);
 
-            if (layer && layer._isRefreshing === false && _this._isUpdating === false) {
-              layer._needsRefresh = true; // setTimeout(() => layer._markForRefresh(), 1000) // catch any late updates
+            if (layer) {
+              if (record.type === 'childList') {
+                layer.traverse(setLayerNeedsRefresh);
+              } else layer.needsRefresh = true;
             }
           }
         } catch (err) {
@@ -48889,7 +48910,7 @@ function (_THREE$Object3D) {
           }
         }
 
-        _this.refresh(needsForceRefresh);
+        _this.refresh();
       };
 
       element.addEventListener('input', _this._triggerRefresh, {
@@ -48922,7 +48943,7 @@ function (_THREE$Object3D) {
 
             var target = _this.getLayerForElement(record.target);
 
-            target._needsRefresh = true;
+            target.needsRefresh = true;
           }
         } catch (err) {
           _didIteratorError2 = true;
@@ -49067,14 +49088,17 @@ function (_THREE$Object3D) {
           var layer = _this2.rootLayer._meshMap.get(intersection.object);
 
           if (!layer) return "continue";
-          var layerBoundingRect = layer.element.getBoundingClientRect();
+          var layerBoundingRect = layer.boundingRect;
           if (!layerBoundingRect.width || !layerBoundingRect.height) return "continue";
           var target = layer.element;
           var clientX = intersection.uv.x * layerBoundingRect.width;
           var clientY = (1 - intersection.uv.y) * layerBoundingRect.height;
+
+          _this2._disableTransforms(true);
+
           traverseDOM(layer.element, function (el) {
             if (!target.contains(el)) return false;
-            var elementBoundingRect = el.getBoundingClientRect();
+            var elementBoundingRect = (0, _Bounds.parseBounds)(el, window.pageXOffset, window.pageYOffset);
             var offsetLeft = elementBoundingRect.left - layerBoundingRect.left;
             var offsetTop = elementBoundingRect.top - layerBoundingRect.top;
             var width = elementBoundingRect.width,
@@ -49089,6 +49113,9 @@ function (_THREE$Object3D) {
 
             return false; // stop traversal down this path
           });
+
+          _this2._disableTransforms(false);
+
           return {
             v: {
               layer: layer,
@@ -49133,7 +49160,7 @@ function (_THREE$Object3D) {
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee() {
         var force,
-            childrenRefreshing,
+            refreshes,
             _iteratorNormalCompletion5,
             _didIteratorError5,
             _iteratorError5,
@@ -49147,7 +49174,7 @@ function (_THREE$Object3D) {
             switch (_context.prev = _context.next) {
               case 0:
                 force = _args.length > 0 && _args[0] !== undefined ? _args[0] : false;
-                if (force) this._needsRefresh = true;
+                if (force) this.needsRefresh = true;
 
                 this._updateState();
 
@@ -49155,79 +49182,81 @@ function (_THREE$Object3D) {
 
                 this._updateDefaultLayout();
 
-                this._updateMesh();
-
-                childrenRefreshing = [];
+                refreshes = [];
                 _iteratorNormalCompletion5 = true;
                 _didIteratorError5 = false;
                 _iteratorError5 = undefined;
-                _context.prev = 10;
+                _context.prev = 9;
 
                 for (_iterator5 = this.children[Symbol.iterator](); !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
                   child = _step5.value;
-                  if (child instanceof WebLayer3D) childrenRefreshing.push(child.refresh(force));
+                  if (child instanceof WebLayer3D) refreshes.push(child.refresh(force));
                 }
 
-                _context.next = 18;
+                _context.next = 17;
                 break;
 
-              case 14:
-                _context.prev = 14;
-                _context.t0 = _context["catch"](10);
+              case 13:
+                _context.prev = 13;
+                _context.t0 = _context["catch"](9);
                 _didIteratorError5 = true;
                 _iteratorError5 = _context.t0;
 
-              case 18:
+              case 17:
+                _context.prev = 17;
                 _context.prev = 18;
-                _context.prev = 19;
 
                 if (!_iteratorNormalCompletion5 && _iterator5.return != null) {
                   _iterator5.return();
                 }
 
-              case 21:
-                _context.prev = 21;
+              case 20:
+                _context.prev = 20;
 
                 if (!_didIteratorError5) {
-                  _context.next = 24;
+                  _context.next = 23;
                   break;
                 }
 
                 throw _iteratorError5;
 
+              case 23:
+                return _context.finish(20);
+
               case 24:
-                return _context.finish(21);
+                return _context.finish(17);
 
               case 25:
-                return _context.finish(18);
-
-              case 26:
-                if (!(this._needsRefresh && !this._isRefreshing)) {
+                if (!(this.needsRefresh && !this._isRefreshing)) {
                   _context.next = 32;
                   break;
                 }
 
                 this._isRefreshing = true;
-                this._needsRefresh = false;
-                _context.next = 31;
+                this.needsRefresh = false;
+                _context.next = 30;
                 return this._renderTextures();
 
-              case 31:
+              case 30:
                 this._isRefreshing = false;
 
-              case 32:
-                _context.next = 34;
-                return Promise.all(childrenRefreshing);
+                this._updateDefaultLayout();
 
-              case 34:
-                return _context.abrupt("return");
+              case 32:
+                this._updateMesh();
+
+                _context.next = 35;
+                return Promise.all(refreshes);
 
               case 35:
+                return _context.abrupt("return");
+
+              case 36:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, this, [[10, 14, 18, 26], [19,, 21, 25]]);
+        }, _callee, this, [[9, 13, 17, 25], [18,, 20, 24]]);
       }));
 
       function refresh() {
@@ -49312,8 +49341,8 @@ function (_THREE$Object3D) {
   }, {
     key: "_updateDefaultLayout",
     value: function _updateDefaultLayout() {
-      this.defaultContentPosition.set(0, 0, 0);
-      this.defaultContentScale.set(0.1, 0.1, 0.1);
+      this.targetContentPosition.copy(this._lastTargetContentPosition);
+      this.targetContentScale.copy(this._lastTargetContentScale);
 
       if (this.needsRemoval) {
         this._needsHiding = true;
@@ -49321,10 +49350,10 @@ function (_THREE$Object3D) {
       }
 
       this._needsHiding = false;
-      var rootBoundingRect = this.rootLayer.element.getBoundingClientRect();
-      var boundingRect = this.element.getBoundingClientRect();
+      var rootBoundingRect = this.rootLayer.boundingRect;
+      var boundingRect = this.boundingRect;
 
-      if (boundingRect.width === 0 || boundingRect.height === 0) {
+      if (boundingRect.width === 0 || boundingRect.height === 0 || this.parent instanceof WebLayer3D && this.parent._needsHiding) {
         this._needsHiding = true;
         return;
       }
@@ -49339,10 +49368,14 @@ function (_THREE$Object3D) {
         var rootOriginY = pixelSize * (rootBoundingRect.height / 2);
         var myLeft = pixelSize * (left + boundingRect.width / 2);
         var myTop = pixelSize * (top + boundingRect.height / 2);
-        this.defaultContentPosition.set(rootOriginX + myLeft, rootOriginY - myTop, layerSeparation * this.level);
+        this.targetContentPosition.set(rootOriginX + myLeft, rootOriginY - myTop, layerSeparation * this.level);
       }
 
-      this.defaultContentScale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
+      this.targetContentScale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
+
+      this._lastTargetContentPosition.copy(this.targetContentPosition);
+
+      this._lastTargetContentScale.copy(this.targetContentScale);
     }
   }, {
     key: "_updateMesh",
@@ -49374,7 +49407,7 @@ function (_THREE$Object3D) {
         this._updateDefaultLayout(); // this.content.position.copy(this.defaultContentPosition)
 
 
-        this.content.scale.copy(this.defaultContentScale);
+        this.content.scale.copy(this.targetContentScale);
       }
 
       if (this.needsHiding && mesh.material.opacity < 0.05) {
@@ -49390,7 +49423,7 @@ function (_THREE$Object3D) {
       interactionMap.clear();
 
       if (!this._interactionRays || this._interactionRays.length === 0) {
-        this.traverseLayers(WebLayer3D._UPDATE_INTERACTION, interactionMap);
+        this.traverseLayers(WebLayer3D._updateInteraction, interactionMap);
         return;
       }
 
@@ -49454,7 +49487,7 @@ function (_THREE$Object3D) {
         }
       }
 
-      this.traverseLayers(WebLayer3D._UPDATE_INTERACTION, interactionMap);
+      this.traverseLayers(WebLayer3D._updateInteraction, interactionMap);
     }
   }, {
     key: "_showChildLayers",
@@ -49486,6 +49519,12 @@ function (_THREE$Object3D) {
           }
         }
       }
+    }
+  }, {
+    key: "_disableTransforms",
+    value: function _disableTransforms(disabled) {
+      var rootParent = this.rootLayer.element.parentElement;
+      if (disabled) rootParent.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');else rootParent.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
     } // private _markForRefresh() {
     //   if (this._needsRefresh) return
     //   this._needsRefresh = true
@@ -49579,7 +49618,7 @@ function (_THREE$Object3D) {
       regeneratorRuntime.mark(function _callee2() {
         var _this3 = this;
 
-        var element, textures, renderFunctions, scrollX, scrollY, bounds, _iteratorNormalCompletion13, _didIteratorError13, _iteratorError13, _loop2, _iterator13, _step13, imageStore, renderOptions, _i, render;
+        var element, textures, renderFunctions, bounds, _iteratorNormalCompletion13, _didIteratorError13, _iteratorError13, _loop2, _iterator13, _step13, imageStore, renderOptions, _i, render;
 
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
@@ -49587,19 +49626,18 @@ function (_THREE$Object3D) {
               case 0:
                 element = this.element;
                 textures = this.textures;
-                renderFunctions = []; // let el = this.element
-                // do {
-                //   el.style.transform 
-                // }
+                renderFunctions = [];
 
-                scrollX = window.pageXOffset;
-                scrollY = window.pageYOffset;
-                bounds = (0, _Bounds.parseBounds)(element, scrollX, scrollY);
+                this._disableTransforms(true);
+
+                bounds = this.boundingRect = (0, _Bounds.parseBounds)(element, window.pageXOffset, window.pageYOffset);
 
                 if (!(!bounds.width || !bounds.height)) {
                   _context2.next = 8;
                   break;
                 }
+
+                this._disableTransforms(false);
 
                 return _context2.abrupt("return");
 
@@ -49685,14 +49723,15 @@ function (_THREE$Object3D) {
               case 29:
                 this._showChildLayers(true);
 
+                this._disableTransforms(false);
+
                 this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
 
-                _context2.next = 33;
+                _context2.next = 34;
                 return this.rootLayer._resourceLoader.ready();
 
-              case 33:
+              case 34:
                 imageStore = _context2.sent;
-                // const boundingRect = element.getBoundingClientRect()
                 renderOptions = {
                   backgroundColor: null,
                   fontMetrics: this.rootLayer._fontMetrics,
@@ -49711,7 +49750,7 @@ function (_THREE$Object3D) {
                   render();
                 }
 
-              case 36:
+              case 37:
               case "end":
                 return _context2.stop();
             }
@@ -49787,8 +49826,8 @@ function (_THREE$Object3D) {
   }], [{
     key: "transitionLayout",
     value: function transitionLayout(layer, alpha) {
-      layer.content.position.lerp(layer.defaultContentPosition, alpha);
-      layer.content.scale.lerp(layer.defaultContentScale, alpha);
+      layer.content.position.lerp(layer.targetContentPosition, alpha);
+      layer.content.scale.lerp(layer.targetContentScale, alpha);
     }
   }, {
     key: "transitionVisibility",
@@ -49821,6 +49860,7 @@ WebLayer3D.LAYER_ATTRIBUTE = 'data-layer';
 WebLayer3D.LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container';
 WebLayer3D.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
 WebLayer3D.STATES_ATTRIBUTE = 'data-layer-states';
+WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms';
 WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.005;
 WebLayer3D.DEFAULT_PIXEL_DIMENSIONS = 0.001;
 WebLayer3D.GEOMETRY = new THREE.PlaneGeometry(1, 1, 2, 2);
@@ -49831,7 +49871,7 @@ WebLayer3D.TRANSITION_DEFAULT = function (layer) {
   WebLayer3D.transitionVisibility(layer, alpha);
 };
 
-WebLayer3D._UPDATE_INTERACTION = function (layer, interactions) {
+WebLayer3D._updateInteraction = function (layer, interactions) {
   var interaction = interactions.get(layer);
 
   if (interaction) {
@@ -49845,6 +49885,8 @@ WebLayer3D._UPDATE_INTERACTION = function (layer, interactions) {
   }
 };
 
+WebLayer3D._didInstallStyleSheet = false;
+
 function ensureElementIsInDocument(element, options) {
   var document = element.ownerDocument;
 
@@ -49856,7 +49898,7 @@ function ensureElementIsInDocument(element, options) {
   container.setAttribute(WebLayer3D.LAYER_CONTAINER_ATTRIBUTE, '');
   container.style.position = 'fixed';
   container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '550px';
-  container.style.height = options && 'windowHeight' in options ? options.windowHeight + 'px' : '150px'; // top -100000px allows html2canvas to render input boxes more accurately 
+  container.style.height = options && 'windowHeight' in options ? options.windowHeight + 'px' : '150px'; // top -100000px allows html2canvas to render input boxes more accurately
   // on mobile safari than left -10000px
   // my guess is this has something to do with safari trying to move the viewport
   // when a text field is focussed
@@ -49876,6 +49918,14 @@ function traverseDOM(node, each, bind) {
         traverseDOM(el, each, bind);
       }
     }
+  }
+}
+
+function addCSSRule(sheet, selector, rules, index) {
+  if ('insertRule' in sheet) {
+    sheet.insertRule(selector + '{' + rules + '}', index);
+  } else if ('addRule' in sheet) {
+    sheet.addRule(selector, rules, index);
   }
 }
 },{"three":"../../node_modules/three/build/three.module.js","resize-observer-polyfill":"../../node_modules/resize-observer-polyfill/dist/ResizeObserver.es.js","babel-polyfill":"../../node_modules/babel-polyfill/lib/index.js","@speigg/html2canvas/dist/npm/NodeParser":"../../node_modules/@speigg/html2canvas/dist/npm/NodeParser.js","@speigg/html2canvas/dist/npm/Logger":"../../node_modules/@speigg/html2canvas/dist/npm/Logger.js","@speigg/html2canvas/dist/npm/renderer/CanvasRenderer":"../../node_modules/@speigg/html2canvas/dist/npm/renderer/CanvasRenderer.js","@speigg/html2canvas/dist/npm/Renderer":"../../node_modules/@speigg/html2canvas/dist/npm/Renderer.js","@speigg/html2canvas/dist/npm/ResourceLoader":"../../node_modules/@speigg/html2canvas/dist/npm/ResourceLoader.js","@speigg/html2canvas/dist/npm/Font":"../../node_modules/@speigg/html2canvas/dist/npm/Font.js","@speigg/html2canvas/dist/npm/Bounds":"../../node_modules/@speigg/html2canvas/dist/npm/Bounds.js"}],"../../node_modules/@vue/babel-helper-vue-jsx-merge-props/dist/helper.js":[function(require,module,exports) {
@@ -58558,10 +58608,11 @@ var _default = _vue.default.extend({
             }
           }
         },
-        "class": "toggle",
         "attrs": {
+          "id": "toggle-" + todo.id,
           "type": "checkbox"
         },
+        "class": "toggle",
         "domProps": {
           "checked": Array.isArray(todo.completed) ? _this._i(todo.completed, null) > -1 : todo.completed
         }
@@ -58572,12 +58623,49 @@ var _default = _vue.default.extend({
           modifiers: {}
         }]
       }])), h("label", {
-        "on": {
-          "click": function click() {
-            return _this.editTodo(todo);
-          }
+        "attrs": {
+          "data-layer": true,
+          "for": "toggle-" + todo.id
         }
-      }, [todo.title]), h("button", {
+      }, [todo.completed ? h("svg", {
+        "attrs": {
+          "xmlns": "http://www.w3.org/2000/svg",
+          "width": "40",
+          "height": "40",
+          "viewBox": "-10 -18 100 135"
+        },
+        "style": "padding-right:10px"
+      }, [h("circle", {
+        "attrs": {
+          "cx": "50",
+          "cy": "50",
+          "r": "50",
+          "fill": "none",
+          "stroke": "#bddad5",
+          "stroke-width": "3"
+        }
+      }), h("path", {
+        "attrs": {
+          "fill": "#5dc2af",
+          "d": "M72 25L42 71 27 56l-4 4 20 20 34-52z"
+        }
+      })]) : h("svg", {
+        "attrs": {
+          "xmlns": "http://www.w3.org/2000/svg",
+          "width": "40",
+          "height": "40",
+          "viewBox": "-10 -18 100 135"
+        }
+      }, [h("circle", {
+        "attrs": {
+          "cx": "50",
+          "cy": "50",
+          "r": "50",
+          "fill": "none",
+          "stroke": "#ededed",
+          "stroke-width": "3"
+        }
+      })])]), h("button", {
         "attrs": {
           "data-layer": true
         },
@@ -58587,7 +58675,14 @@ var _default = _vue.default.extend({
             return _this.removeTodo(todo);
           }
         }
-      })]), h("input", (0, _babelHelperVueJsxMergeProps.default)([{
+      }, ["x"])]), h("div", {
+        "class": "title",
+        "on": {
+          "click": function click() {
+            return _this.editTodo(todo);
+          }
+        }
+      }, [todo.title]), h("input", (0, _babelHelperVueJsxMergeProps.default)([{
         "on": {
           "input": function input($event) {
             if ($event.target.composing) return;
@@ -64958,7 +65053,7 @@ var interval = setInterval(function () {
     text: notes.shift()
   }).show();
   if (last) clearInterval(interval);
-}, 12000); // setup three.js 
+}, 12000); // setup three.js
 
 var scene = new THREE.Scene();
 var clock = new THREE.Clock();
@@ -64969,8 +65064,8 @@ renderer.setClearColor(new THREE.Color(0xcccccc));
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;
 var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
-camera.position.z = 0.8;
-scene.add(camera); // setup DOM 
+camera.position.z = 0.7;
+scene.add(camera); // setup DOM
 
 var containerElement = document.body;
 document.documentElement.style.width = '100%';
@@ -64983,22 +65078,25 @@ document.body.style.touchAction = 'none'; // setup controls
 
 var Controls = {
   showDOM: false,
-  hoverEffect: true,
-  cameraMovement: true,
-  layerSeparation: 0.01,
-  lerpSpeed: 3,
-  material: 'basic'
+  moveCamera: false,
+  hoverEffect: false,
+  'shadows(WIP)': false,
+  layerSeparation: 0.001,
+  lerpSpeed: 3
 };
-var gui = new _dat.default.GUI();
-gui.add(Controls, 'showDOM', false);
-gui.add(Controls, 'cameraMovement', true);
+var gui = new _dat.default.GUI({
+  hideable: false
+});
+gui.add(Controls, 'showDOM', false).onChange(toggleDOM);
+gui.add(Controls, 'moveCamera', true);
 gui.add(Controls, 'hoverEffect', true);
-gui.add(Controls, 'layerSeparation', 0.001, 0.15);
+gui.add(Controls, 'shadows(WIP)', false).onChange(toggleShadows);
+var sep = gui.add(Controls, 'layerSeparation', 0.001, 0.15);
 gui.add(Controls, 'lerpSpeed', 0.5, 10);
-gui.add(Controls, 'material', ['basic', 'toon']);
 gui.domElement.style.border = '0';
 gui.domElement.style.position = 'fixed';
-gui.domElement.style.right = '0'; // create and mount Vue instance (without attaching to DOM)
+gui.domElement.style.right = '0';
+if (window.innerWidth < 600) gui.close(); // create and mount Vue instance (without attaching to DOM)
 
 var todoVue = window.todoVue = new _TodoMVC.default().$mount(); // handle routing (use Vue's reactive properties to update the DOM)
 
@@ -65017,35 +65115,82 @@ window.addEventListener('hashchange', onHashChange);
 onHashChange(); // setup scene
 
 var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2();
-var cursorGeometry = new THREE.SphereGeometry(0.008);
-scene.add(new THREE.AmbientLight(0xAAAAAA));
-var light = new THREE.DirectionalLight(0xdfebff, 1);
-light.position.set(0.1, 0.1, 0.1); // light.position.multiplyScalar( 1.3 );
+var pointer = new THREE.Vector2();
+var cursorGeometry = new THREE.SphereGeometry(0.008); // scene.add(new THREE.AmbientLight(0xaaaaaa))
 
+var light = new THREE.DirectionalLight(0xffffff, 1.2);
+light.position.set(1, 1, 2);
 light.castShadow = true;
 light.shadow.mapSize.width = 1024;
 light.shadow.mapSize.height = 1024;
-var d = 300;
+var d = 0.5;
 light.shadow.camera.left = -d;
 light.shadow.camera.right = d;
 light.shadow.camera.top = d;
 light.shadow.camera.bottom = -d;
-light.shadow.camera.far = 1000;
-camera.add(light);
-scene.add(light); // magic: convert DOM hierarchy to WebLayer3D heirarchy
+light.shadow.camera.far = 3; // camera.add(light)
+
+scene.add(light);
+var shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera); // magic: convert DOM hierarchy to WebLayer3D heirarchy
 
 var todoLayer = window.todoLayer = new _threeWebLayer.default(todoVue.$el, {
   windowWidth: 500,
-  layerSeparation: 0.001,
+  layerSeparation: 0.2,
   pixelRatio: window.devicePixelRatio,
   onLayerCreate: function onLayerCreate(layer) {
     layer.cursor.add(new THREE.Mesh(cursorGeometry));
     layer.mesh.castShadow = true;
     layer.mesh.receiveShadow = true;
+
+    if (Controls['shadows(WIP)']) {
+      layer.mesh.material = new THREE.MeshPhongMaterial({
+        alphaTest: 0.12
+      });
+    } else {
+      layer.mesh.material = new THREE.MeshBasicMaterial({
+        transparent: true
+      });
+    }
   }
 });
-scene.add(todoLayer); // enable hover-state rendering
+scene.add(todoLayer); // WIP shadows
+
+function toggleShadows(enabled) {
+  if (enabled) {
+    todoLayer.traverseLayers(function (layer) {
+      layer.mesh.material = new THREE.MeshPhongMaterial({
+        alphaTest: 0.12
+      });
+    });
+    scene.add(shadowCameraHelper);
+  } else {
+    todoLayer.traverseLayers(function (layer) {
+      layer.mesh.material = new THREE.MeshBasicMaterial({
+        transparent: true
+      });
+    });
+    scene.remove(shadowCameraHelper);
+  }
+}
+
+function toggleDOM(enabled) {
+  // show/hide the Vue-managed DOM
+  var containerStyle = todoLayer.element.parentElement.style;
+
+  if (enabled) {
+    containerStyle.top = '';
+    containerStyle.bottom = '0px';
+    containerStyle.overflow = 'auto';
+    containerStyle.height = '100vh';
+    containerStyle.transform = 'scale(0.5)';
+    containerStyle.transformOrigin = 'bottom left';
+    todoLayer.refresh(true);
+  } else {
+    containerStyle.top = '-100000px';
+    todoLayer.refresh(true);
+  }
+} // enable hover-state rendering
+
 
 todoLayer.interactionRays = [raycaster.ray]; // setup interaction
 
@@ -65059,22 +65204,33 @@ document.addEventListener('mousemove', onMouseMove, false);
 renderer.domElement.addEventListener('touchmove', onTouchMove, {
   passive: false
 });
-renderer.domElement.addEventListener('touchstart', redirectEvent);
-renderer.domElement.addEventListener('click', redirectEvent, false);
+renderer.domElement.addEventListener('touchstart', onTouchStart, false);
+renderer.domElement.addEventListener('click', onClick, false);
 
-function updateMouse(x, y) {
-  mouse.x = x / document.documentElement.offsetWidth * 2 - 1;
-  mouse.y = -(y / document.documentElement.offsetHeight) * 2 + 1;
+function updateRay(x, y) {
+  pointer.x = (x + window.pageXOffset) / document.documentElement.offsetWidth * 2 - 1;
+  pointer.y = -(y + window.pageYOffset) / document.documentElement.offsetHeight * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
 }
 
 function onMouseMove(event) {
-  updateMouse(event.clientX, event.clientY);
+  updateRay(event.clientX, event.clientY);
+}
+
+function onClick(event) {
+  updateRay(event.clientX, event.clientY);
+  redirectEvent(event);
 }
 
 function onTouchMove(event) {
   event.preventDefault(); // disable scrolling
 
-  updateMouse(event.touches[0].clientX, event.touches[0].clientY);
+  updateRay(event.touches[0].clientX, event.touches[0].clientY);
+}
+
+function onTouchStart(event) {
+  updateRay(event.touches[0].clientX, event.touches[0].clientY);
+  redirectEvent(event);
 } // redirect DOM events from the canvas, to the 3D scene,
 // to the appropriate child Web3DLayer, and finally (back) to the
 // DOM to dispatch an event on the intended DOM target
@@ -65093,7 +65249,7 @@ function redirectEvent(evt) {
 
 function animate() {
   requestAnimationFrame(animate);
-  var deltaTime = clock.getDelta(); // update camera 
+  var deltaTime = clock.getDelta(); // update camera
   // important: window.innerWidth/window.innerHeight changes when soft-keyboard is up!
   // We want the fixed viewport size, so we use offsetWidth/Height of the documentElement
 
@@ -65103,47 +65259,44 @@ function animate() {
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
 
-  if (Controls.cameraMovement) {
-    camera.position.x += (mouse.x * 0.3 - camera.position.x) * 0.05;
-    camera.position.y += (mouse.y * 0.3 - camera.position.y) * 0.05;
+  if (Controls.moveCamera) {
+    camera.position.x += (pointer.x * 0.3 - camera.position.x) * 0.05;
+    camera.position.y += (pointer.y * 0.3 - camera.position.y) * 0.05;
   } else {
     camera.position.x = 0;
     camera.position.y = 0;
   }
 
-  camera.lookAt(scene.position); // update our interaction ray 
+  camera.lookAt(scene.position); // update our interaction ray
   // important: make sure camera pose is updated first!
 
-  raycaster.setFromCamera(mouse, camera); // update our WebLayer3D heirarchy 
+  raycaster.setFromCamera(pointer, camera); // update our WebLayer3D heirarchy
   // important: update interaction rays first!
 
   todoLayer.update(deltaTime * Controls.lerpSpeed, function (layer, alpha) {
     var level = layer.element.matches('.info a') ? layer.level - 0.9 : layer.level;
-    layer.defaultContentPosition.z = Controls.layerSeparation * level;
+    layer.targetContentPosition.z = Controls.layerSeparation * level;
 
     if (Controls.hoverEffect) {
-      if (layer.hover && layer.level > 1) {
-        layer.defaultContentPosition.z += 0.005;
-        layer.defaultContentScale.multiplyScalar(1.05);
+      if (layer.hover && layer.level > 1 && layer.element.nodeName !== 'H1' && !layer.element.matches('.todo-count')) {
+        layer.targetContentPosition.z += Controls.layerSeparation * 0.3;
+        layer.targetContentScale.multiplyScalar(1.15);
       }
+    }
+
+    if (layer.needsHiding && layer.element.matches('.todo-list *')) {
+      layer.targetContentPosition.set(0, 0, 0);
+      layer.targetContentScale.y = 0.001;
     }
 
     _threeWebLayer.default.TRANSITION_DEFAULT(layer, alpha);
   }); // render!
 
   renderer.setSize(width, height, false);
-  renderer.render(scene, camera); // show/hide the Vue-managed DOM
+  renderer.render(scene, camera); // Update controllers
 
-  var containerStyle = todoLayer.element.parentElement.style;
-
-  if (Controls.showDOM) {
-    containerStyle.top = '0px';
-    containerStyle.overflow = 'auto';
-    containerStyle.height = '100vh';
-    containerStyle.transform = 'scale(0.5)';
-    containerStyle.transformOrigin = '0 0';
-  } else {
-    containerStyle.top = '-100000px';
+  for (var i in gui.__controllers) {
+    gui.__controllers[i].updateDisplay();
   }
 }
 
@@ -65175,7 +65328,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "0.0.0.0" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62602" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56664" + '/');
 
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);

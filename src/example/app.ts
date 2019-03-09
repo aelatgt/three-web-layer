@@ -40,7 +40,7 @@ renderer.setClearColor(new THREE.Color(0xcccccc))
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.shadowMap.enabled = true
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10)
-camera.position.z = 0.8
+camera.position.z = 0.7
 scene.add(camera)
 
 // setup DOM
@@ -56,22 +56,23 @@ document.body.style.touchAction = 'none'
 // setup controls
 const Controls = {
   showDOM: false,
-  hoverEffect: true,
-  cameraMovement: true,
-  layerSeparation: 0.01,
-  lerpSpeed: 3,
-  material: 'basic'
+  moveCamera: false,
+  hoverEffect: false,
+  'shadows(WIP)': false,
+  layerSeparation: 0.001,
+  lerpSpeed: 3
 }
-const gui = new dat.GUI()
-gui.add(Controls, 'showDOM', false)
-gui.add(Controls, 'cameraMovement', true)
+const gui = new dat.GUI({ hideable: false })
+gui.add(Controls, 'showDOM', false).onChange(toggleDOM)
+gui.add(Controls, 'moveCamera', true)
 gui.add(Controls, 'hoverEffect', true)
-gui.add(Controls, 'layerSeparation', 0.001, 0.15)
+gui.add(Controls, 'shadows(WIP)', false).onChange(toggleShadows)
+const sep = gui.add(Controls, 'layerSeparation', 0.001, 0.15)
 gui.add(Controls, 'lerpSpeed', 0.5, 10)
-gui.add(Controls, 'material', ['basic', 'toon'])
 gui.domElement.style.border = '0'
 gui.domElement.style.position = 'fixed'
 gui.domElement.style.right = '0'
+if (window.innerWidth < 600) gui.close()
 
 // create and mount Vue instance (without attaching to DOM)
 const todoVue = ((window as any).todoVue = new TodoMVC().$mount())
@@ -91,37 +92,74 @@ onHashChange()
 
 // setup scene
 const raycaster = new THREE.Raycaster()
-const mouse = new THREE.Vector2()
+const pointer = new THREE.Vector2()
 const cursorGeometry = new THREE.SphereGeometry(0.008)
 
-scene.add(new THREE.AmbientLight(0xaaaaaa))
-const light = new THREE.DirectionalLight(0xdfebff, 1)
-light.position.set(0.1, 0.1, 0.1)
-// light.position.multiplyScalar( 1.3 );
+// scene.add(new THREE.AmbientLight(0xaaaaaa))
+const light = new THREE.DirectionalLight(0xffffff, 1.2)
+light.position.set(1, 1, 2)
 light.castShadow = true
 light.shadow.mapSize.width = 1024
 light.shadow.mapSize.height = 1024
-var d = 300
+var d = 0.5
 light.shadow.camera.left = -d
 light.shadow.camera.right = d
 light.shadow.camera.top = d
 light.shadow.camera.bottom = -d
-light.shadow.camera.far = 1000
-camera.add(light)
+light.shadow.camera.far = 3
+// camera.add(light)
 scene.add(light)
+const shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera)
 
 // magic: convert DOM hierarchy to WebLayer3D heirarchy
 const todoLayer = ((window as any).todoLayer = new WebLayer3D(todoVue.$el, {
   windowWidth: 500,
-  layerSeparation: 0.001,
+  layerSeparation: 0.2,
   pixelRatio: window.devicePixelRatio,
   onLayerCreate(layer) {
     layer.cursor.add(new THREE.Mesh(cursorGeometry))
     layer.mesh.castShadow = true
     layer.mesh.receiveShadow = true
+    if (Controls['shadows(WIP)']) {
+      layer.mesh.material = new THREE.MeshPhongMaterial({ alphaTest: 0.12 })
+    } else {
+      layer.mesh.material = new THREE.MeshBasicMaterial({ transparent: true })
+    }
   }
 }))
 scene.add(todoLayer)
+
+// WIP shadows
+function toggleShadows(enabled) {
+  if (enabled) {
+    todoLayer.traverseLayers(layer => {
+      layer.mesh.material = new THREE.MeshPhongMaterial({ alphaTest: 0.12 })
+    })
+    scene.add(shadowCameraHelper)
+  } else {
+    todoLayer.traverseLayers(layer => {
+      layer.mesh.material = new THREE.MeshBasicMaterial({ transparent: true })
+    })
+    scene.remove(shadowCameraHelper)
+  }
+}
+
+function toggleDOM(enabled) {
+  // show/hide the Vue-managed DOM
+  const containerStyle = todoLayer.element.parentElement!.style
+  if (enabled) {
+    containerStyle.top = ''
+    containerStyle.bottom = '0px'
+    containerStyle.overflow = 'auto'
+    containerStyle.height = '100vh'
+    containerStyle.transform = 'scale(0.5)'
+    containerStyle.transformOrigin = 'bottom left'
+    todoLayer.refresh(true)
+  } else {
+    containerStyle.top = '-100000px'
+    todoLayer.refresh(true)
+  }
+}
 
 // enable hover-state rendering
 todoLayer.interactionRays = [raycaster.ray]
@@ -133,21 +171,32 @@ document.documentElement.addEventListener('gesturestart', e => e.preventDefault(
 })
 document.addEventListener('mousemove', onMouseMove, false)
 renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false })
-renderer.domElement.addEventListener('touchstart', redirectEvent)
-renderer.domElement.addEventListener('click', redirectEvent, false)
+renderer.domElement.addEventListener('touchstart', onTouchStart, false)
+renderer.domElement.addEventListener('click', onClick, false)
 
-function updateMouse(x, y) {
-  mouse.x = (x / document.documentElement.offsetWidth) * 2 - 1
-  mouse.y = -(y / document.documentElement.offsetHeight) * 2 + 1
+function updateRay(x, y) {
+  pointer.x = ((x + window.pageXOffset) / document.documentElement.offsetWidth) * 2 - 1
+  pointer.y = (-(y + window.pageYOffset) / document.documentElement.offsetHeight) * 2 + 1
+  raycaster.setFromCamera(pointer, camera)
 }
 
 function onMouseMove(event) {
-  updateMouse(event.clientX, event.clientY)
+  updateRay(event.clientX, event.clientY)
+}
+
+function onClick(event) {
+  updateRay(event.clientX, event.clientY)
+  redirectEvent(event)
 }
 
 function onTouchMove(event) {
   event.preventDefault() // disable scrolling
-  updateMouse(event.touches[0].clientX, event.touches[0].clientY)
+  updateRay(event.touches[0].clientX, event.touches[0].clientY)
+}
+
+function onTouchStart(event) {
+  updateRay(event.touches[0].clientX, event.touches[0].clientY)
+  redirectEvent(event)
 }
 
 // redirect DOM events from the canvas, to the 3D scene,
@@ -175,9 +224,9 @@ function animate() {
   const aspect = width / height
   camera.aspect = aspect
   camera.updateProjectionMatrix()
-  if (Controls.cameraMovement) {
-    camera.position.x += (mouse.x * 0.3 - camera.position.x) * 0.05
-    camera.position.y += (mouse.y * 0.3 - camera.position.y) * 0.05
+  if (Controls.moveCamera) {
+    camera.position.x += (pointer.x * 0.3 - camera.position.x) * 0.05
+    camera.position.y += (pointer.y * 0.3 - camera.position.y) * 0.05
   } else {
     camera.position.x = 0
     camera.position.y = 0
@@ -186,18 +235,27 @@ function animate() {
 
   // update our interaction ray
   // important: make sure camera pose is updated first!
-  raycaster.setFromCamera(mouse, camera)
+  raycaster.setFromCamera(pointer, camera)
 
   // update our WebLayer3D heirarchy
   // important: update interaction rays first!
   todoLayer.update(deltaTime * Controls.lerpSpeed, (layer, alpha) => {
     const level = layer.element.matches('.info a') ? layer.level - 0.9 : layer.level
-    layer.defaultContentPosition.z = Controls.layerSeparation * level
+    layer.targetContentPosition.z = Controls.layerSeparation * level
     if (Controls.hoverEffect) {
-      if (layer.hover && layer.level > 1) {
-        layer.defaultContentPosition.z += 0.005
-        layer.defaultContentScale.multiplyScalar(1.05)
+      if (
+        layer.hover &&
+        layer.level > 1 &&
+        layer.element.nodeName !== 'H1' &&
+        !layer.element.matches('.todo-count')
+      ) {
+        layer.targetContentPosition.z += Controls.layerSeparation * 0.3
+        layer.targetContentScale.multiplyScalar(1.15)
       }
+    }
+    if (layer.needsHiding && layer.element.matches('.todo-list *')) {
+      layer.targetContentPosition.set(0, 0, 0)
+      layer.targetContentScale.y = 0.001
     }
     WebLayer3D.TRANSITION_DEFAULT(layer, alpha)
   })
@@ -206,16 +264,9 @@ function animate() {
   renderer.setSize(width, height, false)
   renderer.render(scene, camera)
 
-  // show/hide the Vue-managed DOM
-  const containerStyle = todoLayer.element.parentElement!.style
-  if (Controls.showDOM) {
-    containerStyle.top = '0px'
-    containerStyle.overflow = 'auto'
-    containerStyle.height = '100vh'
-    containerStyle.transform = 'scale(0.5)'
-    containerStyle.transformOrigin = '0 0'
-  } else {
-    containerStyle.top = '-100000px'
+  // Update controllers
+  for (var i in gui.__controllers) {
+    gui.__controllers[i].updateDisplay()
   }
 }
 

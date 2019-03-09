@@ -170,10 +170,15 @@ export default Vue.extend({
                 return  <li class={`todo ${classes.join(' ')}`} key={todo.id} v-show={this.filteredTodos.includes(todo)}>
                         <div data-layer>
                           <div class="view">
-                            <input class="toggle" type="checkbox" v-model={todo.completed} />
-                            <label onclick={()=>this.editTodo(todo)}>{ todo.title }</label>
-                            <button data-layer class="destroy" onclick={() => this.removeTodo(todo)}></button>
-                          </div>
+                            <input id={"toggle-"+todo.id} class="toggle" type="checkbox" v-model={todo.completed} />
+                            <label data-layer for={"toggle-"+todo.id}>{
+                              todo.completed ? 
+                              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135" style="padding-right:10px"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="3"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>
+                              : <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#ededed" stroke-width="3"/></svg>
+                            }</label>
+                            <button data-layer class="destroy" onclick={() => this.removeTodo(todo)}>x</button>
+                          </div>                            
+                          <div class="title" onclick={()=>this.editTodo(todo)}>{ todo.title }</div>
                           <input class="edit" type="text"
                             spellcheck="false"
                             v-model={todo.title}
