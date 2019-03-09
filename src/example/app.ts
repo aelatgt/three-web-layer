@@ -15,9 +15,9 @@ if (module.hot) {
 const notes = [
   'FYI, this is running in WebGL, using three.js!',
   'In this demo, web content is rendered to the DOM by VueJS',
-  'The Vue-managed DOM heiarchy is then wrapped in a WebLayer3D instance',
-  'Internally, WebLayer3D uses html2canvas.js to render DOM content to WebGL',
-  'Input events are seamlessly redirected from the WebGL canvas, into the 3D scene, and back to the underlying DOM',
+  'The Vue-managed DOM hierarchy is rendered to WebGL by a WebLayer3D instance',
+  'Internally, WebLayer3D uses html2canvas.js to render DOM content to a 2D canvas',
+  'Input events are seamlessly redirected from the WebGL canvas, into the 3D scene, and back out to the underlying DOM',
   '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ← Check out the source!'
 ]
 const interval = setInterval(() => {
