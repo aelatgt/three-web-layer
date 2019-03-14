@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import 'babel-polyfill';
 export interface WebLayer3DOptions {
     pixelRatio?: number;
     layerSeparation?: number;
@@ -51,6 +50,7 @@ export default class WebLayer3D extends THREE.Object3D {
     static LAYER_CONTAINER_ATTRIBUTE: string;
     static PIXEL_RATIO_ATTRIBUTE: string;
     static STATES_ATTRIBUTE: string;
+    static HOVER_DEPTH_ATTRIBUTE: string;
     private static DISABLE_TRANSFORMS_ATTRIBUTE;
     static DEFAULT_LAYER_SEPARATION: number;
     static DEFAULT_PIXEL_DIMENSIONS: number;
@@ -58,33 +58,30 @@ export default class WebLayer3D extends THREE.Object3D {
     static TRANSITION_DEFAULT: (layer: WebLayer3D, alpha?: number) => void;
     static transitionLayout(layer: WebLayer3D, alpha: number): void;
     static transitionVisibility(layer: WebLayer3D, alpha: number): void;
+    private static _updateInteractions;
+    private static _resetHover;
+    private static _incrementChildHover;
     private static _updateInteraction;
     private static _didInstallStyleSheet;
     element: HTMLElement;
     content: THREE.Object3D;
     textures: {
-        [state: string]: THREE.Texture;
+        [state: string]: THREE.Texture[];
     };
     mesh: THREE.Mesh;
     depthMaterial: THREE.MeshDepthMaterial;
     childLayers: WebLayer3D[];
     targetContentPosition: THREE.Vector3;
     targetContentScale: THREE.Vector3;
-    boundingRect: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    };
     cursor: THREE.Object3D;
     needsRefresh: boolean;
     private _lastTargetContentPosition;
     private _lastTargetContentScale;
-    private _isRefreshing;
     private _isUpdating;
     private _needsRemoval;
     private _needsHiding;
     private _hover;
+    private _hoverDepth;
     private _states;
     private _pixelRatio;
     private _state;
@@ -96,8 +93,7 @@ export default class WebLayer3D extends THREE.Object3D {
     private _fontMetrics?;
     private _logger?;
     private _meshMap;
-    private _interactionRays?;
-    private _interactionMap;
+    private _interactionRays;
     private _triggerRefresh?;
     private _processMutations?;
     constructor(element: Element, options?: WebLayer3DOptions, rootLayer?: WebLayer3D, _level?: number);
@@ -106,16 +102,23 @@ export default class WebLayer3D extends THREE.Object3D {
      * Note: if a state is not available, the `default` state will be rendered.
      */
     state: string;
+    readonly texture: THREE.Texture;
+    readonly bounds: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
     /**
      * A list of Rays to be used for interaction.
      * Can only be set on a root WebLayer3D instance.
      * @param rays
      */
-    interactionRays: THREE.Ray[] | undefined | null;
+    interactionRays: THREE.Ray[];
     /**
      * Get the hover state
      */
-    readonly hover: boolean;
+    readonly hover: number;
     /**
      * Get the layer level
      */
@@ -145,13 +148,14 @@ export default class WebLayer3D extends THREE.Object3D {
     dispose(): void;
     private _updateState;
     private _checkRoot;
+    private _updateBounds;
     private _updateDefaultLayout;
     private _updateMesh;
-    private _updateInteractions;
     private _showChildLayers;
     private _disableTransforms;
+    private _setHoverClasses;
     private _markForRemoval;
     private _updateChildLayers;
     private _tryConvertToWebLayer3D;
-    private _renderTextures;
+    private _refresh;
 }

@@ -1,6 +1,6 @@
 {
   "name": "three-web-layer",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Render DOM content with three.js!",
   "main": "dist/three-web-layer.umd.js",
   "module": "dist/three-web-layer.es5.js",

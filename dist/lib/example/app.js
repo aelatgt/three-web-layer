@@ -54,18 +54,18 @@ document.body.style.touchAction = 'none';
 // setup controls
 const Controls = {
     showDOM: false,
-    moveCamera: false,
-    hoverEffect: false,
-    'shadows(WIP)': false,
+    moveCamera: true,
+    hoverEffect: true,
+    shadows: false,
     layerSeparation: 0.001,
     lerpSpeed: 3
 };
 const gui = new dat_gui_1.default.GUI({ hideable: false });
-gui.add(Controls, 'showDOM', false).onChange(toggleDOM);
+gui.add(Controls, 'showDOM', true).onChange(toggleDOM);
 gui.add(Controls, 'moveCamera', true);
 gui.add(Controls, 'hoverEffect', true);
-gui.add(Controls, 'shadows(WIP)', false).onChange(toggleShadows);
-const sep = gui.add(Controls, 'layerSeparation', 0.001, 0.15);
+gui.add(Controls, 'shadows', true).onChange(toggleShadows);
+gui.add(Controls, 'layerSeparation', 0.001, 0.05);
 gui.add(Controls, 'lerpSpeed', 0.5, 10);
 gui.domElement.style.border = '0';
 gui.domElement.style.position = 'fixed';
@@ -91,32 +91,31 @@ onHashChange();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const cursorGeometry = new THREE.SphereGeometry(0.008);
-// scene.add(new THREE.AmbientLight(0xaaaaaa))
-const light = new THREE.DirectionalLight(0xffffff, 1.2);
-light.position.set(1, 1, 2);
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const light = new THREE.SpotLight(0xffffff, 0.3);
+light.position.set(1, 1, 1.5);
+light.angle = 0.3;
+light.penumbra = 0.8;
 light.castShadow = true;
-light.shadow.mapSize.width = 1024;
-light.shadow.mapSize.height = 1024;
-var d = 0.5;
-light.shadow.camera.left = -d;
-light.shadow.camera.right = d;
-light.shadow.camera.top = d;
-light.shadow.camera.bottom = -d;
+light.shadow.mapSize.width = 2048;
+light.shadow.mapSize.height = 2048;
+light.shadow.bias = -0.0015;
 light.shadow.camera.far = 3;
-// camera.add(light)
+light.shadow.camera.near = 1;
+light.shadow.radius = 2;
 scene.add(light);
 const shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera);
 // magic: convert DOM hierarchy to WebLayer3D heirarchy
 const todoLayer = (window.todoLayer = new three_web_layer_1.default(todoVue.$el, {
     windowWidth: 500,
-    layerSeparation: 0.2,
+    // layerSeparation: 0.2,
     pixelRatio: window.devicePixelRatio,
     onLayerCreate(layer) {
         layer.cursor.add(new THREE.Mesh(cursorGeometry));
         layer.mesh.castShadow = true;
         layer.mesh.receiveShadow = true;
-        if (Controls['shadows(WIP)']) {
-            layer.mesh.material = new THREE.MeshPhongMaterial({ alphaTest: 0.12 });
+        if (Controls.shadows) {
+            layer.mesh.material = makeShadowMaterial();
         }
         else {
             layer.mesh.material = new THREE.MeshBasicMaterial({ transparent: true });
@@ -124,11 +123,17 @@ const todoLayer = (window.todoLayer = new three_web_layer_1.default(todoVue.$el,
     }
 }));
 scene.add(todoLayer);
+function makeShadowMaterial() {
+    return new THREE.MeshPhongMaterial({
+        alphaTest: 0.11,
+        side: THREE.DoubleSide
+    });
+}
 // WIP shadows
 function toggleShadows(enabled) {
     if (enabled) {
         todoLayer.traverseLayers(layer => {
-            layer.mesh.material = new THREE.MeshPhongMaterial({ alphaTest: 0.12 });
+            layer.mesh.material = makeShadowMaterial();
         });
         scene.add(shadowCameraHelper);
     }
@@ -228,12 +233,12 @@ function animate() {
         const level = layer.element.matches('.info a') ? layer.level - 0.9 : layer.level;
         layer.targetContentPosition.z = Controls.layerSeparation * level;
         if (Controls.hoverEffect) {
-            if (layer.hover &&
+            if (layer.hover === 1 &&
                 layer.level > 1 &&
                 layer.element.nodeName !== 'H1' &&
                 !layer.element.matches('.todo-count')) {
                 layer.targetContentPosition.z += Controls.layerSeparation * 0.3;
-                layer.targetContentScale.multiplyScalar(1.15);
+                layer.targetContentScale.multiplyScalar(1.1);
             }
         }
         if (layer.needsHiding && layer.element.matches('.todo-list *')) {
@@ -245,10 +250,6 @@ function animate() {
     // render!
     renderer.setSize(width, height, false);
     renderer.render(scene, camera);
-    // Update controllers
-    for (var i in gui.__controllers) {
-        gui.__controllers[i].updateDisplay();
-    }
 }
 animate();
 //# sourceMappingURL=app.js.map

@@ -2,8 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const THREE = require("three");
 const resize_observer_polyfill_1 = require("resize-observer-polyfill");
-require("babel-polyfill");
-// import html2canvas from '@speigg/html2canvas/dist/npm/index'
 const NodeParser_1 = require("@speigg/html2canvas/dist/npm/NodeParser");
 const Logger_1 = require("@speigg/html2canvas/dist/npm/Logger");
 const CanvasRenderer_1 = require("@speigg/html2canvas/dist/npm/renderer/CanvasRenderer");
@@ -58,28 +56,29 @@ class WebLayer3D extends THREE.Object3D {
             opacity: 0
         }));
         this.depthMaterial = new THREE.MeshDepthMaterial({
-            // depthPacking: THREE.RGBADepthPacking,
-            alphaTest: 0.5
+            depthPacking: THREE.RGBADepthPacking,
+            alphaTest: 0.1
         });
         this.childLayers = [];
         this.targetContentPosition = new THREE.Vector3();
         this.targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
-        this.boundingRect = { left: 0, top: 0, width: 0, height: 0 };
+        // boundingRect = { left: 0, top: 0, width: 0, height: 0 }
         this.cursor = new THREE.Object3D();
         this.needsRefresh = true;
         this._lastTargetContentPosition = new THREE.Vector3();
         this._lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
-        this._isRefreshing = false;
-        this._isUpdating = false;
+        this._isUpdating = false; // true while in WebLayer3D#update() function
         this._needsRemoval = false;
         this._needsHiding = false;
-        this._hover = false;
+        this._hover = 0;
+        this._hoverDepth = 0;
+        this._states = {};
         this._pixelRatio = 1;
         this._state = '';
         this._raycaster = new THREE.Raycaster();
         this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
         this._meshMap = new WeakMap();
-        this._interactionMap = new Map();
+        this._interactionRays = [];
         this.element = element;
         this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString());
         this.rootLayer = rootLayer || this;
@@ -90,29 +89,35 @@ class WebLayer3D extends THREE.Object3D {
         if (!WebLayer3D._didInstallStyleSheet) {
             const style = document.createElement('style');
             document.head.append(style);
-            addCSSRule(style.sheet, `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}], [${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}] *`, 'transform: none !important;', 0);
+            addCSSRule(style.sheet, `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}]`, 'transform: none !important;', 0);
             WebLayer3D._didInstallStyleSheet = true;
         }
         this.add(this.content);
-        this.mesh.renderOrder = this.level;
         this.mesh.visible = false;
-        this.mesh['customDepthMaterial'] = new THREE.MeshDepthMaterial();
+        this.mesh['customDepthMaterial'] = this.depthMaterial;
         this.rootLayer._meshMap.set(this.mesh, this);
         if (this.rootLayer === this) {
             this._triggerRefresh = (e) => {
                 const layer = this.getLayerForElement(e.target);
                 if (layer) {
                     layer.needsRefresh = true;
-                    layer.refresh();
                 }
             };
-            const setLayerNeedsRefresh = layer => (layer.needsRefresh = true);
+            element.addEventListener('input', this._triggerRefresh, { capture: true });
+            element.addEventListener('change', this._triggerRefresh, { capture: true });
+            // element.addEventListener('focus', this._triggerRefresh, { capture: true })
+            element.addEventListener('transitionend', this._triggerRefresh, { capture: true });
+            const setLayerNeedsRefresh = layer => {
+                layer.needsRefresh = true;
+            };
             this._processMutations = (records) => {
                 if (this._isUpdating)
                     return;
                 for (const record of records) {
                     if (record.type === 'attributes' &&
-                        record.target.getAttribute(record.attributeName) === record.oldValue)
+                        (record.target.getAttribute(record.attributeName) ===
+                            record.oldValue ||
+                            record.attributeName === WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE))
                         continue;
                     if (record.type === 'characterData' &&
                         record.target.data === record.oldValue)
@@ -120,24 +125,13 @@ class WebLayer3D extends THREE.Object3D {
                     const target = record.target.nodeType === Node.ELEMENT_NODE
                         ? record.target
                         : record.target.parentElement;
-                    if (!target) {
+                    if (!target)
                         continue;
-                    }
                     const layer = this.getLayerForElement(target);
-                    if (layer) {
-                        if (record.type === 'childList') {
-                            layer.traverse(setLayerNeedsRefresh);
-                        }
-                        else
-                            layer.needsRefresh = true;
-                    }
+                    if (layer)
+                        layer.traverseLayers(setLayerNeedsRefresh);
                 }
-                this.refresh();
             };
-            element.addEventListener('input', this._triggerRefresh, { capture: true });
-            element.addEventListener('change', this._triggerRefresh, { capture: true });
-            // element.addEventListener('focus', this._triggerRefresh, { capture: true })
-            // element.addEventListener('transitionend', this._triggerRefresh, { capture: true })
             this._mutationObserver = new MutationObserver(this._processMutations);
             this._mutationObserver.observe(element, {
                 characterData: true,
@@ -147,14 +141,6 @@ class WebLayer3D extends THREE.Object3D {
                 childList: true,
                 subtree: true
             });
-            this._resizeObserver = new resize_observer_polyfill_1.default((records, observer) => {
-                for (const record of records) {
-                    const target = this.getLayerForElement(record.target);
-                    target.needsRefresh = true;
-                }
-                this.refresh();
-            });
-            this._resizeObserver.observe(element);
             // stuff for rendering with html2canvas ¯\_(ツ)_/¯
             this._logger = new Logger_1.default(false);
             this._fontMetrics = new Font_1.FontMetrics(document);
@@ -163,6 +149,18 @@ class WebLayer3D extends THREE.Object3D {
                 allowTaint: options.allowTaint || false
             }, this._logger, window);
         }
+        // technically this should only be needed in the root layer,
+        // however the polyfill seems to miss resizes that happen in child
+        // elements unless observing each layer
+        this._resizeObserver = new resize_observer_polyfill_1.default(records => {
+            for (const record of records) {
+                const layer = this.getLayerForElement(record.target);
+                if (layer.element.offsetWidth !== layer.bounds.width ||
+                    layer.element.offsetHeight !== layer.bounds.height)
+                    layer.needsRefresh = true;
+            }
+        });
+        this._resizeObserver.observe(element);
         if (this.options.onLayerCreate)
             this.options.onLayerCreate(this);
     }
@@ -191,6 +189,22 @@ class WebLayer3D extends THREE.Object3D {
             }
         }
     }
+    static _updateInteractions(rootLayer) {
+        rootLayer.traverseLayers(WebLayer3D._resetHover);
+        for (const ray of rootLayer._interactionRays) {
+            rootLayer._hitIntersections.length = 0;
+            rootLayer._raycaster.ray.copy(ray);
+            rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections);
+            for (const intersection of rootLayer._hitIntersections) {
+                const layer = rootLayer._meshMap.get(intersection.object);
+                if (layer) {
+                    layer._hover = 1;
+                    WebLayer3D._updateInteraction(layer, intersection.point);
+                }
+            }
+        }
+        rootLayer.traverseLayers(WebLayer3D._incrementChildHover);
+    }
     /**
      * Change the texture state.
      * Note: if a state is not available, the `default` state will be rendered.
@@ -200,6 +214,14 @@ class WebLayer3D extends THREE.Object3D {
     }
     get state() {
         return this._state;
+    }
+    get texture() {
+        const state = this._states[this.state] || this._states[''];
+        return (state[this.hover] || state[0]).texture;
+    }
+    get bounds() {
+        const state = this._states[this.state] || this._states[''];
+        return (state[this.hover] || state[0]).bounds;
     }
     /**
      * A list of Rays to be used for interaction.
@@ -245,8 +267,8 @@ class WebLayer3D extends THREE.Object3D {
         this._isUpdating = true;
         this._checkRoot();
         this.refresh();
-        this._updateInteractions();
         this.traverseLayers(transition, alpha);
+        WebLayer3D._updateInteractions(this);
         this._isUpdating = false;
     }
     traverseLayers(each, ...params) {
@@ -282,7 +304,7 @@ class WebLayer3D extends THREE.Object3D {
             const layer = this.rootLayer._meshMap.get(intersection.object);
             if (!layer)
                 continue;
-            const layerBoundingRect = layer.boundingRect;
+            const layerBoundingRect = layer.bounds;
             if (!layerBoundingRect.width || !layerBoundingRect.height)
                 continue;
             let target = layer.element;
@@ -313,23 +335,18 @@ class WebLayer3D extends THREE.Object3D {
         return undefined;
     }
     async refresh(force = false) {
-        if (force)
-            this.needsRefresh = true;
         this._updateState();
-        this._updateChildLayers();
-        this._updateDefaultLayout();
+        this._updateBounds();
+        const waitingForRefresh = this.needsRefresh || force ? this._refresh() : undefined;
+        this.rootLayer._mutationObserver.takeRecords();
         const refreshes = [];
         for (const child of this.children) {
             if (child instanceof WebLayer3D)
                 refreshes.push(child.refresh(force));
         }
-        if (this.needsRefresh && !this._isRefreshing) {
-            this._isRefreshing = true;
-            this.needsRefresh = false;
-            await this._renderTextures();
-            this._isRefreshing = false;
-            this._updateDefaultLayout();
-        }
+        if (waitingForRefresh)
+            await waitingForRefresh;
+        this._updateDefaultLayout();
         this._updateMesh();
         await Promise.all(refreshes);
         return;
@@ -354,18 +371,62 @@ class WebLayer3D extends THREE.Object3D {
             ? pixelRatioAttribute * pixelRatioDefault
             : pixelRatioDefault;
         this._pixelRatio = Math.max(pixelRatio, 10e-6);
-        this._states = (element.getAttribute(WebLayer3D.STATES_ATTRIBUTE) || '')
+        this._hoverDepth = parseInt(element.getAttribute(WebLayer3D.HOVER_DEPTH_ATTRIBUTE) || '0');
+        const states = (element.getAttribute(WebLayer3D.STATES_ATTRIBUTE) || '')
             .trim()
             .split(/\s+/)
             .filter(Boolean);
-        this._states.push('');
-        for (const state of this._states.slice()) {
-            this._states.push((state + ' hover').trim());
+        states.push('');
+        // cleanup unused textures
+        for (const stateKey in this._states) {
+            if (states.indexOf(stateKey) === -1) {
+                const hoverStates = this._states[stateKey];
+                for (const hoverState of hoverStates) {
+                    hoverState.texture.dispose();
+                }
+                delete this._states[stateKey];
+            }
+        }
+        for (const stateKey of states) {
+            if (this._states[stateKey] === undefined) {
+                const hoverStates = (this._states[stateKey] = []);
+                for (let i = 0; i <= this._hoverDepth; i++) {
+                    hoverStates[i] = hoverStates[i] || {
+                        texture: null,
+                        bounds: {}
+                    };
+                }
+            }
         }
     }
     _checkRoot() {
         if (this.rootLayer !== this)
             throw new Error('Only call `update` on a root WebLayer3D instance');
+    }
+    _updateBounds() {
+        let el = this.element;
+        let offsetTop = 0;
+        while (el) {
+            offsetTop += el.offsetTop - el.scrollTop;
+            el = el.offsetParent;
+        }
+        const top = offsetTop - window.pageYOffset;
+        el = this.element;
+        let offsetLeft = 0;
+        while (el) {
+            offsetLeft += el.offsetLeft - el.scrollLeft;
+            el = el.offsetParent;
+        }
+        const left = offsetLeft - window.pageXOffset;
+        const width = this.element.offsetWidth;
+        const height = this.element.offsetHeight;
+        if ((width && height) || !this.hover) {
+            const bounds = this.bounds;
+            bounds.top = top;
+            bounds.left = left;
+            bounds.width = this.element.offsetWidth;
+            bounds.height = this.element.offsetHeight;
+        }
     }
     _updateDefaultLayout() {
         this.targetContentPosition.copy(this._lastTargetContentPosition);
@@ -375,8 +436,8 @@ class WebLayer3D extends THREE.Object3D {
             return;
         }
         this._needsHiding = false;
-        const rootBoundingRect = this.rootLayer.boundingRect;
-        const boundingRect = this.boundingRect;
+        const rootBoundingRect = this.rootLayer.bounds;
+        const boundingRect = this.bounds;
         if (boundingRect.width === 0 ||
             boundingRect.height === 0 ||
             (this.parent instanceof WebLayer3D && this.parent._needsHiding)) {
@@ -399,18 +460,8 @@ class WebLayer3D extends THREE.Object3D {
         this._lastTargetContentScale.copy(this.targetContentScale);
     }
     _updateMesh() {
-        // cleanup unused textures
-        const states = this._states;
-        for (const state in this.textures) {
-            if (!states.includes(state)) {
-                this.textures[state].dispose();
-                delete this.textures[state];
-            }
-        }
         const mesh = this.mesh;
-        const textureID = (this.hover ? this.state + ' hover' : this.state).trim();
-        const fallbackTextureID = this.hover ? 'hover' : '';
-        const texture = this.textures[textureID] || this.textures[fallbackTextureID];
+        const texture = this.texture;
         if (!texture)
             return;
         const material = mesh.material;
@@ -430,27 +481,7 @@ class WebLayer3D extends THREE.Object3D {
         else {
             mesh.visible = true;
         }
-    }
-    _updateInteractions() {
-        const interactionMap = this._interactionMap;
-        interactionMap.clear();
-        if (!this._interactionRays || this._interactionRays.length === 0) {
-            this.traverseLayers(WebLayer3D._updateInteraction, interactionMap);
-            return;
-        }
-        interactions: for (const ray of this._interactionRays) {
-            this._hitIntersections.length = 0;
-            this._raycaster.ray.copy(ray);
-            this._raycaster.intersectObject(this, true, this._hitIntersections);
-            for (const intersection of this._hitIntersections) {
-                const layer = this._meshMap.get(intersection.object);
-                if (layer) {
-                    interactionMap.set(layer, { point: intersection.point });
-                    continue interactions;
-                }
-            }
-        }
-        this.traverseLayers(WebLayer3D._updateInteraction, interactionMap);
+        mesh.renderOrder = this.level;
     }
     _showChildLayers(show) {
         for (const child of this.childLayers) {
@@ -461,17 +492,35 @@ class WebLayer3D extends THREE.Object3D {
         }
     }
     _disableTransforms(disabled) {
-        const rootParent = this.rootLayer.element.parentElement;
-        if (disabled)
-            rootParent.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');
-        else
-            rootParent.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
+        let el = this.element;
+        while (el) {
+            if (disabled) {
+                this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
+                el.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');
+            }
+            else {
+                el.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
+                this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
+            }
+            el = el.parentElement;
+        }
     }
-    // private _markForRefresh() {
-    //   if (this._needsRefresh) return
-    //   this._needsRefresh = true
-    //   if (this.parent instanceof WebLayer3D) this.parent._markForRefresh()
-    // }
+    _setHoverClasses(hover) {
+        let el = this.element;
+        let skip = hover - 1;
+        while (el) {
+            if (hover === 0) {
+                el.classList.remove('hover');
+            }
+            else if (skip === 0) {
+                el.classList.add('hover');
+            }
+            else {
+                skip--;
+            }
+            el = el.parentElement;
+        }
+    }
     _markForRemoval() {
         this._needsRemoval = true;
         for (const child of this.children) {
@@ -484,18 +533,18 @@ class WebLayer3D extends THREE.Object3D {
         const childLayers = this.childLayers;
         const oldChildLayers = childLayers.slice();
         childLayers.length = 0;
-        traverseDOM(element, this._tryConvertToWebLayer3D, this);
+        traverseDOM(element, this._tryConvertToWebLayer3D, this, this.level);
         for (const child of oldChildLayers) {
             if (childLayers.indexOf(child) === -1)
                 child._markForRemoval();
         }
     }
-    _tryConvertToWebLayer3D(el) {
+    _tryConvertToWebLayer3D(el, level) {
         const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE);
         if (id !== null) {
             let child = this.getObjectById(parseInt(id, 10));
             if (!child) {
-                child = new WebLayer3D(el, this.options, this.rootLayer, this._level + 1);
+                child = new WebLayer3D(el, this.options, this.rootLayer, level);
                 this.add(child);
             }
             this.childLayers.push(child);
@@ -503,61 +552,60 @@ class WebLayer3D extends THREE.Object3D {
         }
         return true;
     }
-    async _renderTextures() {
+    async _refresh() {
         const element = this.element;
-        const textures = this.textures;
         const renderFunctions = [];
+        this.needsRefresh = false;
+        this._updateChildLayers();
         this._disableTransforms(true);
-        const bounds = (this.boundingRect = Bounds_1.parseBounds(element, window.pageXOffset, window.pageYOffset));
-        if (!bounds.width || !bounds.height) {
-            this._disableTransforms(false);
-            return;
-        }
         this._showChildLayers(false);
-        for (const state of this._states) {
-            let texture = textures[state];
-            if (!texture) {
-                texture = new THREE.Texture(document.createElement('canvas'));
-                texture.anisotropy = 16;
+        for (const stateKey in this._states) {
+            const hoverStates = this._states[stateKey];
+            let hoverDepth = this._hoverDepth;
+            for (let hover = 0; hover <= hoverDepth; hover++) {
+                const state = hoverStates[hover];
+                const texture = state.texture || new THREE.Texture(document.createElement('canvas'));
+                if (stateKey)
+                    element.classList.add(stateKey);
+                this._setHoverClasses(hover);
+                const bounds = (state.bounds = Bounds_1.parseBounds(element, window.pageXOffset, window.pageYOffset));
+                const stack = NodeParser_1.NodeParser(element, this.rootLayer._resourceLoader, this.rootLayer._logger);
+                if (stateKey)
+                    element.classList.remove(stateKey);
+                this._setHoverClasses(0);
+                if (!bounds.width || !bounds.height)
+                    continue;
+                renderFunctions.push(() => {
+                    const canvas = texture.image;
+                    const context = canvas.getContext('2d');
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    const renderer = new Renderer_1.default(new CanvasRenderer_1.default(canvas), {
+                        backgroundColor: null,
+                        fontMetrics: this.rootLayer._fontMetrics,
+                        imageStore,
+                        logger: this.rootLayer._logger,
+                        scale: this._pixelRatio,
+                        x: bounds.left,
+                        y: bounds.top,
+                        width: bounds.width,
+                        height: bounds.height,
+                        allowTaint: this.options.allowTaint || false
+                    });
+                    renderer.render(stack);
+                    if (!canvas.width || !canvas.height) {
+                        canvas.width = 1;
+                        canvas.height = 1;
+                    }
+                    texture.image = canvas;
+                    texture.minFilter = THREE.LinearFilter;
+                    texture.needsUpdate = true;
+                    state.texture = texture;
+                });
             }
-            const classes = state && state.split(' ');
-            if (classes)
-                element.classList.add(...classes);
-            const stack = NodeParser_1.NodeParser(element, this.rootLayer._resourceLoader, this.rootLayer._logger);
-            if (classes)
-                element.classList.remove(...classes);
-            renderFunctions.push(() => {
-                const canvas = texture.image;
-                const context = canvas.getContext('2d');
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                const renderer = new Renderer_1.default(new CanvasRenderer_1.default(canvas), renderOptions);
-                renderer.render(stack);
-                if (!canvas.width || !canvas.height) {
-                    canvas.width = 1;
-                    canvas.height = 1;
-                }
-                texture.image = canvas;
-                texture.minFilter = THREE.LinearFilter;
-                texture.needsUpdate = true;
-                textures[state] = texture;
-            });
         }
         this._showChildLayers(true);
         this._disableTransforms(false);
-        this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
         const imageStore = await this.rootLayer._resourceLoader.ready();
-        const renderOptions = {
-            backgroundColor: null,
-            fontMetrics: this.rootLayer._fontMetrics,
-            imageStore,
-            logger: this.rootLayer._logger,
-            scale: this._pixelRatio,
-            x: bounds.left,
-            y: bounds.top,
-            width: bounds.width,
-            height: bounds.height,
-            allowTaint: this.options.allowTaint || false
-        };
         for (const render of renderFunctions)
             render();
     }
@@ -566,6 +614,7 @@ WebLayer3D.LAYER_ATTRIBUTE = 'data-layer';
 WebLayer3D.LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container';
 WebLayer3D.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
 WebLayer3D.STATES_ATTRIBUTE = 'data-layer-states';
+WebLayer3D.HOVER_DEPTH_ATTRIBUTE = 'data-layer-hover-depth';
 WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms';
 WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.005;
 WebLayer3D.DEFAULT_PIXEL_DIMENSIONS = 0.001;
@@ -574,16 +623,23 @@ WebLayer3D.TRANSITION_DEFAULT = function (layer, alpha = 1) {
     WebLayer3D.transitionLayout(layer, alpha);
     WebLayer3D.transitionVisibility(layer, alpha);
 };
-WebLayer3D._updateInteraction = function (layer, interactions) {
-    const interaction = interactions.get(layer);
-    if (interaction) {
-        layer._hover = true;
-        layer.cursor.position.copy(interaction.point);
+WebLayer3D._resetHover = function (layer) {
+    layer._hover = 0;
+    layer.remove(layer.cursor);
+};
+WebLayer3D._incrementChildHover = function (layer) {
+    layer._hover =
+        layer._hover === 0 && layer.parent instanceof WebLayer3D && layer.parent._hover > 0
+            ? layer.parent._hover + 1
+            : layer._hover;
+};
+WebLayer3D._updateInteraction = function (layer, point) {
+    if (layer.hover === 1) {
+        layer.cursor.position.copy(point);
         layer.worldToLocal(layer.cursor.position);
         layer.add(layer.cursor);
     }
     else {
-        layer._hover = false;
         layer.remove(layer.cursor);
     }
 };
@@ -611,12 +667,13 @@ function ensureElementIsInDocument(element, options) {
         : document.documentElement.appendChild(container);
     return element;
 }
-function traverseDOM(node, each, bind) {
+function traverseDOM(node, each, bind, level = 0) {
+    level++;
     for (let child = node.firstChild; child; child = child.nextSibling) {
         if (child.nodeType === Node.ELEMENT_NODE) {
             const el = child;
-            if (each.call(bind, el)) {
-                traverseDOM(el, each, bind);
+            if (each.call(bind, el, level)) {
+                traverseDOM(el, each, bind, level);
             }
         }
     }
