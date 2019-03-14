@@ -1,12 +1,12 @@
 {
   "name": "three-web-layer",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Render DOM content with three.js!",
   "main": "dist/three-web-layer.umd.js",
   "module": "dist/three-web-layer.es5.js",
   "typings": "dist/types/three-web-layer.d.ts",
   "files": [
-    "dist"
+    "/dist"
   ],
   "repository": {
     "type": "git",
