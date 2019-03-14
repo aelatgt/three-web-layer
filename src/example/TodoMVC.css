@@ -121,20 +121,24 @@ body {
 .toggle-all + label {
 	width: 60px;
 	height: 34px;
-	font-size: 0;
+	/* font-size: 0; */
 	position: absolute;
 	top: -52px;
 	left: -13px;
 	-webkit-transform: rotate(90deg);
 	transform: rotate(90deg);
+	opacity: 1;
+	font-size: 22px;
+	color: #e6e6e6;
+	padding: 10px 27px 10px 27px;
 }
-
+/* 
 .toggle-all + label:before {
 	content: '❯';
 	font-size: 22px;
 	color: #e6e6e6;
 	padding: 10px 27px 10px 27px;
-}
+} */
 
 .toggle-all:checked + label:before {
 	color: #737373;
@@ -156,30 +160,30 @@ body {
 	border-bottom: none;
 }
 
-.todo-list li.editing {
+.todo-list .editing {
 	border-bottom: none;
 	padding: 0;
 }
 
-.todo-list li.editing .edit {
+.todo-list .editing .edit {
 	display: block;
 	width: calc(100% - 43px);
 	padding: 12px 16px 12px 0px;
 	margin: 0 0 0 43px;
 }
 
-.todo-list li .title {
+.todo-list .title {
 	/* width: calc(100% - 43px);  */
 	word-wrap: break-word; 
 	padding: 12px 16px 12px 0px;
 	margin: 0 0 0 43px;
 }
 
-.todo-list li.editing .view, .todo-list li.editing .title {
+.todo-list .editing .view, .todo-list li.editing .title {
 	display: none;
 }
 
-.todo-list li .toggle {
+.todo-list .toggle {
 	text-align: center;
 	width: 40px;
 	/* auto, since non-WebKit browsers doesn't support input styling */
@@ -191,27 +195,10 @@ body {
 	border: none; /* Mobile Safari */
 	-webkit-appearance: none;
 	appearance: none;
-}
-
-.todo-list li .toggle {
 	visibility: hidden;
 }
 
-.todo-list li .toggle::before {
-	/* content: 'o'; */
-	display: block;
-	visibility: visible;
-	font-size: 25px;
-}
-
-.todo-list li .toggle:checked::before {
-	/* content: '√'; */
-	color: green;
-	display: block;
-	font-size: 25px;
-}
-
-.todo-list li .toggle + label {
+.todo-list .toggle + label {
 	/*
 		Firefox requires `#` to be escaped - https://bugzilla.mozilla.org/show_bug.cgi?id=922433
 		IE and Edge requires *everything* to be escaped to render, so we do that instead of just the `#` - https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/7157459/
@@ -221,12 +208,12 @@ body {
 	background-position: center left;
 }
 
-.todo-list li .toggle:checked + label {
+.todo-list .toggle:checked + label {
 	background: none;
 	/* background-image: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%22-10%20-18%20100%20135%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2250%22%20fill%3D%22none%22%20stroke%3D%22%23bddad5%22%20stroke-width%3D%223%22/%3E%3Cpath%20fill%3D%22%235dc2af%22%20d%3D%22M72%2025L42%2071%2027%2056l-4%204%2020%2020%2034-52z%22/%3E%3C/svg%3E'); */
 }
 
-.todo-list li label {
+.todo-list label {
 	position: absolute;
 	top: 0px;
 	bottom: 0px;
@@ -237,7 +224,7 @@ body {
 	padding-right: 10px;
 }
 
-.todo-list li label {
+.todo-list label {
 	word-break: break-all;
 	/* padding: 15px 15px 15px 5px; */
 	display: block;
@@ -245,16 +232,16 @@ body {
 	/* transition: color 0.4s; */
 }
 
-.todo-list li .title {
+.todo-list .title {
 	margin: 0 0 0 60px;
 }
 
-.todo-list li.completed .title {
+.todo-list .completed .title {
 	color: #d9d9d9;
 	text-decoration: line-through;
 }
 
-.todo-list li .destroy {
+.todo-list .destroy {
 	display: none;
 	position: absolute;
 	top: 0;
@@ -269,7 +256,7 @@ body {
 	/* transition: color 0.2s ease-out; */
 }
 
-.todo-list li .destroy:hover, .todo-list li .destroy.hover {
+.todo-list .destroy:hover, .todo-list .destroy.hover {
 	color: #af5b5e;
 }
 
@@ -285,7 +272,7 @@ body {
 	display: none;
 }
 
-.todo-list li.editing:last-child {
+.todo-list .editing:last-child {
 	margin-bottom: -1px;
 }
 

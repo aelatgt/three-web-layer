@@ -1,6 +1,10 @@
 # three-web-layer
 A handy tool for rendering DOM layouts in three.js, built on html2canvas
 
+## Motivation
+
+The goal of this project is to leverage the power of the 2D web for layout and design of content presented in a 3D environment.
+
 ## DEMO
 
 [TodoMVC running in WebGL! Built with Vuejs, JSX, and WebLayer3D](http://argonjs.github.io/three-web-layer/)
@@ -9,7 +13,7 @@ A handy tool for rendering DOM layouts in three.js, built on html2canvas
 
 ```bash
 npm i three-web-layer
-```
+``` 
 
 ## API
 
@@ -92,16 +96,12 @@ function animate() {
 }
 ```
 
-    Note: See the example source code for more details, which roughly follows the above setup while presenting web content built with Vue.js and JSX (just an example, the only dependencies of WebLayer3D are threejs, WebGL, and DOM).
+*Note: See the example source code for more details, which roughly follows the above setup while presenting web content built with Vue.js and JSX (just an example, the only dependencies of WebLayer3D are threejs, WebGL, and DOM).*
 
-When an instance is created, a `layer` data-attribute is set on
-the passed DOM element to match this instance's Object3D id.
-If the passed DOM element has an `id` attribute, this instance's Object3D name
-will be set to match the element id.
+When a WebLayer3D instance is created, a `layer` data-attribute is set on
+the DOM element to match the `id` property (inherited from Object3D). Likewise, the name property will be set to match the element id (allowing `scene.getObjectByName(<dom-id>)`).
 
-Child WebLayer3D instances can be specified with an empty `layer` data-attribute,
-which will be set when the child WebLayer3D instance is created automatically.
-The data-attribute can be specified added in HTML or dynamically:
+Child WebLayer3D instances can be created by adding a `layer` data-attribute to the intended DOM element. The `layer` data-attribute can be added in HTML or dynamically:
  - `<div data-layer></div>`
  - `element.dataset.layer = ''`
 
@@ -109,12 +109,11 @@ Additionally, the pixel ratio can be adjusted on each layer, individually:
  - `<div data-layer data-layer-pixel-ratio="0.5"></div>`
  - `element.dataset.layerPixelRatio = '0.5'`
 
-Finally, each layer can prerender multipe states specified as CSS classes delimited by spaces:
+Finally, each layer can prerender multipe states specified similarly to CSS classes:
  - `<div data-layer data-layer-states="near far"></div>`
  - `element.dataset.layerStates = 'near far'`
 
-Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
-Every layer has a `default` state. The texture can be changed with `layer.setState(state)`,
+Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element. The texture state can then be changed with `layer.setState(state)`, 
 without requiring the DOM to be re-rendered. Setting a state on a parent layer does
 not affect the state of a child layer. 
 

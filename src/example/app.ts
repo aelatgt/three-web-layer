@@ -244,7 +244,7 @@ function animate() {
     layer.targetContentPosition.z = Controls.layerSeparation * level
     if (Controls.hoverEffect) {
       if (
-        layer.hover &&
+        layer.hover === 1 &&
         layer.level > 1 &&
         layer.element.nodeName !== 'H1' &&
         !layer.element.matches('.todo-count')
