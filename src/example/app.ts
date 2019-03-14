@@ -35,7 +35,7 @@ const interval = setInterval(() => {
 // setup three.js
 const scene = new THREE.Scene()
 const clock = new THREE.Clock()
-const renderer = new THREE.WebGLRenderer({ antialias: true })
+const renderer = new THREE.WebGLRenderer({ antialias: false })
 renderer.setClearColor(new THREE.Color(0xcccccc))
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.shadowMap.enabled = true
