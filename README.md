@@ -1,5 +1,5 @@
 # three-web-layer
-A handy tool for rendering DOM layouts in three.js, built on html2canvas
+A handy tool for rendering complex and interactive 2D web content in WebGL using three.js, built on html2canvas
 
 ## Motivation
 
