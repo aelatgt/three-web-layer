@@ -138,7 +138,6 @@ export default class WebLayer3D extends THREE.Object3D {
 
   element: HTMLElement
   content = new THREE.Object3D()
-  textures: { [state: string]: THREE.Texture[] } = {}
   mesh = new THREE.Mesh(
     WebLayer3D.GEOMETRY,
     new THREE.MeshBasicMaterial({
@@ -154,7 +153,6 @@ export default class WebLayer3D extends THREE.Object3D {
   childLayers: WebLayer3D[] = []
   targetContentPosition = new THREE.Vector3()
   targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
-  // boundingRect = { left: 0, top: 0, width: 0, height: 0 }
   cursor = new THREE.Object3D()
   needsRefresh = true
 
