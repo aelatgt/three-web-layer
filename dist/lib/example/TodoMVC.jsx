@@ -159,7 +159,7 @@ exports.default = vue_1.default.extend({
                 : <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#ededed" stroke-width="3"/></svg>}</label>
                               <button data-layer data-layer-hover-depth="2" class="destroy" onclick={() => this.removeTodo(todo)}>x</button>
                             </div> 
-                            <div data-layer>                       
+                            <div data-layer class="item">                       
                               <div class="title" onclick={() => this.editTodo(todo)}>{todo.title}</div>
                               <input class="edit" type="text" spellcheck="false" v-model={todo.title} v-todo-focus="todo == editedTodo" onblur={() => this.doneEdit(todo)} onkeyup={(event) => {
                 if (event.key === 'Enter')
@@ -177,19 +177,19 @@ exports.default = vue_1.default.extend({
             <strong>{this.remaining}</strong> {this.$options.filters.pluralize(this.remaining)} left
             </span>
             <ul class="filters">
-            <li><a data-layer href="#/all" class={this.visibility == 'all' ? 'selected' : ''}>All</a></li>
-            <li><a data-layer href="#/active" class={this.visibility == 'active' ? 'selected' : ''}>Active</a></li>
-            <li><a data-layer href="#/completed" class={this.visibility == 'completed' ? 'selected' : ''}>Completed</a></li>
+            <li><a data-layer data-layer-hover-depth="1" href="#/all" class={this.visibility == 'all' ? 'selected' : ''}>All</a></li>
+            <li><a data-layer data-layer-hover-depth="1" href="#/active" class={this.visibility == 'active' ? 'selected' : ''}>Active</a></li>
+            <li><a data-layer data-layer-hover-depth="1" href="#/completed" class={this.visibility == 'completed' ? 'selected' : ''}>Completed</a></li>
             </ul>
-            <button data-layer class="clear-completed" onclick={this.removeCompleted} v-show={this.todos.length > this.remaining}>
+            <button data-layer data-layer-hover-depth="1" class="clear-completed" onclick={this.removeCompleted} v-show={this.todos.length > this.remaining}>
             Clear completed
             </button>
         </footer>
         </section>
         <footer data-layer class="info">
         <p>Click to edit a todo</p>
-        <p>Written by <a data-layer href="http://ael.gatech.edu/lab/author/gheric/">&nbsp;Gheric Speiginer</a></p>
-        <p>Part of <a data-layer href="http://todomvc.com">TodoMVC</a></p>
+        <p>Written by <a data-layer data-layer-hover-depth="1" href="http://ael.gatech.edu/lab/author/gheric/">&nbsp;Gheric Speiginer</a></p>
+        <p>Part of <a data-layer data-layer-hover-depth="1" href="http://todomvc.com">TodoMVC</a></p>
         </footer>
     </div>;
     }

@@ -58,16 +58,15 @@ export default class WebLayer3D extends THREE.Object3D {
     static TRANSITION_DEFAULT: (layer: WebLayer3D, alpha?: number) => void;
     static transitionLayout(layer: WebLayer3D, alpha: number): void;
     static transitionVisibility(layer: WebLayer3D, alpha: number): void;
+    private static _hoverLayers;
     private static _updateInteractions;
-    private static _resetHover;
-    private static _incrementChildHover;
+    private static _clearHover;
+    private static _setHover;
+    private static _setHoverClass;
     private static _updateInteraction;
     private static _didInstallStyleSheet;
     element: HTMLElement;
     content: THREE.Object3D;
-    textures: {
-        [state: string]: THREE.Texture[];
-    };
     mesh: THREE.Mesh;
     depthMaterial: THREE.MeshDepthMaterial;
     childLayers: WebLayer3D[];
@@ -131,7 +130,6 @@ export default class WebLayer3D extends THREE.Object3D {
      * This should be called each frame, and can only be called on a root WebLayer3D instance.
      *
      * @param alpha lerp value
-     * @param children if true, also update child layers. Default is true.
      * @param transition transition function. Default is WebLayer3D.TRANSITION_DEFAULT
      */
     update(alpha?: number, transition?: (layer: WebLayer3D, alpha: number) => void): void;
@@ -149,7 +147,7 @@ export default class WebLayer3D extends THREE.Object3D {
     private _updateState;
     private _checkRoot;
     private _updateBounds;
-    private _updateDefaultLayout;
+    private _updateTargetLayout;
     private _updateMesh;
     private _showChildLayers;
     private _disableTransforms;

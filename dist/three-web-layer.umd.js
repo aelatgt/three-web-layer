@@ -7016,8 +7016,8 @@
             this.rootLayer = rootLayer;
             this._level = _level;
             this.content = new THREE.Object3D();
-            this.textures = {};
             this.mesh = new THREE.Mesh(WebLayer3D.GEOMETRY, new THREE.MeshBasicMaterial({
+                depthTest: false,
                 transparent: true,
                 opacity: 0
             }));
@@ -7028,7 +7028,6 @@
             this.childLayers = [];
             this.targetContentPosition = new THREE.Vector3();
             this.targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
-            // boundingRect = { left: 0, top: 0, width: 0, height: 0 }
             this.cursor = new THREE.Object3D();
             this.needsRefresh = true;
             this._lastTargetContentPosition = new THREE.Vector3();
@@ -7094,8 +7093,38 @@
                         if (!target)
                             continue;
                         const layer = this.getLayerForElement(target);
-                        if (layer)
-                            layer.traverseLayers(setLayerNeedsRefresh);
+                        if (!layer)
+                            continue;
+                        if (record.type === 'attributes' && record.attributeName === 'class') {
+                            const oldClasses = record.oldValue ? record.oldValue.split(/\s+/) : [];
+                            const currentClasses = record.target.className.split(/\s+/);
+                            const addedClasses = arraySubtract(currentClasses, oldClasses);
+                            const removedClasses = arraySubtract(oldClasses, currentClasses);
+                            let needsRefresh = false;
+                            for (const c of removedClasses) {
+                                if (c === 'hover') {
+                                    continue;
+                                }
+                                if (layer._states[c]) {
+                                    layer.state = '';
+                                    continue;
+                                }
+                                needsRefresh = true;
+                            }
+                            for (const c of addedClasses) {
+                                if (c === 'hover') {
+                                    continue;
+                                }
+                                if (layer._states[c]) {
+                                    layer.state = c;
+                                    continue;
+                                }
+                                needsRefresh = true;
+                            }
+                            if (!needsRefresh)
+                                continue;
+                        }
+                        layer.traverseLayers(setLayerNeedsRefresh);
                     }
                 };
                 this._mutationObserver = new MutationObserver(this._processMutations);
@@ -7131,7 +7160,8 @@
                 this.options.onLayerCreate(this);
         }
         static transitionLayout(layer, alpha) {
-            layer.content.position.lerp(layer.targetContentPosition, alpha);
+            const material = layer.mesh.material;
+            layer.content.position.lerp(layer.targetContentPosition, material.opacity < 0.01 ? 1 : alpha);
             layer.content.scale.lerp(layer.targetContentScale, alpha);
         }
         static transitionVisibility(layer, alpha) {
@@ -7156,20 +7186,23 @@
             }
         }
         static _updateInteractions(rootLayer) {
-            rootLayer.traverseLayers(WebLayer3D._resetHover);
+            rootLayer.traverseLayers(WebLayer3D._clearHover);
+            WebLayer3D._hoverLayers.clear();
             for (const ray of rootLayer._interactionRays) {
                 rootLayer._hitIntersections.length = 0;
                 rootLayer._raycaster.ray.copy(ray);
                 rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections);
                 for (const intersection of rootLayer._hitIntersections) {
                     const layer = rootLayer._meshMap.get(intersection.object);
-                    if (layer) {
+                    if (layer && !layer.needsHiding) {
+                        WebLayer3D._hoverLayers.add(layer);
                         layer._hover = 1;
                         WebLayer3D._updateInteraction(layer, intersection.point);
                     }
                 }
             }
-            rootLayer.traverseLayers(WebLayer3D._incrementChildHover);
+            rootLayer.traverseLayers(WebLayer3D._setHover);
+            traverseDOM(rootLayer.element, WebLayer3D._setHoverClass);
         }
         /**
          * Change the texture state.
@@ -7225,16 +7258,15 @@
          * This should be called each frame, and can only be called on a root WebLayer3D instance.
          *
          * @param alpha lerp value
-         * @param children if true, also update child layers. Default is true.
          * @param transition transition function. Default is WebLayer3D.TRANSITION_DEFAULT
          */
         update(alpha = 1, transition = WebLayer3D.TRANSITION_DEFAULT) {
             alpha = Math.min(alpha, 1);
             this._isUpdating = true;
             this._checkRoot();
+            WebLayer3D._updateInteractions(this);
             this.refresh();
             this.traverseLayers(transition, alpha);
-            WebLayer3D._updateInteractions(this);
             this._isUpdating = false;
         }
         traverseLayers(each, ...params) {
@@ -7263,6 +7295,7 @@
             return this.id === id ? this : this.getObjectById(id);
         }
         hitTest(ray) {
+            this._checkRoot();
             this._raycaster.ray.copy(ray);
             this._hitIntersections.length = 0;
             const intersections = this._raycaster.intersectObject(this, true, this._hitIntersections);
@@ -7276,11 +7309,10 @@
                 let target = layer.element;
                 const clientX = intersection.uv.x * layerBoundingRect.width;
                 const clientY = (1 - intersection.uv.y) * layerBoundingRect.height;
-                this._disableTransforms(true);
                 traverseDOM(layer.element, el => {
                     if (!target.contains(el))
                         return false;
-                    const elementBoundingRect = Bounds_9(el, window.pageXOffset, window.pageYOffset);
+                    const elementBoundingRect = getBounds(el);
                     const offsetLeft = elementBoundingRect.left - layerBoundingRect.left;
                     const offsetTop = elementBoundingRect.top - layerBoundingRect.top;
                     const { width, height } = elementBoundingRect;
@@ -7295,7 +7327,6 @@
                     }
                     return false; // stop traversal down this path
                 });
-                this._disableTransforms(false);
                 return { layer, intersection, target };
             }
             return undefined;
@@ -7312,7 +7343,7 @@
             }
             if (waitingForRefresh)
                 await waitingForRefresh;
-            this._updateDefaultLayout();
+            this._updateTargetLayout();
             this._updateMesh();
             await Promise.all(refreshes);
             return;
@@ -7370,39 +7401,15 @@
                 throw new Error('Only call `update` on a root WebLayer3D instance');
         }
         _updateBounds() {
-            let el = this.element;
-            let offsetTop = 0;
-            while (el) {
-                offsetTop += el.offsetTop - el.scrollTop;
-                el = el.offsetParent;
-            }
-            const top = offsetTop - window.pageYOffset;
-            el = this.element;
-            let offsetLeft = 0;
-            while (el) {
-                offsetLeft += el.offsetLeft - el.scrollLeft;
-                el = el.offsetParent;
-            }
-            const left = offsetLeft - window.pageXOffset;
-            const width = this.element.offsetWidth;
-            const height = this.element.offsetHeight;
-            if ((width && height) || !this.hover) {
-                const bounds = this.bounds;
-                bounds.top = top;
-                bounds.left = left;
-                bounds.width = this.element.offsetWidth;
-                bounds.height = this.element.offsetHeight;
-            }
+            getBounds(this.element, this.bounds);
         }
-        _updateDefaultLayout() {
+        _updateTargetLayout() {
             this.targetContentPosition.copy(this._lastTargetContentPosition);
             this.targetContentScale.copy(this._lastTargetContentScale);
             if (this.needsRemoval) {
                 this._needsHiding = true;
                 return;
             }
-            this._needsHiding = false;
-            const rootBoundingRect = this.rootLayer.bounds;
             const boundingRect = this.bounds;
             if (boundingRect.width === 0 ||
                 boundingRect.height === 0 ||
@@ -7410,6 +7417,8 @@
                 this._needsHiding = true;
                 return;
             }
+            this._needsHiding = false;
+            const rootBoundingRect = this.rootLayer.bounds;
             const left = boundingRect.left - rootBoundingRect.left;
             const top = boundingRect.top - rootBoundingRect.top;
             const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS;
@@ -7437,8 +7446,8 @@
             this.depthMaterial.needsUpdate = true;
             if (!this.needsHiding && !mesh.parent) {
                 this.content.add(mesh);
-                this._updateDefaultLayout();
-                // this.content.position.copy(this.defaultContentPosition)
+                this._updateTargetLayout();
+                this.content.position.copy(this.targetContentPosition);
                 this.content.scale.copy(this.targetContentScale);
             }
             if (this.needsHiding && mesh.material.opacity < 0.05) {
@@ -7476,13 +7485,17 @@
             let skip = hover - 1;
             while (el) {
                 if (hover === 0) {
-                    el.classList.remove('hover');
+                    if (el.classList.contains('hover'))
+                        el.classList.remove('hover');
                 }
                 else if (skip === 0) {
-                    el.classList.add('hover');
+                    if (!el.classList.contains('hover'))
+                        el.classList.add('hover');
                 }
                 else {
                     skip--;
+                    el = this.parent && this.parent instanceof WebLayer3D ? this.parent.element : null;
+                    continue;
                 }
                 el = el.parentElement;
             }
@@ -7534,13 +7547,14 @@
                     if (stateKey)
                         element.classList.add(stateKey);
                     this._setHoverClasses(hover);
-                    const bounds = (state.bounds = Bounds_9(element, window.pageXOffset, window.pageYOffset));
+                    const bounds = getBounds(element);
                     const stack = NodeParser_2(element, this.rootLayer._resourceLoader, this.rootLayer._logger);
                     if (stateKey)
                         element.classList.remove(stateKey);
                     this._setHoverClasses(0);
                     if (!bounds.width || !bounds.height)
                         continue;
+                    state.bounds = bounds;
                     renderFunctions.push(() => {
                         const canvas = texture.image;
                         const context = canvas.getContext('2d');
@@ -7589,15 +7603,31 @@
         WebLayer3D.transitionLayout(layer, alpha);
         WebLayer3D.transitionVisibility(layer, alpha);
     };
-    WebLayer3D._resetHover = function (layer) {
+    WebLayer3D._hoverLayers = new Set();
+    WebLayer3D._clearHover = function (layer) {
         layer._hover = 0;
         layer.remove(layer.cursor);
     };
-    WebLayer3D._incrementChildHover = function (layer) {
+    WebLayer3D._setHover = function (layer) {
         layer._hover =
             layer._hover === 0 && layer.parent instanceof WebLayer3D && layer.parent._hover > 0
                 ? layer.parent._hover + 1
                 : layer._hover;
+    };
+    WebLayer3D._setHoverClass = function (element) {
+        const hoverLayers = WebLayer3D._hoverLayers;
+        let hover = false;
+        for (const layer of hoverLayers) {
+            if (element.contains(layer.element)) {
+                hover = true;
+                break;
+            }
+        }
+        if (hover && !element.classList.contains('hover'))
+            element.classList.add('hover');
+        if (!hover && element.classList.contains('hover'))
+            element.classList.remove('hover');
+        return true;
     };
     WebLayer3D._updateInteraction = function (layer, point) {
         if (layer.hover === 1) {
@@ -7627,9 +7657,7 @@
         // when a text field is focussed
         container.style.top = '-100000px';
         container.appendChild(element);
-        document.body
-            ? document.body.appendChild(container)
-            : document.documentElement.appendChild(container);
+        document.documentElement.appendChild(container);
         return element;
     }
     function traverseDOM(node, each, bind, level = 0) {
@@ -7643,6 +7671,29 @@
             }
         }
     }
+    function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+        const window = element.ownerDocument.defaultView;
+        let el = element;
+        let left = el.offsetLeft;
+        let top = el.offsetTop;
+        let offsetParent = el.offsetParent;
+        while (el && el.nodeType !== Node.DOCUMENT_NODE) {
+            left -= el.scrollLeft;
+            top -= el.scrollTop;
+            if (el === offsetParent) {
+                const style = window.getComputedStyle(el);
+                left += el.offsetLeft + parseFloat(style.borderLeftWidth) || 0;
+                top += el.offsetTop + parseFloat(style.borderTopWidth) || 0;
+                offsetParent = el.offsetParent;
+            }
+            el = el.offsetParent;
+        }
+        bounds.left = left + window.pageXOffset;
+        bounds.top = top + window.pageYOffset;
+        bounds.width = element.offsetWidth;
+        bounds.height = element.offsetHeight;
+        return bounds;
+    }
     function addCSSRule(sheet, selector, rules, index$$1) {
         if ('insertRule' in sheet) {
             sheet.insertRule(selector + '{' + rules + '}', index$$1);
@@ -7650,6 +7701,14 @@
         else if ('addRule' in sheet) {
             sheet.addRule(selector, rules, index$$1);
         }
+    }
+    function arraySubtract(a, b) {
+        const result = [];
+        for (const item of a) {
+            if (!b.includes(item))
+                result.push(item);
+        }
+        return result;
     }
 
     return WebLayer3D;
