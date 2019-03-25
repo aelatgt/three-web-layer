@@ -13,6 +13,12 @@ html,
 body {
 	margin: 0;
 	padding: 0;
+	font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	background: #f5f5f5;
+	color: #4d4d4d;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-weight: 300;
 }
 
 button {
@@ -32,13 +38,7 @@ button {
 }
 
 body {
-	font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif;
-	background: #f5f5f5;
-	color: #4d4d4d;
 	margin: 0 auto;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	font-weight: 300;
 }
 
 :focus {
@@ -168,14 +168,14 @@ body {
 .todo-list .editing .edit {
 	display: block;
 	width: calc(100% - 43px);
-	padding: 12px 16px 12px 0px;
+	padding: 15px 15px 15px 0px;
 	margin: 0 0 0 43px;
 }
 
 .todo-list .title {
 	/* width: calc(100% - 43px);  */
 	word-wrap: break-word; 
-	padding: 12px 16px 12px 0px;
+	padding: 15px 15px 15px 0px;
 	margin: 0 0 0 43px;
 }
 

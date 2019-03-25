@@ -44,7 +44,6 @@ camera.position.z = 0.7
 scene.add(camera)
 
 // setup DOM
-const containerElement = document.body
 document.documentElement.style.width = '100%'
 document.documentElement.style.height = '100%'
 renderer.domElement.style.width = '100%'
@@ -67,7 +66,7 @@ gui.add(Controls, 'showDOM', true).onChange(toggleDOM)
 gui.add(Controls, 'moveCamera', true)
 gui.add(Controls, 'hoverEffect', true)
 gui.add(Controls, 'shadows', true).onChange(toggleShadows)
-gui.add(Controls, 'layerSeparation', 0.001, 0.05)
+gui.add(Controls, 'layerSeparation', 0.001, 0.2)
 gui.add(Controls, 'lerpSpeed', 0.5, 10)
 gui.domElement.style.border = '0'
 gui.domElement.style.position = 'fixed'
@@ -97,7 +96,7 @@ const cursorGeometry = new THREE.SphereGeometry(0.008)
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.8))
 const light = new THREE.SpotLight(0xffffff, 0.3)
-light.position.set(1, 1, 1.5)
+light.position.set(0, 0, 1.5)
 light.angle = 0.3
 light.penumbra = 0.8
 light.castShadow = true
@@ -113,7 +112,6 @@ const shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera)
 // magic: convert DOM hierarchy to WebLayer3D heirarchy
 const todoLayer = ((window as any).todoLayer = new WebLayer3D(todoVue.$el, {
   windowWidth: 500,
-  // layerSeparation: 0.2,
   pixelRatio: window.devicePixelRatio,
   onLayerCreate(layer) {
     layer.cursor.add(new THREE.Mesh(cursorGeometry))
@@ -135,18 +133,18 @@ function makeShadowMaterial() {
   })
 }
 
-// WIP shadows
+// shadows
 function toggleShadows(enabled) {
   if (enabled) {
     todoLayer.traverseLayers(layer => {
       layer.mesh.material = makeShadowMaterial()
     })
-    scene.add(shadowCameraHelper)
+    // scene.add(shadowCameraHelper)
   } else {
     todoLayer.traverseLayers(layer => {
       layer.mesh.material = new THREE.MeshBasicMaterial({ transparent: true })
     })
-    scene.remove(shadowCameraHelper)
+    // scene.remove(shadowCameraHelper)
   }
 }
 
@@ -231,8 +229,8 @@ function animate() {
   camera.aspect = aspect
   camera.updateProjectionMatrix()
   if (Controls.moveCamera) {
-    camera.position.x += (pointer.x * 0.3 - camera.position.x) * 0.05
-    camera.position.y += (pointer.y * 0.3 - camera.position.y) * 0.05
+    camera.position.x += (pointer.x * 0.4 - camera.position.x) * 0.05
+    camera.position.y += (pointer.y * 0.4 - camera.position.y) * 0.05
   } else {
     camera.position.x = 0
     camera.position.y = 0
@@ -259,8 +257,8 @@ function animate() {
         layer.targetContentScale.multiplyScalar(1.1)
       }
     }
-    if (layer.needsHiding && layer.element.matches('.todo-list *')) {
-      layer.targetContentPosition.set(0, 0, 0)
+    if (layer.needsHiding && layer.element.matches('.todo *')) {
+      if (!layer.element.matches('.destroy')) layer.targetContentPosition.y = 0
       layer.targetContentScale.y = 0.001
     }
     WebLayer3D.TRANSITION_DEFAULT(layer, alpha)
