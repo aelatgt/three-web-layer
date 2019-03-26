@@ -96,6 +96,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private static _hoverLayers = new Set<WebLayer3D>()
   private static _updateInteractions(rootLayer: WebLayer3D) {
+    rootLayer.updateWorldMatrix(true, true)
     rootLayer.traverseLayers(WebLayer3D._clearHover)
     WebLayer3D._hoverLayers.clear()
     for (const ray of rootLayer._interactionRays) {
@@ -113,6 +114,14 @@ export default class WebLayer3D extends THREE.Object3D {
     }
     rootLayer.traverseLayers(WebLayer3D._setHover)
     traverseDOM(rootLayer.element, WebLayer3D._setHoverClass)
+  }
+
+  private static async _scheduleRasterizations(rootLayer: WebLayer3D) {
+    await null // wait for render to complete
+    const queue = rootLayer._rasterizationQueue
+    while (queue.length && performance.now() - rootLayer._lastUpdateTime < 12) {
+      queue.shift()!._rasterize()
+    }
   }
 
   private static _clearHover = function(layer: WebLayer3D) {
@@ -172,11 +181,12 @@ export default class WebLayer3D extends THREE.Object3D {
   targetContentPosition = new THREE.Vector3()
   targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
   cursor = new THREE.Object3D()
-  needsRefresh = true
+  needsRasterize = true
 
   private _lastTargetContentPosition = new THREE.Vector3()
   private _lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
 
+  private _lastUpdateTime = Number.POSITIVE_INFINITY
   private _isUpdating = false // true while in WebLayer3D#update() function
   private _needsRemoval = false
   private _needsHiding = false
@@ -194,6 +204,7 @@ export default class WebLayer3D extends THREE.Object3D {
   private _hitIntersections = this._raycaster.intersectObjects([]) // for type inference
 
   // the following properties are meant to be accessed on the root layer
+  private _rasterizationQueue = [] as WebLayer3D[]
   private _mutationObserver?: MutationObserver
   private _resizeObserver?: ResizeObserver
   private _resourceLoader?: any
@@ -242,7 +253,7 @@ export default class WebLayer3D extends THREE.Object3D {
       this._triggerRefresh = (e: Event) => {
         const layer = this.getLayerForElement(e.target as any)!
         if (layer) {
-          layer.needsRefresh = true
+          layer.needsRasterize = true
         }
       }
       element.addEventListener('input', this._triggerRefresh, { capture: true })
@@ -250,8 +261,8 @@ export default class WebLayer3D extends THREE.Object3D {
       // element.addEventListener('focus', this._triggerRefresh, { capture: true })
       element.addEventListener('transitionend', this._triggerRefresh, { capture: true })
 
-      const setLayerNeedsRefresh = layer => {
-        layer.needsRefresh = true
+      const setLayerNeedsRasterize = (layer: WebLayer3D) => {
+        layer.needsRasterize = true
       }
       this._processMutations = (records: MutationRecord[]) => {
         if (this._isUpdating) return
@@ -280,7 +291,7 @@ export default class WebLayer3D extends THREE.Object3D {
             const currentClasses = (record.target as HTMLElement).className.split(/\s+/)
             const addedClasses = arraySubtract(currentClasses, oldClasses)
             const removedClasses = arraySubtract(oldClasses, currentClasses)
-            let needsRefresh = false
+            let needsRasterize = false
             for (const c of removedClasses) {
               if (c === 'hover') {
                 continue
@@ -289,7 +300,7 @@ export default class WebLayer3D extends THREE.Object3D {
                 layer.state = ''
                 continue
               }
-              needsRefresh = true
+              needsRasterize = true
             }
             for (const c of addedClasses) {
               if (c === 'hover') {
@@ -299,11 +310,11 @@ export default class WebLayer3D extends THREE.Object3D {
                 layer.state = c
                 continue
               }
-              needsRefresh = true
+              needsRasterize = true
             }
-            if (!needsRefresh) continue
+            if (!needsRasterize) continue
           }
-          layer.traverseLayers(setLayerNeedsRefresh)
+          layer.traverseLayers(setLayerNeedsRasterize)
         }
       }
 
@@ -340,7 +351,7 @@ export default class WebLayer3D extends THREE.Object3D {
           layer.element.offsetWidth !== layer.bounds.width ||
           layer.element.offsetHeight !== layer.bounds.height
         )
-          layer.needsRefresh = true
+          layer.needsRasterize = true
       }
     })
     this._resizeObserver.observe(element)
@@ -417,6 +428,7 @@ export default class WebLayer3D extends THREE.Object3D {
     alpha = 1,
     transition: (layer: WebLayer3D, alpha: number) => void = WebLayer3D.TRANSITION_DEFAULT
   ) {
+    this._lastUpdateTime = performance.now()
     alpha = Math.min(alpha, 1)
     this._isUpdating = true
     this._checkRoot()
@@ -424,6 +436,7 @@ export default class WebLayer3D extends THREE.Object3D {
     this.refresh()
     this.traverseLayers(transition, alpha)
     this._isUpdating = false
+    WebLayer3D._scheduleRasterizations(this)
   }
 
   traverseLayers<T extends any[]>(each: (layer: WebLayer3D, ...params: T) => void, ...params: T) {
@@ -493,20 +506,20 @@ export default class WebLayer3D extends THREE.Object3D {
     return undefined
   }
 
-  async refresh(force = false): Promise<void> {
+  refresh(forceRasterize = false) {
     this._updateState()
     this._updateBounds()
-    const waitingForRefresh = this.needsRefresh || force ? this._refresh() : undefined
-    this.rootLayer._mutationObserver!.takeRecords()
-    const refreshes = [] as Promise<void>[]
-    for (const child of this.children) {
-      if (child instanceof WebLayer3D) refreshes.push(child.refresh(force))
+    if (this.needsRasterize || forceRasterize) {
+      this.needsRasterize = false
+      this._updateChildLayers()
+      if (this.rootLayer._rasterizationQueue.indexOf(this) === -1)
+        this.rootLayer._rasterizationQueue.push(this)
     }
-    if (waitingForRefresh) await waitingForRefresh
+    for (const child of this.children) {
+      if (child instanceof WebLayer3D) child.refresh(forceRasterize)
+    }
     this._updateTargetLayout()
     this._updateMesh()
-    await Promise.all(refreshes)
-    return
   }
 
   dispose() {
@@ -669,7 +682,7 @@ export default class WebLayer3D extends THREE.Object3D {
         el.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '')
       } else {
         el.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE)
-        this.rootLayer._processMutations(this.rootLayer._mutationObserver!.takeRecords())
+        this.rootLayer._mutationObserver!.takeRecords()
       }
       el = el.parentElement!
     }
@@ -726,12 +739,10 @@ export default class WebLayer3D extends THREE.Object3D {
     return true
   }
 
-  private async _refresh() {
+  private async _rasterize() {
     const element = this.element
     const renderFunctions = [] as Function[]
-    this.needsRefresh = false
 
-    this._updateChildLayers()
     this._disableTransforms(true)
     this._showChildLayers(false)
 
