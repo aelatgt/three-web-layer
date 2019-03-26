@@ -261,6 +261,9 @@ function animate() {
       if (!layer.element.matches('.destroy')) layer.targetContentPosition.y = 0
       layer.targetContentScale.y = 0.001
     }
+    if (layer.element.matches('.destroy')) {
+      layer.content.position.copy(layer.targetContentPosition)
+    }
     WebLayer3D.TRANSITION_DEFAULT(layer, alpha)
   })
 

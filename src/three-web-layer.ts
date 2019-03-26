@@ -71,8 +71,7 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   static transitionLayout(layer: WebLayer3D, alpha: number) {
-    const material = layer.mesh.material as THREE.MeshBasicMaterial
-    layer.content.position.lerp(layer.targetContentPosition, material.opacity < 0.01 ? 1 : alpha)
+    layer.content.position.lerp(layer.targetContentPosition, alpha)
     layer.content.scale.lerp(layer.targetContentScale, alpha)
   }
 
