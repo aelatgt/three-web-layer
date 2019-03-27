@@ -244,6 +244,9 @@ function animate() {
                 layer.targetContentPosition.y = 0;
             layer.targetContentScale.y = 0.001;
         }
+        if (layer.element.matches('.destroy')) {
+            layer.content.position.copy(layer.targetContentPosition);
+        }
         three_web_layer_1.default.TRANSITION_DEFAULT(layer, alpha);
     });
     // render!

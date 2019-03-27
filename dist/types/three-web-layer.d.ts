@@ -60,6 +60,7 @@ export default class WebLayer3D extends THREE.Object3D {
     static transitionVisibility(layer: WebLayer3D, alpha: number): void;
     private static _hoverLayers;
     private static _updateInteractions;
+    private static _scheduleRasterizations;
     private static _clearHover;
     private static _setHover;
     private static _setHoverClass;
@@ -73,7 +74,7 @@ export default class WebLayer3D extends THREE.Object3D {
     targetContentPosition: THREE.Vector3;
     targetContentScale: THREE.Vector3;
     cursor: THREE.Object3D;
-    needsRefresh: boolean;
+    needsRasterize: boolean;
     private _lastTargetContentPosition;
     private _lastTargetContentScale;
     private _isUpdating;
@@ -86,6 +87,7 @@ export default class WebLayer3D extends THREE.Object3D {
     private _state;
     private _raycaster;
     private _hitIntersections;
+    private _rasterizationQueue;
     private _mutationObserver?;
     private _resizeObserver?;
     private _resourceLoader?;
@@ -142,7 +144,7 @@ export default class WebLayer3D extends THREE.Object3D {
         intersection: import("three/src/core/Raycaster").Intersection;
         target: HTMLElement;
     } | undefined;
-    refresh(force?: boolean): Promise<void>;
+    refresh(forceRasterize?: boolean): void;
     dispose(): void;
     private _updateState;
     private _checkRoot;
@@ -155,5 +157,5 @@ export default class WebLayer3D extends THREE.Object3D {
     private _markForRemoval;
     private _updateChildLayers;
     private _tryConvertToWebLayer3D;
-    private _refresh;
+    private _rasterize;
 }

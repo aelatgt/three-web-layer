@@ -7025,7 +7025,7 @@ class WebLayer3D extends Object3D {
         this.targetContentPosition = new Vector3();
         this.targetContentScale = new Vector3(0.1, 0.1, 0.1);
         this.cursor = new Object3D();
-        this.needsRefresh = true;
+        this.needsRasterize = true;
         this._lastTargetContentPosition = new Vector3();
         this._lastTargetContentScale = new Vector3(0.1, 0.1, 0.1);
         this._isUpdating = false; // true while in WebLayer3D#update() function
@@ -7038,6 +7038,8 @@ class WebLayer3D extends Object3D {
         this._state = '';
         this._raycaster = new Raycaster();
         this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
+        // the following properties are meant to be accessed on the root layer
+        this._rasterizationQueue = [];
         this._meshMap = new WeakMap();
         this._interactionRays = [];
         this.element = element;
@@ -7061,15 +7063,15 @@ class WebLayer3D extends Object3D {
             this._triggerRefresh = (e) => {
                 const layer = this.getLayerForElement(e.target);
                 if (layer) {
-                    layer.needsRefresh = true;
+                    layer.needsRasterize = true;
                 }
             };
             element.addEventListener('input', this._triggerRefresh, { capture: true });
             element.addEventListener('change', this._triggerRefresh, { capture: true });
             // element.addEventListener('focus', this._triggerRefresh, { capture: true })
             element.addEventListener('transitionend', this._triggerRefresh, { capture: true });
-            const setLayerNeedsRefresh = layer => {
-                layer.needsRefresh = true;
+            const setLayerNeedsRasterize = (layer) => {
+                layer.needsRasterize = true;
             };
             this._processMutations = (records) => {
                 if (this._isUpdating)
@@ -7096,7 +7098,7 @@ class WebLayer3D extends Object3D {
                         const currentClasses = record.target.className.split(/\s+/);
                         const addedClasses = arraySubtract(currentClasses, oldClasses);
                         const removedClasses = arraySubtract(oldClasses, currentClasses);
-                        let needsRefresh = false;
+                        let needsRasterize = false;
                         for (const c of removedClasses) {
                             if (c === 'hover') {
                                 continue;
@@ -7105,7 +7107,7 @@ class WebLayer3D extends Object3D {
                                 layer.state = '';
                                 continue;
                             }
-                            needsRefresh = true;
+                            needsRasterize = true;
                         }
                         for (const c of addedClasses) {
                             if (c === 'hover') {
@@ -7115,12 +7117,12 @@ class WebLayer3D extends Object3D {
                                 layer.state = c;
                                 continue;
                             }
-                            needsRefresh = true;
+                            needsRasterize = true;
                         }
-                        if (!needsRefresh)
+                        if (!needsRasterize)
                             continue;
                     }
-                    layer.traverseLayers(setLayerNeedsRefresh);
+                    layer.traverseLayers(setLayerNeedsRasterize);
                 }
             };
             this._mutationObserver = new MutationObserver(this._processMutations);
@@ -7148,7 +7150,7 @@ class WebLayer3D extends Object3D {
                 const layer = this.getLayerForElement(record.target);
                 if (layer.element.offsetWidth !== layer.bounds.width ||
                     layer.element.offsetHeight !== layer.bounds.height)
-                    layer.needsRefresh = true;
+                    layer.needsRasterize = true;
             }
         });
         this._resizeObserver.observe(element);
@@ -7156,8 +7158,7 @@ class WebLayer3D extends Object3D {
             this.options.onLayerCreate(this);
     }
     static transitionLayout(layer, alpha) {
-        const material = layer.mesh.material;
-        layer.content.position.lerp(layer.targetContentPosition, material.opacity < 0.01 ? 1 : alpha);
+        layer.content.position.lerp(layer.targetContentPosition, alpha);
         layer.content.scale.lerp(layer.targetContentScale, alpha);
     }
     static transitionVisibility(layer, alpha) {
@@ -7182,6 +7183,7 @@ class WebLayer3D extends Object3D {
         }
     }
     static _updateInteractions(rootLayer) {
+        rootLayer.updateWorldMatrix(true, true);
         rootLayer.traverseLayers(WebLayer3D._clearHover);
         WebLayer3D._hoverLayers.clear();
         for (const ray of rootLayer._interactionRays) {
@@ -7199,6 +7201,24 @@ class WebLayer3D extends Object3D {
         }
         rootLayer.traverseLayers(WebLayer3D._setHover);
         traverseDOM(rootLayer.element, WebLayer3D._setHoverClass);
+    }
+    static async _scheduleRasterizations(rootLayer) {
+        const queue = rootLayer._rasterizationQueue;
+        if (window.requestIdleCallback) {
+            if (queue.length)
+                window.requestIdleCallback(idleDeadline => {
+                    while (queue.length && idleDeadline.timeRemaining() > 0) {
+                        queue.shift()._rasterize();
+                    }
+                });
+        }
+        else {
+            await null; // wait for render to complete
+            const startTime = performance.now();
+            while (queue.length && performance.now() - startTime < 5) {
+                queue.shift()._rasterize();
+            }
+        }
     }
     /**
      * Change the texture state.
@@ -7264,6 +7284,7 @@ class WebLayer3D extends Object3D {
         this.refresh();
         this.traverseLayers(transition, alpha);
         this._isUpdating = false;
+        WebLayer3D._scheduleRasterizations(this);
     }
     traverseLayers(each, ...params) {
         each(this, ...params);
@@ -7327,22 +7348,21 @@ class WebLayer3D extends Object3D {
         }
         return undefined;
     }
-    async refresh(force = false) {
+    refresh(forceRasterize = false) {
         this._updateState();
         this._updateBounds();
-        const waitingForRefresh = this.needsRefresh || force ? this._refresh() : undefined;
-        this.rootLayer._mutationObserver.takeRecords();
-        const refreshes = [];
+        if (this.needsRasterize || forceRasterize) {
+            this.needsRasterize = false;
+            this._updateChildLayers();
+            if (this.rootLayer._rasterizationQueue.indexOf(this) === -1)
+                this.rootLayer._rasterizationQueue.push(this);
+        }
         for (const child of this.children) {
             if (child instanceof WebLayer3D)
-                refreshes.push(child.refresh(force));
+                child.refresh(forceRasterize);
         }
-        if (waitingForRefresh)
-            await waitingForRefresh;
         this._updateTargetLayout();
         this._updateMesh();
-        await Promise.all(refreshes);
-        return;
     }
     dispose() {
         if (this._mutationObserver)
@@ -7471,7 +7491,7 @@ class WebLayer3D extends Object3D {
             }
             else {
                 el.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
-                this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
+                this.rootLayer._mutationObserver.takeRecords();
             }
             el = el.parentElement;
         }
@@ -7527,11 +7547,9 @@ class WebLayer3D extends Object3D {
         }
         return true;
     }
-    async _refresh() {
+    async _rasterize() {
         const element = this.element;
         const renderFunctions = [];
-        this.needsRefresh = false;
-        this._updateChildLayers();
         this._disableTransforms(true);
         this._showChildLayers(false);
         for (const stateKey in this._states) {
