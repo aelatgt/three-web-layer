@@ -117,10 +117,20 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   private static async _scheduleRasterizations(rootLayer: WebLayer3D) {
-    await null // wait for render to complete
     const queue = rootLayer._rasterizationQueue
-    while (queue.length && performance.now() - rootLayer._lastUpdateTime < 12) {
-      queue.shift()!._rasterize()
+    if (window.requestIdleCallback) {
+      if (queue.length)
+        window.requestIdleCallback(idleDeadline => {
+          while (queue.length && idleDeadline.timeRemaining() > 0) {
+            queue.shift()!._rasterize()
+          }
+        })
+    } else {
+      await null // wait for render to complete
+      const startTime = performance.now()
+      while (queue.length && performance.now() - startTime < 5) {
+        queue.shift()!._rasterize()
+      }
     }
   }
 
@@ -186,7 +196,6 @@ export default class WebLayer3D extends THREE.Object3D {
   private _lastTargetContentPosition = new THREE.Vector3()
   private _lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
 
-  private _lastUpdateTime = Number.POSITIVE_INFINITY
   private _isUpdating = false // true while in WebLayer3D#update() function
   private _needsRemoval = false
   private _needsHiding = false
@@ -428,7 +437,6 @@ export default class WebLayer3D extends THREE.Object3D {
     alpha = 1,
     transition: (layer: WebLayer3D, alpha: number) => void = WebLayer3D.TRANSITION_DEFAULT
   ) {
-    this._lastUpdateTime = performance.now()
     alpha = Math.min(alpha, 1)
     this._isUpdating = true
     this._checkRoot()
