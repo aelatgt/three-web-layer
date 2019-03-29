@@ -735,8 +735,8 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private _tryConvertToWebLayer3D(el: HTMLElement, level) {
     const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE)
-    if (id !== null) {
-      let child = this.getObjectById(parseInt(id, 10)) as WebLayer3D
+    if (id !== null || el.nodeName === 'video') {
+      let child = this.getObjectById(parseInt(id + '', 10)) as WebLayer3D
       if (!child) {
         child = new WebLayer3D(el, this.options, this.rootLayer, level)
         this.add(child)
@@ -749,13 +749,21 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private async _rasterize() {
     const element = this.element
+    const states = this._states
     const renderFunctions = [] as Function[]
+
+    if (element.nodeName === 'video') {
+      const state = states[''][0]
+      state.bounds = getBounds(element)
+      state.texture = state.texture || new THREE.VideoTexture(element as HTMLVideoElement)
+      return
+    }
 
     this._disableTransforms(true)
     this._showChildLayers(false)
 
-    for (const stateKey in this._states) {
-      const hoverStates = this._states[stateKey]
+    for (const stateKey in states) {
+      const hoverStates = states[stateKey]
       let hoverDepth = this._hoverDepth
 
       for (let hover = 0; hover <= hoverDepth; hover++) {
