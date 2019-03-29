@@ -54,6 +54,7 @@ export type WebLayerHit = ReturnType<typeof WebLayer3D.prototype.hitTest> & {}
  *     e.g., 500px width means 0.5meters
  */
 export default class WebLayer3D extends THREE.Object3D {
+  static DEBUG = false
   static LAYER_ATTRIBUTE = 'data-layer'
   static LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container'
   static PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio'
@@ -121,16 +122,33 @@ export default class WebLayer3D extends THREE.Object3D {
     if (window.requestIdleCallback) {
       if (queue.length)
         window.requestIdleCallback(idleDeadline => {
+          if (!queue.length) return
+          if (WebLayer3D.DEBUG) performance.mark('rasterize queue start')
           while (queue.length && idleDeadline.timeRemaining() > 0) {
+            if (WebLayer3D.DEBUG) performance.mark('rasterize start')
             queue.shift()!._rasterize()
+            if (WebLayer3D.DEBUG) performance.mark('rasterize end')
+            if (WebLayer3D.DEBUG)
+              performance.measure('rasterize', 'rasterize start', 'rasterize end')
           }
+          if (WebLayer3D.DEBUG) performance.mark('rasterize queue end')
+          if (WebLayer3D.DEBUG)
+            performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end')
         })
     } else {
       await null // wait for render to complete
+      if (!queue.length) return
       const startTime = performance.now()
+      if (WebLayer3D.DEBUG) performance.mark('rasterize queue start')
       while (queue.length && performance.now() - startTime < 5) {
+        if (WebLayer3D.DEBUG) performance.mark('rasterize start')
         queue.shift()!._rasterize()
+        if (WebLayer3D.DEBUG) performance.mark('rasterize end')
+        if (WebLayer3D.DEBUG) performance.measure('rasterize', 'rasterize start', 'rasterize end')
       }
+      if (WebLayer3D.DEBUG) performance.mark('rasterize queue end')
+      if (WebLayer3D.DEBUG)
+        performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end')
     }
   }
 
@@ -246,7 +264,7 @@ export default class WebLayer3D extends THREE.Object3D {
       document.head.append(style)
       addCSSRule(
         style.sheet as CSSStyleSheet,
-        `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}]`,
+        `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}] *`,
         'transform: none !important;',
         0
       )
@@ -270,17 +288,16 @@ export default class WebLayer3D extends THREE.Object3D {
       // element.addEventListener('focus', this._triggerRefresh, { capture: true })
       element.addEventListener('transitionend', this._triggerRefresh, { capture: true })
 
+      let target: HTMLElement | null
       const setLayerNeedsRasterize = (layer: WebLayer3D) => {
-        layer.needsRasterize = true
+        if (target!.contains(layer.element)) layer.needsRasterize = true
       }
       this._processMutations = (records: MutationRecord[]) => {
         if (this._isUpdating) return
         for (const record of records) {
           if (
             record.type === 'attributes' &&
-            ((record.target as HTMLElement).getAttribute(record.attributeName!) ===
-              record.oldValue ||
-              record.attributeName === WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE)
+            (record.target as HTMLElement).getAttribute(record.attributeName!) === record.oldValue
           )
             continue
           if (
@@ -288,7 +305,7 @@ export default class WebLayer3D extends THREE.Object3D {
             (record.target as CharacterData).data === record.oldValue
           )
             continue
-          const target =
+          target =
             record.target.nodeType === Node.ELEMENT_NODE
               ? (record.target as HTMLElement)
               : record.target.parentElement
@@ -323,6 +340,7 @@ export default class WebLayer3D extends THREE.Object3D {
             }
             if (!needsRasterize) continue
           }
+          layer.needsRasterize = true
           layer.traverseLayers(setLayerNeedsRasterize)
         }
       }
@@ -437,14 +455,30 @@ export default class WebLayer3D extends THREE.Object3D {
     alpha = 1,
     transition: (layer: WebLayer3D, alpha: number) => void = WebLayer3D.TRANSITION_DEFAULT
   ) {
+    if (WebLayer3D.DEBUG) performance.mark('update start')
     alpha = Math.min(alpha, 1)
     this._isUpdating = true
     this._checkRoot()
     WebLayer3D._updateInteractions(this)
+    if (WebLayer3D.DEBUG) performance.mark('update interactions end')
+    if (WebLayer3D.DEBUG) performance.mark('update refresh start')
     this.refresh()
+    if (WebLayer3D.DEBUG) performance.mark('update refresh end')
+    if (WebLayer3D.DEBUG) performance.mark('update transitions start')
     this.traverseLayers(transition, alpha)
+    if (WebLayer3D.DEBUG) performance.mark('update transitions end')
     this._isUpdating = false
     WebLayer3D._scheduleRasterizations(this)
+    if (WebLayer3D.DEBUG) performance.mark('update end')
+    if (WebLayer3D.DEBUG)
+      performance.measure('update refresh', 'update refresh start', 'update refresh end')
+    if (WebLayer3D.DEBUG)
+      performance.measure(
+        'update transitions',
+        'update transitions start',
+        'update transitions end'
+      )
+    if (WebLayer3D.DEBUG) performance.measure('update', 'update start', 'update end')
   }
 
   traverseLayers<T extends any[]>(each: (layer: WebLayer3D, ...params: T) => void, ...params: T) {
@@ -520,8 +554,9 @@ export default class WebLayer3D extends THREE.Object3D {
     if (this.needsRasterize || forceRasterize) {
       this.needsRasterize = false
       this._updateChildLayers()
-      if (this.rootLayer._rasterizationQueue.indexOf(this) === -1)
+      if (this.rootLayer._rasterizationQueue.indexOf(this) === -1) {
         this.rootLayer._rasterizationQueue.push(this)
+      }
     }
     for (const child of this.children) {
       if (child instanceof WebLayer3D) child.refresh(forceRasterize)
@@ -683,16 +718,12 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   private _disableTransforms(disabled: boolean) {
-    let el = this.element
-    while (el) {
-      if (disabled) {
-        this.rootLayer._processMutations(this.rootLayer._mutationObserver!.takeRecords())
-        el.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '')
-      } else {
-        el.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE)
-        this.rootLayer._mutationObserver!.takeRecords()
-      }
-      el = el.parentElement!
+    if (disabled) {
+      this.rootLayer._processMutations(this.rootLayer._mutationObserver!.takeRecords())
+      document.documentElement.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '')
+    } else {
+      document.documentElement.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE)
+      this.rootLayer._mutationObserver!.takeRecords()
     }
   }
 
