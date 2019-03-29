@@ -4,6 +4,10 @@ import TodoMVC, { filters } from './TodoMVC'
 import dat from 'dat.gui'
 import Noty from 'noty'
 
+import { createXRButton } from './xr'
+
+WebLayer3D.DEBUG = true
+
 // reload on changes during development
 if (module.hot) {
   module.hot.dispose(() => {
@@ -51,6 +55,7 @@ renderer.domElement.style.height = '100%'
 renderer.domElement.style.position = 'fixed'
 document.body.append(renderer.domElement)
 document.body.style.touchAction = 'none'
+document.body.appendChild(createXRButton(renderer))
 
 // setup controls
 const Controls = {
@@ -178,6 +183,16 @@ renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false 
 renderer.domElement.addEventListener('touchstart', onTouchStart, false)
 renderer.domElement.addEventListener('click', onClick, false)
 
+const controller1 = (renderer.vr as any).getController(0)
+// controller1.addEventListener( 'selectstart', onSelectStart );
+// controller1.addEventListener( 'selectend', onSelectEnd );
+scene.add(controller1)
+
+const controller2 = (renderer.vr as any).getController(1)
+// controller2.addEventListener( 'selectstart', onSelectStart );
+// controller2.addEventListener( 'selectend', onSelectEnd );
+scene.add(controller2)
+
 function updateRay(x, y) {
   pointer.x = ((x + window.pageXOffset) / document.documentElement.offsetWidth) * 2 - 1
   pointer.y = (-(y + window.pageYOffset) / document.documentElement.offsetHeight) * 2 + 1
@@ -217,7 +232,6 @@ function redirectEvent(evt) {
 
 // animate
 function animate() {
-  requestAnimationFrame(animate)
   const deltaTime = clock.getDelta()
 
   // update camera
@@ -272,4 +286,4 @@ function animate() {
   renderer.render(scene, camera)
 }
 
-animate()
+renderer.setAnimationLoop(animate)

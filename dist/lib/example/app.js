@@ -5,6 +5,8 @@ const three_web_layer_1 = require("../three-web-layer");
 const TodoMVC_1 = require("./TodoMVC");
 const dat_gui_1 = require("dat.gui");
 const noty_1 = require("noty");
+const xr_1 = require("./xr");
+three_web_layer_1.default.DEBUG = true;
 // reload on changes during development
 if (module.hot) {
     module.hot.dispose(() => {
@@ -50,6 +52,7 @@ renderer.domElement.style.height = '100%';
 renderer.domElement.style.position = 'fixed';
 document.body.append(renderer.domElement);
 document.body.style.touchAction = 'none';
+document.body.appendChild(xr_1.createXRButton(renderer));
 // setup controls
 const Controls = {
     showDOM: false,
@@ -170,6 +173,14 @@ document.addEventListener('mousemove', onMouseMove, false);
 renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
 renderer.domElement.addEventListener('touchstart', onTouchStart, false);
 renderer.domElement.addEventListener('click', onClick, false);
+const controller1 = renderer.vr.getController(0);
+// controller1.addEventListener( 'selectstart', onSelectStart );
+// controller1.addEventListener( 'selectend', onSelectEnd );
+scene.add(controller1);
+const controller2 = renderer.vr.getController(1);
+// controller2.addEventListener( 'selectstart', onSelectStart );
+// controller2.addEventListener( 'selectend', onSelectEnd );
+scene.add(controller2);
 function updateRay(x, y) {
     pointer.x = ((x + window.pageXOffset) / document.documentElement.offsetWidth) * 2 - 1;
     pointer.y = (-(y + window.pageYOffset) / document.documentElement.offsetHeight) * 2 + 1;
@@ -203,7 +214,6 @@ function redirectEvent(evt) {
 }
 // animate
 function animate() {
-    requestAnimationFrame(animate);
     const deltaTime = clock.getDelta();
     // update camera
     // important: window.innerWidth/window.innerHeight changes when soft-keyboard is up!
@@ -253,5 +263,5 @@ function animate() {
     renderer.setSize(width, height, false);
     renderer.render(scene, camera);
 }
-animate();
+renderer.setAnimationLoop(animate);
 //# sourceMappingURL=app.js.map

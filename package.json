@@ -80,9 +80,11 @@
     "babel-plugin-transform-vue-jsx": "^3.7.0",
     "commitizen": "^3.0.0",
     "cz-conventional-changelog": "^2.1.0",
+    "dat.gui": "^0.7.5",
     "husky": "^1.0.1",
     "lint-staged": "^8.0.0",
     "lodash.camelcase": "^4.3.0",
+    "noty": "^3.2.0-beta",
     "parcel": "^1.11.0",
     "prettier": "^1.14.3",
     "rimraf": "^2.6.2",
@@ -96,7 +98,7 @@
     "rollup-plugin-typescript2": "^0.19.3",
     "semantic-release": "^15.13.3",
     "shelljs": "^0.8.3",
-    "three": "^0.101.0",
+    "three": "^0.103.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
@@ -104,17 +106,15 @@
     "typedoc": "^0.12.0",
     "typescript": "^3.3.3333",
     "vue": "^2.6.8",
-    "vue-template-compiler": "^2.6.8",
     "vue-hot-reload-api": "^2.3.3",
-    "dat.gui": "^0.7.5",
-    "noty": "^3.2.0-beta"
+    "vue-template-compiler": "^2.6.8"
   },
   "dependencies": {
     "@speigg/html2canvas": "^1.0.0-alpha.12-fork.0.0.1",
     "resize-observer-polyfill": "^1.5.1"
   },
   "peerDependencies": {
-    "three": "^0.101.0"
+    "three": "^0.103.0"
   },
   "husky": {
     "hooks": {

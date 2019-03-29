@@ -9,7 +9,7 @@ export declare const filters: {
     active: (todos: Todo[]) => Todo[];
     completed: (todos: Todo[]) => Todo[];
 };
-declare const _default: import("vue").VueConstructor<{
+declare const TodoMVC: import("vue").VueConstructor<{
     todos: Todo[];
     newTodo: string;
     editedTodo: Todo | null;
@@ -27,4 +27,4 @@ declare const _default: import("vue").VueConstructor<{
     remaining: number;
     allDone: any;
 } & Record<never, any> & Vue>;
-export default _default;
+export default TodoMVC;

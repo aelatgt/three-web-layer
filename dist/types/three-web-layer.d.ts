@@ -46,6 +46,7 @@ export default class WebLayer3D extends THREE.Object3D {
     options: WebLayer3DOptions;
     rootLayer: WebLayer3D;
     private _level;
+    static DEBUG: boolean;
     static LAYER_ATTRIBUTE: string;
     static LAYER_CONTAINER_ATTRIBUTE: string;
     static PIXEL_RATIO_ATTRIBUTE: string;
@@ -141,7 +142,7 @@ export default class WebLayer3D extends THREE.Object3D {
     getLayerForElement(element: Element): WebLayer3D | undefined;
     hitTest(ray: THREE.Ray): {
         layer: WebLayer3D;
-        intersection: import("three/src/core/Raycaster").Intersection;
+        intersection: THREE.Intersection;
         target: HTMLElement;
     } | undefined;
     refresh(forceRasterize?: boolean): void;

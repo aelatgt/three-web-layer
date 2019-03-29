@@ -1,4 +1,4 @@
-import { Object3D, Mesh, MeshBasicMaterial, MeshDepthMaterial, RGBADepthPacking, Vector3, Raycaster, Math as Math$1, Texture, LinearFilter, PlaneGeometry } from 'three';
+import { Object3D, Mesh, MeshBasicMaterial, MeshDepthMaterial, RGBADepthPacking, Vector3, Raycaster, Math as Math$1, VideoTexture, Texture, LinearFilter, PlaneGeometry } from 'three';
 
 /**
  * A collection of shims that provide minimal functionality of the ES6 collections.
@@ -7052,7 +7052,7 @@ class WebLayer3D extends Object3D {
         if (!WebLayer3D._didInstallStyleSheet) {
             const style = document.createElement('style');
             document.head.append(style);
-            addCSSRule(style.sheet, `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}]`, 'transform: none !important;', 0);
+            addCSSRule(style.sheet, `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}] *`, 'transform: none !important;', 0);
             WebLayer3D._didInstallStyleSheet = true;
         }
         this.add(this.content);
@@ -7070,24 +7070,25 @@ class WebLayer3D extends Object3D {
             element.addEventListener('change', this._triggerRefresh, { capture: true });
             // element.addEventListener('focus', this._triggerRefresh, { capture: true })
             element.addEventListener('transitionend', this._triggerRefresh, { capture: true });
+            let target;
             const setLayerNeedsRasterize = (layer) => {
-                layer.needsRasterize = true;
+                if (target.contains(layer.element))
+                    layer.needsRasterize = true;
             };
             this._processMutations = (records) => {
                 if (this._isUpdating)
                     return;
                 for (const record of records) {
                     if (record.type === 'attributes' &&
-                        (record.target.getAttribute(record.attributeName) ===
-                            record.oldValue ||
-                            record.attributeName === WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE))
+                        (record.target.getAttribute(record.attributeName) === record.oldValue))
                         continue;
                     if (record.type === 'characterData' &&
                         record.target.data === record.oldValue)
                         continue;
-                    const target = record.target.nodeType === Node.ELEMENT_NODE
-                        ? record.target
-                        : record.target.parentElement;
+                    target =
+                        record.target.nodeType === Node.ELEMENT_NODE
+                            ? record.target
+                            : record.target.parentElement;
                     if (!target)
                         continue;
                     const layer = this.getLayerForElement(target);
@@ -7122,6 +7123,7 @@ class WebLayer3D extends Object3D {
                         if (!needsRasterize)
                             continue;
                     }
+                    layer.needsRasterize = true;
                     layer.traverseLayers(setLayerNeedsRasterize);
                 }
             };
@@ -7207,17 +7209,45 @@ class WebLayer3D extends Object3D {
         if (window.requestIdleCallback) {
             if (queue.length)
                 window.requestIdleCallback(idleDeadline => {
+                    if (!queue.length)
+                        return;
+                    if (WebLayer3D.DEBUG)
+                        performance.mark('rasterize queue start');
                     while (queue.length && idleDeadline.timeRemaining() > 0) {
+                        if (WebLayer3D.DEBUG)
+                            performance.mark('rasterize start');
                         queue.shift()._rasterize();
+                        if (WebLayer3D.DEBUG)
+                            performance.mark('rasterize end');
+                        if (WebLayer3D.DEBUG)
+                            performance.measure('rasterize', 'rasterize start', 'rasterize end');
                     }
+                    if (WebLayer3D.DEBUG)
+                        performance.mark('rasterize queue end');
+                    if (WebLayer3D.DEBUG)
+                        performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
                 });
         }
         else {
             await null; // wait for render to complete
+            if (!queue.length)
+                return;
             const startTime = performance.now();
+            if (WebLayer3D.DEBUG)
+                performance.mark('rasterize queue start');
             while (queue.length && performance.now() - startTime < 5) {
+                if (WebLayer3D.DEBUG)
+                    performance.mark('rasterize start');
                 queue.shift()._rasterize();
+                if (WebLayer3D.DEBUG)
+                    performance.mark('rasterize end');
+                if (WebLayer3D.DEBUG)
+                    performance.measure('rasterize', 'rasterize start', 'rasterize end');
             }
+            if (WebLayer3D.DEBUG)
+                performance.mark('rasterize queue end');
+            if (WebLayer3D.DEBUG)
+                performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
         }
     }
     /**
@@ -7277,14 +7307,34 @@ class WebLayer3D extends Object3D {
      * @param transition transition function. Default is WebLayer3D.TRANSITION_DEFAULT
      */
     update(alpha = 1, transition = WebLayer3D.TRANSITION_DEFAULT) {
+        if (WebLayer3D.DEBUG)
+            performance.mark('update start');
         alpha = Math.min(alpha, 1);
         this._isUpdating = true;
         this._checkRoot();
         WebLayer3D._updateInteractions(this);
+        if (WebLayer3D.DEBUG)
+            performance.mark('update interactions end');
+        if (WebLayer3D.DEBUG)
+            performance.mark('update refresh start');
         this.refresh();
+        if (WebLayer3D.DEBUG)
+            performance.mark('update refresh end');
+        if (WebLayer3D.DEBUG)
+            performance.mark('update transitions start');
         this.traverseLayers(transition, alpha);
+        if (WebLayer3D.DEBUG)
+            performance.mark('update transitions end');
         this._isUpdating = false;
         WebLayer3D._scheduleRasterizations(this);
+        if (WebLayer3D.DEBUG)
+            performance.mark('update end');
+        if (WebLayer3D.DEBUG)
+            performance.measure('update refresh', 'update refresh start', 'update refresh end');
+        if (WebLayer3D.DEBUG)
+            performance.measure('update transitions', 'update transitions start', 'update transitions end');
+        if (WebLayer3D.DEBUG)
+            performance.measure('update', 'update start', 'update end');
     }
     traverseLayers(each, ...params) {
         each(this, ...params);
@@ -7354,8 +7404,9 @@ class WebLayer3D extends Object3D {
         if (this.needsRasterize || forceRasterize) {
             this.needsRasterize = false;
             this._updateChildLayers();
-            if (this.rootLayer._rasterizationQueue.indexOf(this) === -1)
+            if (this.rootLayer._rasterizationQueue.indexOf(this) === -1) {
                 this.rootLayer._rasterizationQueue.push(this);
+            }
         }
         for (const child of this.children) {
             if (child instanceof WebLayer3D)
@@ -7483,17 +7534,13 @@ class WebLayer3D extends Object3D {
         }
     }
     _disableTransforms(disabled) {
-        let el = this.element;
-        while (el) {
-            if (disabled) {
-                this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
-                el.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');
-            }
-            else {
-                el.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
-                this.rootLayer._mutationObserver.takeRecords();
-            }
-            el = el.parentElement;
+        if (disabled) {
+            this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
+            document.documentElement.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');
+        }
+        else {
+            document.documentElement.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
+            this.rootLayer._mutationObserver.takeRecords();
         }
     }
     _setHoverClasses(hover) {
@@ -7536,8 +7583,8 @@ class WebLayer3D extends Object3D {
     }
     _tryConvertToWebLayer3D(el, level) {
         const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE);
-        if (id !== null) {
-            let child = this.getObjectById(parseInt(id, 10));
+        if (id !== null || el.nodeName === 'video') {
+            let child = this.getObjectById(parseInt(id + '', 10));
             if (!child) {
                 child = new WebLayer3D(el, this.options, this.rootLayer, level);
                 this.add(child);
@@ -7549,11 +7596,18 @@ class WebLayer3D extends Object3D {
     }
     async _rasterize() {
         const element = this.element;
+        const states = this._states;
         const renderFunctions = [];
+        if (element.nodeName === 'video') {
+            const state = states[''][0];
+            state.bounds = getBounds(element);
+            state.texture = state.texture || new VideoTexture(element);
+            return;
+        }
         this._disableTransforms(true);
         this._showChildLayers(false);
-        for (const stateKey in this._states) {
-            const hoverStates = this._states[stateKey];
+        for (const stateKey in states) {
+            const hoverStates = states[stateKey];
             let hoverDepth = this._hoverDepth;
             for (let hover = 0; hover <= hoverDepth; hover++) {
                 const state = hoverStates[hover];
@@ -7604,6 +7658,7 @@ class WebLayer3D extends Object3D {
             render();
     }
 }
+WebLayer3D.DEBUG = false;
 WebLayer3D.LAYER_ATTRIBUTE = 'data-layer';
 WebLayer3D.LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container';
 WebLayer3D.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
