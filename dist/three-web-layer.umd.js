@@ -7084,7 +7084,7 @@
                         return;
                     for (const record of records) {
                         if (record.type === 'attributes' &&
-                            (record.target.getAttribute(record.attributeName) === record.oldValue))
+                            record.target.getAttribute(record.attributeName) === record.oldValue)
                             continue;
                         if (record.type === 'characterData' &&
                             record.target.data === record.oldValue)

@@ -10,10 +10,16 @@ function createXRButton(renderer, options) {
         button.style.right = '20px';
         button.style.width = '100px';
         button.textContent = 'ENTER VR';
-        button.onmouseenter = function () { button.style.opacity = '1.0'; };
-        button.onmouseleave = function () { button.style.opacity = '0.5'; };
+        button.onmouseenter = function () {
+            button.style.opacity = '1.0';
+        };
+        button.onmouseleave = function () {
+            button.style.opacity = '0.5';
+        };
         button.onclick = function () {
-            device.isPresenting ? device.exitPresent() : device.requestPresent([{ source: renderer.domElement }]);
+            device.isPresenting
+                ? device.exitPresent()
+                : device.requestPresent([{ source: renderer.domElement }]);
         };
         renderer.vr.setDevice(device);
         renderer.vr.enabled = false;
@@ -38,11 +44,17 @@ function createXRButton(renderer, options) {
         button.style.right = '20px';
         button.style.width = '100px';
         button.textContent = 'ENTER XR';
-        button.onmouseenter = function () { button.style.opacity = '1.0'; };
-        button.onmouseleave = function () { button.style.opacity = '0.5'; };
+        button.onmouseenter = function () {
+            button.style.opacity = '1.0';
+        };
+        button.onmouseleave = function () {
+            button.style.opacity = '0.5';
+        };
         button.onclick = function () {
             if (currentSession === null) {
-                device.requestSession({ immersive: true, exclusive: true /* DEPRECATED */ }).then(onSessionStarted);
+                device
+                    .requestSession({ immersive: true, exclusive: true /* DEPRECATED */ })
+                    .then(onSessionStarted);
             }
             else {
                 currentSession.end();
@@ -80,11 +92,17 @@ function createXRButton(renderer, options) {
         var button = document.createElement('button');
         button.style.display = 'none';
         stylizeElement(button);
-        navigator.xr.requestDevice().then(function (device) {
-            device.supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
-                .then(function () { showEnterXR(device); })
+        navigator.xr
+            .requestDevice()
+            .then(function (device) {
+            device
+                .supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
+                .then(function () {
+                showEnterXR(device);
+            })
                 .catch(showVRNotFound);
-        }).catch(showVRNotFound);
+        })
+            .catch(showVRNotFound);
         return button;
     }
     else if ('getVRDisplays' in navigator) {
@@ -101,9 +119,11 @@ function createXRButton(renderer, options) {
             button.textContent = event.display.isPresenting ? 'EXIT VR' : 'ENTER VR';
         }, false);
         window.addEventListener('vrdisplayactivate', function (event) {
+            ;
             event.display.requestPresent([{ source: renderer.domElement }]);
         }, false);
-        navigator.getVRDisplays()
+        navigator
+            .getVRDisplays()
             .then(function (displays) {
             if (displays.length > 0) {
                 showEnterVR(displays[0]);
@@ -111,7 +131,8 @@ function createXRButton(renderer, options) {
             else {
                 showVRNotFound();
             }
-        }).catch(showVRNotFound);
+        })
+            .catch(showVRNotFound);
         return button;
     }
     else {
