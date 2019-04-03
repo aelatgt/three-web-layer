@@ -111,7 +111,8 @@
   },
   "dependencies": {
     "@speigg/html2canvas": "^1.0.0-alpha.12-fork.0.0.1",
-    "resize-observer-polyfill": "^1.5.1"
+    "resize-observer-polyfill": "^1.5.1",
+    "stats.js": "^0.17.0"
   },
   "peerDependencies": {
     "three": "^0.103.0"

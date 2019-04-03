@@ -45,18 +45,18 @@ const TodoItem = Vue.extend({
   render(createElement, context) {
     const parent = context.parent as InstanceType<typeof TodoMVC>
     const todo = context.props.todo as Todo
-    return <li key={todo.id} {...context.data} v-show={parent.filteredTodos.includes(todo)} >
+    return <li key={todo.id} v-show={parent.filteredTodos.includes(todo)} >
       <div data-layer>
         <div class="view">
           <input id={"toggle-"+todo.id} class="toggle" type="checkbox" v-model={todo.completed} />
-          <label data-layer for={"toggle-"+todo.id}>{
+          <label data-layer data-layer-states="completed" class={context.data.class} for={"toggle-"+todo.id}>{
             todo.completed ? 
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135" style="padding-right:10px"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="3"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>
             : <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#ededed" stroke-width="3"/></svg>
           }</label>
           <button data-layer data-layer-hover-depth="2" class="destroy" onclick={() => parent.removeTodo(todo)}>x</button>
         </div> 
-        <div data-layer class="item">                       
+        <div data-layer data-layer-states="completed" class={context.data.class}>                       
           <div class="title" onclick={()=>parent.editTodo(todo)}>{ todo.title }</div>
           <input class="edit" type="text"
             spellcheck="false"

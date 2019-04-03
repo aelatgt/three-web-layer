@@ -20,13 +20,15 @@ export function createXRButton(renderer, options?) {
     }
 
     button.onclick = function() {
+      renderer.vr.enabled = !device.isPresenting
       device.isPresenting
         ? device.exitPresent()
-        : device.requestPresent([{ source: renderer.domElement }])
+        : device.requestPresent([{ source: renderer.domElement }]).catch(() => {
+            renderer.vr.enabled = false
+          })
     }
 
     renderer.vr.setDevice(device)
-    renderer.vr.enabled = false
   }
 
   function showEnterXR(device) {
@@ -118,7 +120,6 @@ export function createXRButton(renderer, options?) {
     button.style.display = 'none'
 
     stylizeElement(button)
-
     ;(navigator as any).xr
       .requestDevice()
       .then(function(device) {
