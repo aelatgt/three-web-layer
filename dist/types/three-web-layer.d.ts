@@ -65,29 +65,26 @@ export default class WebLayer3D extends THREE.Object3D {
     private static _clearHover;
     private static _setHover;
     private static _setHoverClass;
-    private static _updateInteraction;
     private static _didInstallStyleSheet;
     element: HTMLElement;
     content: THREE.Object3D;
     mesh: THREE.Mesh;
     depthMaterial: THREE.MeshDepthMaterial;
     childLayers: WebLayer3D[];
-    targetContentPosition: THREE.Vector3;
-    targetContentScale: THREE.Vector3;
+    target: THREE.Object3D;
+    contentTarget: THREE.Object3D;
+    contentTargetOpacity: number;
     cursor: THREE.Object3D;
     needsRasterize: boolean;
     private _lastTargetContentPosition;
     private _lastTargetContentScale;
-    private _isUpdating;
-    private _needsRemoval;
-    private _needsHiding;
     private _hover;
     private _hoverDepth;
     private _states;
     private _pixelRatio;
     private _state;
-    private _raycaster;
-    private _hitIntersections;
+    private _needsRemoval;
+    private _isUpdating;
     private _rasterizationQueue;
     private _mutationObserver?;
     private _resizeObserver?;
@@ -98,6 +95,8 @@ export default class WebLayer3D extends THREE.Object3D {
     private _interactionRays;
     private _triggerRefresh?;
     private _processMutations?;
+    private _raycaster;
+    private _hitIntersections;
     constructor(element: Element, options?: WebLayer3DOptions, rootLayer?: WebLayer3D, _level?: number);
     /**
      * Change the texture state.
@@ -116,7 +115,7 @@ export default class WebLayer3D extends THREE.Object3D {
      * Can only be set on a root WebLayer3D instance.
      * @param rays
      */
-    interactionRays: THREE.Ray[];
+    interactionRays: Array<THREE.Ray | THREE.Object3D>;
     /**
      * Get the hover state
      */
@@ -127,7 +126,6 @@ export default class WebLayer3D extends THREE.Object3D {
     readonly level: number;
     /** If true, this layer needs to be removed from the scene */
     readonly needsRemoval: boolean;
-    readonly needsHiding: boolean;
     /**
      * Update the pose and opacity of this layer (does not rerender the DOM).
      * This should be called each frame, and can only be called on a root WebLayer3D instance.

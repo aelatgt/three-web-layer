@@ -8,6 +8,8 @@ const CanvasRenderer_1 = require("@speigg/html2canvas/dist/npm/renderer/CanvasRe
 const Renderer_1 = require("@speigg/html2canvas/dist/npm/Renderer");
 const ResourceLoader_1 = require("@speigg/html2canvas/dist/npm/ResourceLoader");
 const Font_1 = require("@speigg/html2canvas/dist/npm/Font");
+const scratchVector = new THREE.Vector3();
+const scratchVector2 = new THREE.Vector3();
 /**
  * Transform a DOM tree into 3D layers.
  *
@@ -50,35 +52,35 @@ class WebLayer3D extends THREE.Object3D {
         this._level = _level;
         this.content = new THREE.Object3D();
         this.mesh = new THREE.Mesh(WebLayer3D.GEOMETRY, new THREE.MeshBasicMaterial({
-            depthTest: false,
             transparent: true,
+            alphaTest: 0.001,
             opacity: 0
         }));
         this.depthMaterial = new THREE.MeshDepthMaterial({
             depthPacking: THREE.RGBADepthPacking,
-            alphaTest: 0.1
+            alphaTest: 0.01
         });
         this.childLayers = [];
-        this.targetContentPosition = new THREE.Vector3();
-        this.targetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
+        this.target = new THREE.Object3D();
+        this.contentTarget = new THREE.Object3D();
+        this.contentTargetOpacity = 0;
         this.cursor = new THREE.Object3D();
         this.needsRasterize = true;
         this._lastTargetContentPosition = new THREE.Vector3();
         this._lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
-        this._isUpdating = false; // true while in WebLayer3D#update() function
-        this._needsRemoval = false;
-        this._needsHiding = false;
         this._hover = 0;
         this._hoverDepth = 0;
         this._states = {};
         this._pixelRatio = 1;
         this._state = '';
-        this._raycaster = new THREE.Raycaster();
-        this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
+        this._needsRemoval = false;
         // the following properties are meant to be accessed on the root layer
+        this._isUpdating = false; // true while in WebLayer3D#update() function
         this._rasterizationQueue = [];
         this._meshMap = new WeakMap();
         this._interactionRays = [];
+        this._raycaster = new THREE.Raycaster();
+        this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
         this.element = element;
         this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString());
         this.rootLayer = rootLayer || this;
@@ -93,6 +95,8 @@ class WebLayer3D extends THREE.Object3D {
             WebLayer3D._didInstallStyleSheet = true;
         }
         this.add(this.content);
+        this.add(this.cursor);
+        this.cursor.visible = false;
         this.mesh.visible = false;
         this.mesh['customDepthMaterial'] = this.depthMaterial;
         this.rootLayer._meshMap.set(this.mesh, this);
@@ -105,7 +109,8 @@ class WebLayer3D extends THREE.Object3D {
             };
             element.addEventListener('input', this._triggerRefresh, { capture: true });
             element.addEventListener('change', this._triggerRefresh, { capture: true });
-            // element.addEventListener('focus', this._triggerRefresh, { capture: true })
+            element.addEventListener('focus', this._triggerRefresh, { capture: true });
+            element.addEventListener('blur', this._triggerRefresh, { capture: true });
             element.addEventListener('transitionend', this._triggerRefresh, { capture: true });
             let target;
             const setLayerNeedsRasterize = (layer) => {
@@ -197,28 +202,29 @@ class WebLayer3D extends THREE.Object3D {
             this.options.onLayerCreate(this);
     }
     static transitionLayout(layer, alpha) {
-        layer.content.position.lerp(layer.targetContentPosition, alpha);
-        layer.content.scale.lerp(layer.targetContentScale, alpha);
+        // layer.position.lerp(layer.target.position, alpha)
+        // layer.scale.lerp(layer.target.scale, alpha)
+        // layer.quaternion.slerp(layer.target.quaternion, alpha)
+        layer.content.position.lerp(layer.contentTarget.position, alpha);
+        layer.content.scale.lerp(layer.contentTarget.scale, alpha);
+        layer.content.quaternion.slerp(layer.contentTarget.quaternion, alpha);
     }
     static transitionVisibility(layer, alpha) {
+        const targetOpacity = layer.contentTargetOpacity;
         const material = layer.mesh.material;
-        if (layer.needsRemoval) {
-            if ('opacity' in material && material.opacity > 0.001) {
-                material.opacity = THREE.Math.lerp(material.opacity, 0, alpha);
-                material.needsUpdate = true;
-            }
-            else {
-                if (layer.parent)
-                    layer.parent.remove(layer);
-                layer.dispose();
-            }
+        if ('opacity' in material) {
+            material.opacity = Math.min(THREE.Math.lerp(material.opacity, targetOpacity, alpha), 1);
+            material.needsUpdate = true;
         }
-        else {
-            if ('opacity' in material) {
-                const opacity = !layer.mesh.parent || layer.needsHiding ? 0 : 1;
-                material.opacity = Math.min(THREE.Math.lerp(material.opacity, opacity, alpha), 1);
-                material.needsUpdate = true;
-            }
+        const isHidden = !material.opacity || material.opacity < 0.005;
+        if (isHidden)
+            layer.mesh.visible = false;
+        else
+            layer.mesh.visible = true;
+        if (layer.needsRemoval && isHidden) {
+            if (layer.parent)
+                layer.parent.remove(layer);
+            layer.dispose();
         }
     }
     static _updateInteractions(rootLayer) {
@@ -227,14 +233,18 @@ class WebLayer3D extends THREE.Object3D {
         WebLayer3D._hoverLayers.clear();
         for (const ray of rootLayer._interactionRays) {
             rootLayer._hitIntersections.length = 0;
-            rootLayer._raycaster.ray.copy(ray);
+            if (ray instanceof THREE.Ray)
+                rootLayer._raycaster.ray.copy(ray);
+            else
+                rootLayer._raycaster.ray.set(ray.getWorldPosition(scratchVector), ray.getWorldDirection(scratchVector2));
             rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections);
             for (const intersection of rootLayer._hitIntersections) {
                 const layer = rootLayer._meshMap.get(intersection.object);
-                if (layer && !layer.needsHiding) {
+                if (layer && layer.contentTargetOpacity !== 0) {
                     WebLayer3D._hoverLayers.add(layer);
                     layer._hover = 1;
-                    WebLayer3D._updateInteraction(layer, intersection.point);
+                    layer.cursor.position.copy(intersection.point);
+                    layer.worldToLocal(layer.cursor.position);
                 }
             }
         }
@@ -333,9 +343,6 @@ class WebLayer3D extends THREE.Object3D {
     get needsRemoval() {
         return this._needsRemoval;
     }
-    get needsHiding() {
-        return this._needsHiding;
-    }
     /**
      * Update the pose and opacity of this layer (does not rerender the DOM).
      * This should be called each frame, and can only be called on a root WebLayer3D instance.
@@ -349,27 +356,13 @@ class WebLayer3D extends THREE.Object3D {
         alpha = Math.min(alpha, 1);
         this._isUpdating = true;
         this._checkRoot();
-        WebLayer3D._updateInteractions(this);
-        if (WebLayer3D.DEBUG)
-            performance.mark('update interactions end');
-        if (WebLayer3D.DEBUG)
-            performance.mark('update refresh start');
         this.refresh();
-        if (WebLayer3D.DEBUG)
-            performance.mark('update refresh end');
-        if (WebLayer3D.DEBUG)
-            performance.mark('update transitions start');
+        WebLayer3D._updateInteractions(this);
         this.traverseLayers(transition, alpha);
-        if (WebLayer3D.DEBUG)
-            performance.mark('update transitions end');
         this._isUpdating = false;
         WebLayer3D._scheduleRasterizations(this);
         if (WebLayer3D.DEBUG)
             performance.mark('update end');
-        if (WebLayer3D.DEBUG)
-            performance.measure('update refresh', 'update refresh start', 'update refresh end');
-        if (WebLayer3D.DEBUG)
-            performance.measure('update transitions', 'update transitions start', 'update transitions end');
         if (WebLayer3D.DEBUG)
             performance.measure('update', 'update start', 'update end');
     }
@@ -399,12 +392,14 @@ class WebLayer3D extends THREE.Object3D {
         return this.id === id ? this : this.getObjectById(id);
     }
     hitTest(ray) {
-        this._checkRoot();
-        this._raycaster.ray.copy(ray);
-        this._hitIntersections.length = 0;
-        const intersections = this._raycaster.intersectObject(this, true, this._hitIntersections);
+        const raycaster = this.rootLayer._raycaster;
+        const intersections = this.rootLayer._hitIntersections;
+        const meshMap = this.rootLayer._meshMap;
+        raycaster.ray.copy(ray);
+        intersections.length = 0;
+        raycaster.intersectObject(this, true, intersections);
         for (const intersection of intersections) {
-            const layer = this.rootLayer._meshMap.get(intersection.object);
+            const layer = meshMap.get(intersection.object);
             if (!layer)
                 continue;
             const layerBoundingRect = layer.bounds;
@@ -508,20 +503,22 @@ class WebLayer3D extends THREE.Object3D {
         getBounds(this.element, this.bounds);
     }
     _updateTargetLayout() {
-        this.targetContentPosition.copy(this._lastTargetContentPosition);
-        this.targetContentScale.copy(this._lastTargetContentScale);
+        this.target.position.set(0, 0, 0);
+        this.target.scale.set(1, 1, 1);
+        this.target.quaternion.set(0, 0, 0, 1);
+        this.contentTarget.position.copy(this._lastTargetContentPosition);
+        this.contentTarget.scale.copy(this._lastTargetContentScale);
+        this.contentTarget.quaternion.set(0, 0, 0, 1);
         if (this.needsRemoval) {
-            this._needsHiding = true;
+            this.contentTargetOpacity = 0;
             return;
         }
         const boundingRect = this.bounds;
-        if (boundingRect.width === 0 ||
-            boundingRect.height === 0 ||
-            (this.parent instanceof WebLayer3D && this.parent._needsHiding)) {
-            this._needsHiding = true;
+        if (boundingRect.width === 0 || boundingRect.height === 0) {
+            this.contentTargetOpacity = 0;
             return;
         }
-        this._needsHiding = false;
+        this.contentTargetOpacity = 1;
         const rootBoundingRect = this.rootLayer.bounds;
         const left = boundingRect.left - rootBoundingRect.left;
         const top = boundingRect.top - rootBoundingRect.top;
@@ -532,11 +529,11 @@ class WebLayer3D extends THREE.Object3D {
             const rootOriginY = pixelSize * (rootBoundingRect.height / 2);
             const myLeft = pixelSize * (left + boundingRect.width / 2);
             const myTop = pixelSize * (top + boundingRect.height / 2);
-            this.targetContentPosition.set(rootOriginX + myLeft, rootOriginY - myTop, layerSeparation * this.level);
+            this.contentTarget.position.set(rootOriginX + myLeft, rootOriginY - myTop, layerSeparation * this.level);
         }
-        this.targetContentScale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
-        this._lastTargetContentPosition.copy(this.targetContentPosition);
-        this._lastTargetContentScale.copy(this.targetContentScale);
+        this.contentTarget.scale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
+        this._lastTargetContentPosition.copy(this.contentTarget.position);
+        this._lastTargetContentScale.copy(this.contentTarget.scale);
     }
     _updateMesh() {
         const mesh = this.mesh;
@@ -548,17 +545,11 @@ class WebLayer3D extends THREE.Object3D {
         material.needsUpdate = true;
         this.depthMaterial['map'] = texture;
         this.depthMaterial.needsUpdate = true;
-        if (!this.needsHiding && !mesh.parent) {
+        if (!mesh.parent) {
             this.content.add(mesh);
             this._updateTargetLayout();
-            this.content.position.copy(this.targetContentPosition);
-            this.content.scale.copy(this.targetContentScale);
-        }
-        if (this.needsHiding && mesh.material.opacity < 0.05) {
-            mesh.visible = false;
-        }
-        else {
-            mesh.visible = true;
+            this.content.position.copy(this.contentTarget.position);
+            this.content.scale.copy(this.contentTarget.scale);
         }
         mesh.renderOrder = this.level;
     }
@@ -643,6 +634,7 @@ class WebLayer3D extends THREE.Object3D {
         }
         this._disableTransforms(true);
         this._showChildLayers(false);
+        const classValue = element.className;
         for (const stateKey in states) {
             const hoverStates = states[stateKey];
             let hoverDepth = this._hoverDepth;
@@ -688,6 +680,7 @@ class WebLayer3D extends THREE.Object3D {
                 });
             }
         }
+        element.className = classValue;
         this._showChildLayers(true);
         this._disableTransforms(false);
         const imageStore = await this.rootLayer._resourceLoader.ready();
@@ -712,13 +705,13 @@ WebLayer3D.TRANSITION_DEFAULT = function (layer, alpha = 1) {
 WebLayer3D._hoverLayers = new Set();
 WebLayer3D._clearHover = function (layer) {
     layer._hover = 0;
-    layer.remove(layer.cursor);
 };
 WebLayer3D._setHover = function (layer) {
     layer._hover =
         layer._hover === 0 && layer.parent instanceof WebLayer3D && layer.parent._hover > 0
             ? layer.parent._hover + 1
             : layer._hover;
+    layer.cursor.visible = layer._hover === 1;
 };
 WebLayer3D._setHoverClass = function (element) {
     const hoverLayers = WebLayer3D._hoverLayers;
@@ -734,16 +727,6 @@ WebLayer3D._setHoverClass = function (element) {
     if (!hover && element.classList.contains('hover'))
         element.classList.remove('hover');
     return true;
-};
-WebLayer3D._updateInteraction = function (layer, point) {
-    if (layer.hover === 1) {
-        layer.cursor.position.copy(point);
-        layer.worldToLocal(layer.cursor.position);
-        layer.add(layer.cursor);
-    }
-    else {
-        layer.remove(layer.cursor);
-    }
 };
 WebLayer3D._didInstallStyleSheet = false;
 exports.default = WebLayer3D;

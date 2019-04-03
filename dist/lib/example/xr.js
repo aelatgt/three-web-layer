@@ -17,12 +17,14 @@ function createXRButton(renderer, options) {
             button.style.opacity = '0.5';
         };
         button.onclick = function () {
+            renderer.vr.enabled = !device.isPresenting;
             device.isPresenting
                 ? device.exitPresent()
-                : device.requestPresent([{ source: renderer.domElement }]);
+                : device.requestPresent([{ source: renderer.domElement }]).catch(() => {
+                    renderer.vr.enabled = false;
+                });
         };
         renderer.vr.setDevice(device);
-        renderer.vr.enabled = false;
     }
     function showEnterXR(device) {
         var currentSession = null;
