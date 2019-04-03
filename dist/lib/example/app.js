@@ -75,7 +75,7 @@ gui.add(Controls, 'hoverEffect', true);
 gui.add(Controls, 'shadows', true).onChange(toggleShadows);
 gui.add(Controls, 'layerSeparation', 0.002, 0.2);
 gui.add(Controls, 'lerpSpeed', 0.5, 10);
-gui.add(Controls, 'layout', ['dom', 'custom']);
+// gui.add(Controls, 'layout', ['dom', 'custom'])
 gui.domElement.style.border = '0';
 gui.domElement.style.position = 'fixed';
 gui.domElement.style.right = '0';
