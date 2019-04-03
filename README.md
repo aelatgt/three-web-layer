@@ -69,10 +69,10 @@ function animate() {
     })
 
     // custom layer transition logic 
-    const customTransition = (layer, alpha) => { 
+    rootLayer.update(alpha, (layer, alpha) => { 
         // transition the layout
-        this.content.position.lerp(this.targetContentPosition, alpha)
-        this.content.scale.lerp(this.targetContentScale, alpha)
+        this.content.position.lerp(this.contentTarget.position, alpha)
+        this.content.scale.lerp(this.contentTarget.scale, alpha)
         // transition the visibility
         const material = layer.mesh.material
         if (layer.needsRemoval) {
@@ -85,13 +85,11 @@ function animate() {
             }
         } else {
             if ('opacity' in material && material.opacity < 1) {
-                const opacity = layer.needsHiding ? 0 : 1
-                material.opacity = Math.min(THREE.Math.lerp(material.opacity, 1, alpha), 1)
+                material.opacity = Math.min(THREE.Math.lerp(material.opacity, layer.contentTargetOpacity, alpha), 1)
                 material.needsUpdate = true
             }
         }
-    }
-    rootLayer.update(alpha, customTransition)
+    })
 
 }
 ```
