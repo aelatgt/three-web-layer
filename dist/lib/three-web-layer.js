@@ -143,21 +143,13 @@ class WebLayer3D extends THREE.Object3D {
                         const removedClasses = arraySubtract(oldClasses, currentClasses);
                         let needsRasterize = false;
                         for (const c of removedClasses) {
-                            if (c === 'hover') {
-                                continue;
-                            }
-                            if (layer._states[c]) {
-                                layer.state = '';
+                            if (c === 'hover' || layer._states[c]) {
                                 continue;
                             }
                             needsRasterize = true;
                         }
                         for (const c of addedClasses) {
-                            if (c === 'hover') {
-                                continue;
-                            }
-                            if (layer._states[c]) {
-                                layer.state = c;
+                            if (c === 'hover' || layer._states[c]) {
                                 continue;
                             }
                             needsRasterize = true;
@@ -298,12 +290,9 @@ class WebLayer3D extends THREE.Object3D {
         }
     }
     /**
-     * Change the texture state.
+     * Get the texture state.
      * Note: if a state is not available, the `default` state will be rendered.
      */
-    set state(state) {
-        this._state = state;
-    }
     get state() {
         return this._state;
     }
@@ -473,6 +462,16 @@ class WebLayer3D extends THREE.Object3D {
             .split(/\s+/)
             .filter(Boolean);
         states.push('');
+        // set the current state from classlist
+        const classes = element.classList;
+        let state = '';
+        for (const c of classes) {
+            if (states.indexOf(c) > -1) {
+                state = c;
+                break;
+            }
+        }
+        this._state = state;
         // cleanup unused textures
         for (const stateKey in this._states) {
             if (states.indexOf(stateKey) === -1) {

@@ -99,10 +99,10 @@ export default class WebLayer3D extends THREE.Object3D {
     private _hitIntersections;
     constructor(element: Element, options?: WebLayer3DOptions, rootLayer?: WebLayer3D, _level?: number);
     /**
-     * Change the texture state.
+     * Get the texture state.
      * Note: if a state is not available, the `default` state will be rendered.
      */
-    state: string;
+    readonly state: string;
     readonly texture: THREE.Texture;
     readonly bounds: {
         left: number;
