@@ -45,8 +45,9 @@ const scratchVector2 = new THREE.Vector3()
  *  - `element.dataset.layerStates = 'near far'`
  *
  * Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
- * The texture state can be changed with `layer.setState(state)`, without requiring the DOM to be re-rendered.
- * Setting a state on a parent layer does not affect the state of a child layer.
+ * The texture state can be changed by alternating between the specified classes,
+ * without requiring the DOM to be re-rendered. Setting a state on a parent layer does
+ * not affect the state of a child layer.
  *
  * Every layer has an implicit `hover` state which can be mixed with any other declared state,
  * by using the appropriate CSS selector: `.near.hover` or `.far.hover`. Besides than the

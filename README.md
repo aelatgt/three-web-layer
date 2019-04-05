@@ -111,9 +111,8 @@ Finally, each layer can prerender multipe states specified similarly to CSS clas
  - `<div data-layer data-layer-states="near far"></div>`
  - `element.dataset.layerStates = 'near far'`
 
-Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element. The texture state can then be changed with `layer.setState(state)`, 
-without requiring the DOM to be re-rendered. Setting a state on a parent layer does
-not affect the state of a child layer. 
+Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
+The texture state can be changed by alternating between the specified classes,without requiring the DOM to be re-rendered. Setting a state on a parent layer does not affect the state of a child layer.
 
 Default dimensions: 
 
