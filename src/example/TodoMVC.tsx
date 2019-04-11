@@ -211,7 +211,7 @@ const TodoMVC = Vue.extend({
               })
             }</ul>
         </section>
-        <footer class="footer" v-show={this.todos.length}>
+        <footer data-layer class="footer" v-show={this.todos.length}>
             <span data-layer class="todo-count">
             <strong>{ this.remaining }</strong> { this.$options.filters!.pluralize(this.remaining) } left
             </span>

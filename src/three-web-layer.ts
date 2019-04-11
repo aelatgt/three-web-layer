@@ -8,6 +8,8 @@ import Renderer from '@speigg/html2canvas/dist/npm/Renderer'
 import ResourceLoader from '@speigg/html2canvas/dist/npm/ResourceLoader'
 import { FontMetrics } from '@speigg/html2canvas/dist/npm/Font'
 
+import * as domUtils from './dom-utils'
+
 export interface WebLayer3DOptions {
   pixelRatio?: number
   layerSeparation?: number
@@ -76,9 +78,9 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   static transitionLayout(layer: WebLayer3D, alpha: number) {
-    // layer.position.lerp(layer.target.position, alpha)
-    // layer.scale.lerp(layer.target.scale, alpha)
-    // layer.quaternion.slerp(layer.target.quaternion, alpha)
+    layer.position.lerp(layer.target.position, alpha)
+    layer.scale.lerp(layer.target.scale, alpha)
+    layer.quaternion.slerp(layer.target.quaternion, alpha)
     layer.content.position.lerp(layer.contentTarget.position, alpha)
     layer.content.scale.lerp(layer.contentTarget.scale, alpha)
     layer.content.quaternion.slerp(layer.contentTarget.quaternion, alpha)
@@ -115,17 +117,21 @@ export default class WebLayer3D extends THREE.Object3D {
         )
       rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections)
       for (const intersection of rootLayer._hitIntersections) {
-        const layer = rootLayer._meshMap!.get(intersection.object as any)
+        let layer = rootLayer._meshMap!.get(intersection.object as any)
         if (layer && layer.contentTargetOpacity !== 0) {
-          WebLayer3D._hoverLayers.add(layer)
-          layer._hover = 1
           layer.cursor.position.copy(intersection.point)
           layer.worldToLocal(layer.cursor.position)
+          layer.cursor.visible = true
+          while (layer instanceof WebLayer3D) {
+            WebLayer3D._hoverLayers.add(layer)
+            layer = layer.parent as WebLayer3D
+          }
+          break
         }
       }
     }
     rootLayer.traverseLayers(WebLayer3D._setHover)
-    traverseDOM(rootLayer.element, WebLayer3D._setHoverClass)
+    domUtils.traverseDOM(rootLayer.element, WebLayer3D._setHoverClass)
   }
 
   private static async _scheduleRasterizations(rootLayer: WebLayer3D) {
@@ -165,14 +171,15 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private static _clearHover = function(layer: WebLayer3D) {
     layer._hover = 0
+    layer.cursor.visible = false
   }
 
   private static _setHover = function(layer: WebLayer3D) {
-    layer._hover =
-      layer._hover === 0 && layer.parent instanceof WebLayer3D && layer.parent._hover > 0
-        ? layer.parent._hover + 1
-        : layer._hover
-    layer.cursor.visible = layer._hover === 1
+    layer._hover = WebLayer3D._hoverLayers.has(layer)
+      ? 1
+      : layer.parent instanceof WebLayer3D && layer.parent._hover > 0
+      ? layer.parent._hover + 1
+      : layer._hover
   }
 
   private static _setHoverClass = function(element: HTMLElement) {
@@ -213,8 +220,8 @@ export default class WebLayer3D extends THREE.Object3D {
   cursor = new THREE.Object3D()
   needsRasterize = true
 
-  private _lastTargetContentPosition = new THREE.Vector3()
-  private _lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1)
+  private _lastTargetPosition = new THREE.Vector3()
+  private _lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1)
 
   private _hover = 0
   private _hoverDepth = 0
@@ -263,7 +270,7 @@ export default class WebLayer3D extends THREE.Object3D {
     if (!WebLayer3D._didInstallStyleSheet) {
       const style = document.createElement('style')
       document.head.append(style)
-      addCSSRule(
+      domUtils.addCSSRule(
         style.sheet as CSSStyleSheet,
         `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}] *`,
         'transform: none !important;',
@@ -448,8 +455,8 @@ export default class WebLayer3D extends THREE.Object3D {
     alpha = Math.min(alpha, 1)
     this._isUpdating = true
     this._checkRoot()
-    this.refresh()
     WebLayer3D._updateInteractions(this)
+    this.refresh()
     this.traverseLayers(transition, alpha)
     this._isUpdating = false
     WebLayer3D._scheduleRasterizations(this)
@@ -502,9 +509,9 @@ export default class WebLayer3D extends THREE.Object3D {
       let target = layer.element
       const clientX = intersection.uv!.x * layerBoundingRect.width
       const clientY = (1 - intersection.uv!.y) * layerBoundingRect.height
-      traverseDOM(layer.element, el => {
+      domUtils.traverseDOM(layer.element, el => {
         if (!target.contains(el)) return false
-        const elementBoundingRect = getBounds(el)
+        const elementBoundingRect = domUtils.getBounds(el)
         const offsetLeft = elementBoundingRect.left - layerBoundingRect.left
         const offsetTop = elementBoundingRect.top - layerBoundingRect.top
         const { width, height } = elementBoundingRect
@@ -615,15 +622,15 @@ export default class WebLayer3D extends THREE.Object3D {
   }
 
   private _updateBounds() {
-    getBounds(this.element, this.bounds)
+    domUtils.getBounds(this.element, this.bounds)
   }
 
   private _updateTargetLayout() {
-    this.target.position.set(0, 0, 0)
+    this.target.position.copy(this._lastTargetPosition)
     this.target.scale.set(1, 1, 1)
     this.target.quaternion.set(0, 0, 0, 1)
-    this.contentTarget.position.copy(this._lastTargetContentPosition)
-    this.contentTarget.scale.copy(this._lastTargetContentScale)
+    this.contentTarget.position.set(0, 0, 0)
+    this.contentTarget.scale.copy(this._lastContentTargetScale)
     this.contentTarget.quaternion.set(0, 0, 0, 1)
 
     if (this.needsRemoval) {
@@ -638,23 +645,23 @@ export default class WebLayer3D extends THREE.Object3D {
     }
 
     this.contentTargetOpacity = 1
-    const rootBoundingRect = this.rootLayer.bounds
-    const left = boundingRect.left - rootBoundingRect.left
-    const top = boundingRect.top - rootBoundingRect.top
     const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS
 
-    if (this.rootLayer !== this) {
-      let layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION
+    if (this.parent instanceof WebLayer3D) {
+      const parentBoundingRect = this.parent.bounds
+      const left = boundingRect.left - parentBoundingRect.left
+      const top = boundingRect.top - parentBoundingRect.top
+      const parentOriginX = pixelSize * (-parentBoundingRect.width / 2)
+      const parentOriginY = pixelSize * (parentBoundingRect.height / 2)
 
-      const rootOriginX = pixelSize * (-rootBoundingRect.width / 2)
-      const rootOriginY = pixelSize * (rootBoundingRect.height / 2)
+      let layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION
 
       const myLeft = pixelSize * (left + boundingRect.width / 2)
       const myTop = pixelSize * (top + boundingRect.height / 2)
 
-      this.contentTarget.position.set(
-        rootOriginX + myLeft,
-        rootOriginY - myTop,
+      this.target.position.set(
+        parentOriginX + myLeft,
+        parentOriginY - myTop,
         layerSeparation * this.level
       )
     }
@@ -665,8 +672,8 @@ export default class WebLayer3D extends THREE.Object3D {
       1
     )
 
-    this._lastTargetContentPosition.copy(this.contentTarget.position)
-    this._lastTargetContentScale.copy(this.contentTarget.scale)
+    this._lastTargetPosition.copy(this.target.position)
+    this._lastContentTargetScale.copy(this.contentTarget.scale)
   }
 
   private _updateMesh() {
@@ -740,14 +747,14 @@ export default class WebLayer3D extends THREE.Object3D {
     const oldChildLayers = childLayers.slice()
 
     childLayers.length = 0
-    traverseDOM(element, this._tryConvertToWebLayer3D, this, this.level)
+    domUtils.traverseDOM(element, this._tryConvertToWebLayer3D, this, this.level)
 
     for (const child of oldChildLayers) {
       if (childLayers.indexOf(child) === -1) child._markForRemoval()
     }
   }
 
-  private _tryConvertToWebLayer3D(el: HTMLElement, level) {
+  private _tryConvertToWebLayer3D(el: HTMLElement, level: number) {
     const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE)
     if (id !== null || el.nodeName === 'video') {
       let child = this.getObjectById(parseInt(id + '', 10)) as WebLayer3D
@@ -768,7 +775,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
     if (element.nodeName === 'video') {
       const state = states[''][0]
-      state.bounds = getBounds(element)
+      state.bounds = domUtils.getBounds(element)
       state.texture = state.texture || new THREE.VideoTexture(element as HTMLVideoElement)
       return
     }
@@ -788,7 +795,7 @@ export default class WebLayer3D extends THREE.Object3D {
         if (stateKey) element.classList.add(stateKey)
         this._setHoverClasses(hover)
 
-        const bounds = getBounds(element)
+        const bounds = domUtils.getBounds(element)
         const stack = NodeParser(element, this.rootLayer._resourceLoader, this.rootLayer._logger)
 
         if (stateKey) element.classList.remove(stateKey)
@@ -857,55 +864,6 @@ function ensureElementIsInDocument(element: Element, options?: WebLayer3DOptions
   container.appendChild(element)
   document.documentElement.appendChild(container)
   return element
-}
-
-function traverseDOM(
-  node: Node,
-  each: (node: HTMLElement, level: number) => boolean,
-  bind?: any,
-  level = 0
-) {
-  level++
-  for (let child: Node | null = node.firstChild; child; child = child.nextSibling) {
-    if (child.nodeType === Node.ELEMENT_NODE) {
-      const el = child as HTMLElement
-      if (each.call(bind, el, level)) {
-        traverseDOM(el, each, bind, level)
-      }
-    }
-  }
-}
-
-function getBounds(element: HTMLElement, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
-  const window = element.ownerDocument!.defaultView!
-  let el = element
-  let left = el.offsetLeft
-  let top = el.offsetTop
-  let offsetParent = el.offsetParent
-  while (el && el.nodeType !== Node.DOCUMENT_NODE) {
-    left -= el.scrollLeft
-    top -= el.scrollTop
-    if (el === offsetParent) {
-      const style = window.getComputedStyle(el)
-      left += el.offsetLeft + parseFloat(style.borderLeftWidth!) || 0
-      top += el.offsetTop + parseFloat(style.borderTopWidth!) || 0
-      offsetParent = el.offsetParent
-    }
-    el = el.offsetParent as any
-  }
-  bounds.left = left + window.pageXOffset
-  bounds.top = top + window.pageYOffset
-  bounds.width = element.offsetWidth
-  bounds.height = element.offsetHeight
-  return bounds
-}
-
-function addCSSRule(sheet, selector, rules, index) {
-  if ('insertRule' in sheet) {
-    sheet.insertRule(selector + '{' + rules + '}', index)
-  } else if ('addRule' in sheet) {
-    sheet.addRule(selector, rules, index)
-  }
 }
 
 function arraySubtract<T>(a: T[], b: T[]) {
