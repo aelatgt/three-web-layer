@@ -44,7 +44,7 @@ const interval = setInterval(() => {
 const scene = new THREE.Scene();
 const clock = new THREE.Clock();
 const renderer = (window.renderer = new THREE.WebGLRenderer({ antialias: false }));
-renderer.setClearColor(new THREE.Color(0xcccccc));
+renderer.setClearColor(new THREE.Color('#151513'));
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;
 const camera = (window.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10));
@@ -75,7 +75,7 @@ gui.add(Controls, 'hoverEffect', true);
 gui.add(Controls, 'shadows', true).onChange(toggleShadows);
 gui.add(Controls, 'layerSeparation', 0.002, 0.2);
 gui.add(Controls, 'lerpSpeed', 0.5, 10);
-// gui.add(Controls, 'layout', ['dom', 'custom'])
+gui.add(Controls, 'layout', ['dom', 'custom']);
 gui.domElement.style.border = '0';
 gui.domElement.style.position = 'fixed';
 gui.domElement.style.right = '0';
@@ -307,18 +307,18 @@ function animate() {
     // update our WebLayer3D heirarchy
     // important: update interaction rays first!
     todoLayer.update(lerpValue, (layer, alpha) => {
-        layer.contentTarget.position.z = Controls.layerSeparation * layer.level;
+        layer.target.position.z = Controls.layerSeparation * layer.level;
         if (layer.element.matches('.todo-list li *') && layer.contentTargetOpacity === 0) {
             if (!layer.element.matches('.destroy'))
-                layer.contentTarget.position.y = 0;
-            layer.contentTarget.scale.y = 0.001;
+                layer.target.position.y = 0;
+            layer.target.scale.y = 0.001;
         }
         if (layer.element.matches('.destroy')) {
-            layer.content.position.copy(layer.contentTarget.position);
+            layer.position.copy(layer.target.position);
         }
         if (Controls.hoverEffect) {
             if (layer.hover === 1 &&
-                layer.level > 1 &&
+                layer.level > 2 &&
                 !layer.element.matches('h1') &&
                 !layer.element.matches('.todo-count')) {
                 layer.contentTarget.position.z += Controls.layerSeparation * 0.3;
@@ -330,8 +330,14 @@ function animate() {
                 layer.contentTargetOpacity = 0;
                 const h1Layer = layer.getLayerForQuery('h1');
                 const infoLayer = layer.getLayerForQuery('.info');
-                h1Layer.contentTarget.position.set(-0.4, 0.1, 0);
-                infoLayer.target.position.set(-0.4, 0.4, 0);
+                const mainLayer = layer.getLayerForQuery('.todoapp');
+                const footerLayer = layer.getLayerForQuery('.footer');
+                h1Layer.target.position.set(-0.4, 0.05, 0);
+                infoLayer.target.position.set(-0.2, -0.05, 0);
+                mainLayer.target.position.set(0.2, 0, 0);
+                mainLayer.contentTargetOpacity = 0;
+                footerLayer.target.position.set(-0.2, -0.2, 0);
+                footerLayer.target.scale.set(1.5, 1.5, 1.5);
             }
         }
         three_web_layer_1.default.TRANSITION_DEFAULT(layer, alpha);

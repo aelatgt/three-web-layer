@@ -184,7 +184,7 @@ const TodoMVC = vue_1.default.extend({
             return <todo-item class={`todo ${classes.join(' ')}`} todo={todo}/>;
         })}</ul>
         </section>
-        <footer class="footer" v-show={this.todos.length}>
+        <footer data-layer class="footer" v-show={this.todos.length}>
             <span data-layer class="todo-count">
             <strong>{this.remaining}</strong> {this.$options.filters.pluralize(this.remaining)} left
             </span>

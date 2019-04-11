@@ -6975,6 +6975,49 @@
     var ResourceLoader = unwrapExports(ResourceLoader_1);
     var ResourceLoader_2 = ResourceLoader_1.ResourceStore;
 
+    function traverseDOM(node, each, bind, level = 0) {
+        level++;
+        for (let child = node.firstChild; child; child = child.nextSibling) {
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                const el = child;
+                if (each.call(bind, el, level)) {
+                    traverseDOM(el, each, bind, level);
+                }
+            }
+        }
+    }
+    function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+        const window = element.ownerDocument.defaultView;
+        let el = element;
+        let left = el.offsetLeft;
+        let top = el.offsetTop;
+        let offsetParent = el.offsetParent;
+        while (el && el.nodeType !== Node.DOCUMENT_NODE) {
+            left -= el.scrollLeft;
+            top -= el.scrollTop;
+            if (el === offsetParent) {
+                const style = window.getComputedStyle(el);
+                left += el.offsetLeft + parseFloat(style.borderLeftWidth) || 0;
+                top += el.offsetTop + parseFloat(style.borderTopWidth) || 0;
+                offsetParent = el.offsetParent;
+            }
+            el = el.offsetParent;
+        }
+        bounds.left = left + window.pageXOffset;
+        bounds.top = top + window.pageYOffset;
+        bounds.width = element.offsetWidth;
+        bounds.height = element.offsetHeight;
+        return bounds;
+    }
+    function addCSSRule(sheet, selector, rules, index) {
+        if ('insertRule' in sheet) {
+            sheet.insertRule(selector + '{' + rules + '}', index);
+        }
+        else if ('addRule' in sheet) {
+            sheet.addRule(selector, rules, index);
+        }
+    }
+
     const scratchVector = new THREE.Vector3();
     const scratchVector2 = new THREE.Vector3();
     /**
@@ -7000,8 +7043,9 @@
      *  - `element.dataset.layerStates = 'near far'`
      *
      * Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
-     * The texture state can be changed with `layer.setState(state)`, without requiring the DOM to be re-rendered.
-     * Setting a state on a parent layer does not affect the state of a child layer.
+     * The texture state can be changed by alternating between the specified classes,
+     * without requiring the DOM to be re-rendered. Setting a state on a parent layer does
+     * not affect the state of a child layer.
      *
      * Every layer has an implicit `hover` state which can be mixed with any other declared state,
      * by using the appropriate CSS selector: `.near.hover` or `.far.hover`. Besides than the
@@ -7033,8 +7077,8 @@
             this.contentTargetOpacity = 0;
             this.cursor = new THREE.Object3D();
             this.needsRasterize = true;
-            this._lastTargetContentPosition = new THREE.Vector3();
-            this._lastTargetContentScale = new THREE.Vector3(0.1, 0.1, 0.1);
+            this._lastTargetPosition = new THREE.Vector3();
+            this._lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1);
             this._hover = 0;
             this._hoverDepth = 0;
             this._states = {};
@@ -7161,9 +7205,9 @@
                 this.options.onLayerCreate(this);
         }
         static transitionLayout(layer, alpha) {
-            // layer.position.lerp(layer.target.position, alpha)
-            // layer.scale.lerp(layer.target.scale, alpha)
-            // layer.quaternion.slerp(layer.target.quaternion, alpha)
+            layer.position.lerp(layer.target.position, alpha);
+            layer.scale.lerp(layer.target.scale, alpha);
+            layer.quaternion.slerp(layer.target.quaternion, alpha);
             layer.content.position.lerp(layer.contentTarget.position, alpha);
             layer.content.scale.lerp(layer.contentTarget.scale, alpha);
             layer.content.quaternion.slerp(layer.contentTarget.quaternion, alpha);
@@ -7198,12 +7242,16 @@
                     rootLayer._raycaster.ray.set(ray.getWorldPosition(scratchVector), ray.getWorldDirection(scratchVector2));
                 rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections);
                 for (const intersection of rootLayer._hitIntersections) {
-                    const layer = rootLayer._meshMap.get(intersection.object);
+                    let layer = rootLayer._meshMap.get(intersection.object);
                     if (layer && layer.contentTargetOpacity !== 0) {
-                        WebLayer3D._hoverLayers.add(layer);
-                        layer._hover = 1;
                         layer.cursor.position.copy(intersection.point);
                         layer.worldToLocal(layer.cursor.position);
+                        layer.cursor.visible = true;
+                        while (layer instanceof WebLayer3D) {
+                            WebLayer3D._hoverLayers.add(layer);
+                            layer = layer.parent;
+                        }
+                        break;
                     }
                 }
             }
@@ -7312,8 +7360,8 @@
             alpha = Math.min(alpha, 1);
             this._isUpdating = true;
             this._checkRoot();
-            this.refresh();
             WebLayer3D._updateInteractions(this);
+            this.refresh();
             this.traverseLayers(transition, alpha);
             this._isUpdating = false;
             WebLayer3D._scheduleRasterizations(this);
@@ -7469,11 +7517,11 @@
             getBounds(this.element, this.bounds);
         }
         _updateTargetLayout() {
-            this.target.position.set(0, 0, 0);
+            this.target.position.copy(this._lastTargetPosition);
             this.target.scale.set(1, 1, 1);
             this.target.quaternion.set(0, 0, 0, 1);
-            this.contentTarget.position.copy(this._lastTargetContentPosition);
-            this.contentTarget.scale.copy(this._lastTargetContentScale);
+            this.contentTarget.position.set(0, 0, 0);
+            this.contentTarget.scale.copy(this._lastContentTargetScale);
             this.contentTarget.quaternion.set(0, 0, 0, 1);
             if (this.needsRemoval) {
                 this.contentTargetOpacity = 0;
@@ -7485,21 +7533,21 @@
                 return;
             }
             this.contentTargetOpacity = 1;
-            const rootBoundingRect = this.rootLayer.bounds;
-            const left = boundingRect.left - rootBoundingRect.left;
-            const top = boundingRect.top - rootBoundingRect.top;
             const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS;
-            if (this.rootLayer !== this) {
+            if (this.parent instanceof WebLayer3D) {
+                const parentBoundingRect = this.parent.bounds;
+                const left = boundingRect.left - parentBoundingRect.left;
+                const top = boundingRect.top - parentBoundingRect.top;
+                const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
+                const parentOriginY = pixelSize * (parentBoundingRect.height / 2);
                 let layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
-                const rootOriginX = pixelSize * (-rootBoundingRect.width / 2);
-                const rootOriginY = pixelSize * (rootBoundingRect.height / 2);
                 const myLeft = pixelSize * (left + boundingRect.width / 2);
                 const myTop = pixelSize * (top + boundingRect.height / 2);
-                this.contentTarget.position.set(rootOriginX + myLeft, rootOriginY - myTop, layerSeparation * this.level);
+                this.target.position.set(parentOriginX + myLeft, parentOriginY - myTop, layerSeparation * this.level);
             }
             this.contentTarget.scale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
-            this._lastTargetContentPosition.copy(this.contentTarget.position);
-            this._lastTargetContentScale.copy(this.contentTarget.scale);
+            this._lastTargetPosition.copy(this.target.position);
+            this._lastContentTargetScale.copy(this.contentTarget.scale);
         }
         _updateMesh() {
             const mesh = this.mesh;
@@ -7671,13 +7719,14 @@
     WebLayer3D._hoverLayers = new Set();
     WebLayer3D._clearHover = function (layer) {
         layer._hover = 0;
+        layer.cursor.visible = false;
     };
     WebLayer3D._setHover = function (layer) {
-        layer._hover =
-            layer._hover === 0 && layer.parent instanceof WebLayer3D && layer.parent._hover > 0
+        layer._hover = WebLayer3D._hoverLayers.has(layer)
+            ? 1
+            : layer.parent instanceof WebLayer3D && layer.parent._hover > 0
                 ? layer.parent._hover + 1
                 : layer._hover;
-        layer.cursor.visible = layer._hover === 1;
     };
     WebLayer3D._setHoverClass = function (element) {
         const hoverLayers = WebLayer3D._hoverLayers;
@@ -7714,48 +7763,6 @@
         container.appendChild(element);
         document.documentElement.appendChild(container);
         return element;
-    }
-    function traverseDOM(node, each, bind, level = 0) {
-        level++;
-        for (let child = node.firstChild; child; child = child.nextSibling) {
-            if (child.nodeType === Node.ELEMENT_NODE) {
-                const el = child;
-                if (each.call(bind, el, level)) {
-                    traverseDOM(el, each, bind, level);
-                }
-            }
-        }
-    }
-    function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
-        const window = element.ownerDocument.defaultView;
-        let el = element;
-        let left = el.offsetLeft;
-        let top = el.offsetTop;
-        let offsetParent = el.offsetParent;
-        while (el && el.nodeType !== Node.DOCUMENT_NODE) {
-            left -= el.scrollLeft;
-            top -= el.scrollTop;
-            if (el === offsetParent) {
-                const style = window.getComputedStyle(el);
-                left += el.offsetLeft + parseFloat(style.borderLeftWidth) || 0;
-                top += el.offsetTop + parseFloat(style.borderTopWidth) || 0;
-                offsetParent = el.offsetParent;
-            }
-            el = el.offsetParent;
-        }
-        bounds.left = left + window.pageXOffset;
-        bounds.top = top + window.pageYOffset;
-        bounds.width = element.offsetWidth;
-        bounds.height = element.offsetHeight;
-        return bounds;
-    }
-    function addCSSRule(sheet, selector, rules, index$$1) {
-        if ('insertRule' in sheet) {
-            sheet.insertRule(selector + '{' + rules + '}', index$$1);
-        }
-        else if ('addRule' in sheet) {
-            sheet.addRule(selector, rules, index$$1);
-        }
     }
     function arraySubtract(a, b) {
         const result = [];
