@@ -24,6 +24,8 @@ export type WebLayerHit = ReturnType<typeof WebLayer3D.prototype.hitTest> & {}
 const scratchVector = new THREE.Vector3()
 const scratchVector2 = new THREE.Vector3()
 
+const ZERO_BOUNDS = { top: 0, left: 0, width: 0, height: 0 }
+
 /**
  * Transform a DOM tree into 3D layers.
  *
@@ -219,6 +221,7 @@ export default class WebLayer3D extends THREE.Object3D {
   contentTargetOpacity = 0
   cursor = new THREE.Object3D()
   needsRasterize = true
+  useDOMLayout = false
 
   private _lastTargetPosition = new THREE.Vector3()
   private _lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1)
@@ -287,6 +290,7 @@ export default class WebLayer3D extends THREE.Object3D {
     this.rootLayer._meshMap!.set(this.mesh, this)
 
     if (this.rootLayer === this) {
+      this.useDOMLayout = true
       this._triggerRefresh = (e: Event) => {
         const layer = this.getLayerForElement(e.target as any)!
         if (layer) {
@@ -647,8 +651,9 @@ export default class WebLayer3D extends THREE.Object3D {
     this.contentTargetOpacity = 1
     const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS
 
-    if (this.parent instanceof WebLayer3D) {
-      const parentBoundingRect = this.parent.bounds
+    if (this.useDOMLayout) {
+      const parentBoundingRect =
+        this.parent instanceof WebLayer3D ? this.parent.bounds : ZERO_BOUNDS
       const left = boundingRect.left - parentBoundingRect.left
       const top = boundingRect.top - parentBoundingRect.top
       const parentOriginX = pixelSize * (-parentBoundingRect.width / 2)
