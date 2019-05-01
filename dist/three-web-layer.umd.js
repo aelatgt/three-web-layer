@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('three')) :
     typeof define === 'function' && define.amd ? define(['three'], factory) :
-    (global.threeWebLayer = factory(global.THREE));
+    (global.WebLayer3D = factory(global.THREE));
 }(this, (function (THREE) { 'use strict';
 
     /**
