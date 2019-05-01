@@ -221,7 +221,7 @@ export default class WebLayer3D extends THREE.Object3D {
   contentTargetOpacity = 0
   cursor = new THREE.Object3D()
   needsRasterize = true
-  useDOMLayout = false
+  useDOMLayout = true
 
   private _lastTargetPosition = new THREE.Vector3()
   private _lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1)
@@ -290,7 +290,7 @@ export default class WebLayer3D extends THREE.Object3D {
     this.rootLayer._meshMap!.set(this.mesh, this)
 
     if (this.rootLayer === this) {
-      this.useDOMLayout = true
+      this.useDOMLayout = false
       this._triggerRefresh = (e: Event) => {
         const layer = this.getLayerForElement(e.target as any)!
         if (layer) {
