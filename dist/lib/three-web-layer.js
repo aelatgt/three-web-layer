@@ -69,7 +69,7 @@ class WebLayer3D extends THREE.Object3D {
         this.contentTargetOpacity = 0;
         this.cursor = new THREE.Object3D();
         this.needsRasterize = true;
-        this.useDOMLayout = false;
+        this.useDOMLayout = true;
         this._lastTargetPosition = new THREE.Vector3();
         this._lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1);
         this._hover = 0;
@@ -105,7 +105,7 @@ class WebLayer3D extends THREE.Object3D {
         this.mesh['customDepthMaterial'] = this.depthMaterial;
         this.rootLayer._meshMap.set(this.mesh, this);
         if (this.rootLayer === this) {
-            this.useDOMLayout = true;
+            this.useDOMLayout = false;
             this._triggerRefresh = (e) => {
                 const layer = this.getLayerForElement(e.target);
                 if (layer) {
