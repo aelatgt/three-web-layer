@@ -11,6 +11,7 @@ const Font_1 = require("@speigg/html2canvas/dist/npm/Font");
 const domUtils = require("./dom-utils");
 const scratchVector = new THREE.Vector3();
 const scratchVector2 = new THREE.Vector3();
+const ZERO_BOUNDS = { top: 0, left: 0, width: 0, height: 0 };
 /**
  * Transform a DOM tree into 3D layers.
  *
@@ -68,6 +69,7 @@ class WebLayer3D extends THREE.Object3D {
         this.contentTargetOpacity = 0;
         this.cursor = new THREE.Object3D();
         this.needsRasterize = true;
+        this.useDOMLayout = false;
         this._lastTargetPosition = new THREE.Vector3();
         this._lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1);
         this._hover = 0;
@@ -103,6 +105,7 @@ class WebLayer3D extends THREE.Object3D {
         this.mesh['customDepthMaterial'] = this.depthMaterial;
         this.rootLayer._meshMap.set(this.mesh, this);
         if (this.rootLayer === this) {
+            this.useDOMLayout = true;
             this._triggerRefresh = (e) => {
                 const layer = this.getLayerForElement(e.target);
                 if (layer) {
@@ -525,8 +528,8 @@ class WebLayer3D extends THREE.Object3D {
         }
         this.contentTargetOpacity = 1;
         const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS;
-        if (this.parent instanceof WebLayer3D) {
-            const parentBoundingRect = this.parent.bounds;
+        if (this.useDOMLayout) {
+            const parentBoundingRect = this.parent instanceof WebLayer3D ? this.parent.bounds : ZERO_BOUNDS;
             const left = boundingRect.left - parentBoundingRect.left;
             const top = boundingRect.top - parentBoundingRect.top;
             const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);

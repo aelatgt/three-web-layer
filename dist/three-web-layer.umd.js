@@ -1246,9 +1246,6 @@
 
             this.type = value.substr(value.length - 1) === '%' ? LENGTH_TYPE.PERCENTAGE : LENGTH_TYPE.PX;
             var parsedValue = parseFloat(value);
-            if (process.env.NODE_ENV !== 'production' && isNaN(parsedValue)) {
-                console.error('Invalid value given for Length: "' + value + '"');
-            }
             this.value = isNaN(parsedValue) ? 0 : parsedValue;
         }
 
@@ -1352,14 +1349,6 @@
         this.type = Path.PATH.VECTOR;
         this.x = x;
         this.y = y;
-        if (process.env.NODE_ENV !== 'production') {
-            if (isNaN(x)) {
-                console.error('Invalid x value given for Vector');
-            }
-            if (isNaN(y)) {
-                console.error('Invalid y value given for Vector');
-            }
-        }
     };
 
     exports.default = Vector;
@@ -1498,7 +1487,7 @@
         var documentElement = document.documentElement;
 
         if (!body || !documentElement) {
-            throw new Error(process.env.NODE_ENV !== 'production' ? 'Unable to get document size' : '');
+            throw new Error('');
         }
         var width = Math.max(Math.max(body.scrollWidth, documentElement.scrollWidth), Math.max(body.offsetWidth, documentElement.offsetWidth), Math.max(body.clientWidth, documentElement.clientWidth));
 
@@ -1874,10 +1863,6 @@
                 return BACKGROUND_REPEAT.REPEAT_Y;
             case 'repeat':
                 return BACKGROUND_REPEAT.REPEAT;
-        }
-
-        if (process.env.NODE_ENV !== 'production') {
-            console.error('Invalid background-repeat value "' + backgroundRepeat + '"');
         }
 
         return BACKGROUND_REPEAT.REPEAT;
@@ -4499,17 +4484,6 @@
         this.x = x;
         this.y = y;
         this.radius = radius;
-        if (process.env.NODE_ENV !== 'production') {
-            if (isNaN(x)) {
-                console.error('Invalid x value given for Circle');
-            }
-            if (isNaN(y)) {
-                console.error('Invalid y value given for Circle');
-            }
-            if (isNaN(radius)) {
-                console.error('Invalid radius value given for Circle');
-            }
-        }
     };
 
     exports.default = Circle;
@@ -5117,12 +5091,6 @@
             this.image = getImage(node, resourceLoader);
             this.bounds = IS_INPUT ? (0, Input.reformatInputBounds)((0, Bounds_1.parseBounds)(node, scrollX, scrollY)) : (0, Bounds_1.parseBounds)(node, scrollX, scrollY);
             this.curvedBounds = (0, Bounds_1.parseBoundCurves)(this.bounds, this.style.border, this.style.borderRadius);
-
-            if (process.env.NODE_ENV !== 'production') {
-                this.name = '' + node.tagName.toLowerCase() + (node.id ? '#' + node.id : '') + node.className.toString().split(' ').map(function (s) {
-                    return s.length ? '.' + s : '';
-                }).join('');
-            }
         }
 
         _createClass(NodeContainer, [{
@@ -5296,9 +5264,6 @@
     function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
     var NodeParser = exports.NodeParser = function NodeParser(node, resourceLoader, logger) {
-        if (process.env.NODE_ENV !== 'production') {
-            logger.log('Starting node parsing');
-        }
 
         var index = 0;
 
@@ -5307,19 +5272,12 @@
 
         parseNodeTree(node, container, stack, resourceLoader, index);
 
-        if (process.env.NODE_ENV !== 'production') {
-            logger.log('Finished parsing node tree');
-        }
-
         return stack;
     };
 
     var IGNORED_NODE_NAMES = ['SCRIPT', 'HEAD', 'TITLE', 'OBJECT', 'BR', 'OPTION'];
 
     var parseNodeTree = function parseNodeTree(node, parent, stack, resourceLoader, index) {
-        if (process.env.NODE_ENV !== 'production' && index > 50000) {
-            throw new Error('Recursion error while parsing node tree');
-        }
 
         for (var childNode = node.firstChild, nextNode; childNode; childNode = nextNode) {
             nextNode = childNode.nextSibling;
@@ -5749,7 +5707,7 @@
 
                 var body = this._document.body;
                 if (!body) {
-                    throw new Error(process.env.NODE_ENV !== 'production' ? 'No document found for font metrics' : '');
+                    throw new Error('');
                 }
 
                 container.style.visibility = 'hidden';
@@ -6549,19 +6507,12 @@
         }, {
             key: 'render',
             value: function render(stack) {
-                var _this5 = this;
 
                 if (this.options.backgroundColor) {
                     this.target.rectangle(this.options.x, this.options.y, this.options.width, this.options.height, this.options.backgroundColor);
                 }
                 this.renderStack(stack);
                 var target = this.target.getTarget();
-                if (process.env.NODE_ENV !== 'production') {
-                    return target.then(function (output) {
-                        _this5.options.logger.log('Render completed');
-                        return output;
-                    });
-                }
                 return target;
             }
         }]);
@@ -6644,7 +6595,7 @@
 
     var Proxy = exports.Proxy = function Proxy(src, options) {
         if (!options.proxy) {
-            return Promise.reject(process.env.NODE_ENV !== 'production' ? 'No proxy defined' : null);
+            return Promise.reject(null);
         }
         var proxy = options.proxy;
 
@@ -6669,7 +6620,7 @@
                             reader.readAsDataURL(xhr.response);
                         }
                     } else {
-                        reject(process.env.NODE_ENV !== 'production' ? 'Failed to proxy resource ' + src.substring(0, 256) + ' with status code ' + xhr.status : '');
+                        reject('');
                     }
                 } else {
                     resolve(xhr.responseText);
@@ -6687,7 +6638,7 @@
                 var timeout = options.imageTimeout;
                 xhr.timeout = timeout;
                 xhr.ontimeout = function () {
-                    return reject(process.env.NODE_ENV !== 'production' ? 'Timed out (' + timeout + 'ms) proxying ' + src.substring(0, 256) : '');
+                    return reject('');
                 };
             }
 
@@ -6807,7 +6758,7 @@
                         var timeout = _this3.options.imageTimeout;
                         xhr.timeout = timeout;
                         xhr.ontimeout = function () {
-                            return reject(process.env.NODE_ENV !== 'production' ? 'Timed out (' + timeout + 'ms) fetching ' + src.substring(0, 256) : '');
+                            return reject('');
                         };
                     }
                     xhr.open('GET', src, true);
@@ -6835,10 +6786,6 @@
             value: function addImage(key, src, useCORS) {
                 var _this4 = this;
 
-                if (process.env.NODE_ENV !== 'production') {
-                    this.logger.log('Added image ' + key.substring(0, 256));
-                }
-
                 var imageLoadHandler = function imageLoadHandler(supportsDataImages) {
                     return new Promise(function (resolve, reject) {
                         var img = new Image();
@@ -6861,7 +6808,7 @@
                         if (_this4.options.imageTimeout) {
                             var timeout = _this4.options.imageTimeout;
                             setTimeout(function () {
-                                return reject(process.env.NODE_ENV !== 'production' ? 'Timed out (' + timeout + 'ms) fetching ' + src.substring(0, 256) : '');
+                                return reject('');
                             }, timeout);
                         }
                     });
@@ -6892,16 +6839,10 @@
                 var keys = Object.keys(this.cache);
                 var values = keys.map(function (str) {
                     return _this5.cache[str].catch(function (e) {
-                        if (process.env.NODE_ENV !== 'production') {
-                            _this5.logger.log('Unable to load image', e);
-                        }
                         return null;
                     });
                 });
                 return Promise.all(values).then(function (images) {
-                    if (process.env.NODE_ENV !== 'production') {
-                        _this5.logger.log('Finished loading ' + images.length + ' images', images);
-                    }
                     return new ResourceStore(keys, images);
                 });
             }
@@ -6965,7 +6906,7 @@
             }
             if (timeout) {
                 setTimeout(function () {
-                    return reject(process.env.NODE_ENV !== 'production' ? 'Timed out (' + timeout + 'ms) loading image' : '');
+                    return reject('');
                 }, timeout);
             }
         });
@@ -7020,6 +6961,7 @@
 
     const scratchVector = new THREE.Vector3();
     const scratchVector2 = new THREE.Vector3();
+    const ZERO_BOUNDS = { top: 0, left: 0, width: 0, height: 0 };
     /**
      * Transform a DOM tree into 3D layers.
      *
@@ -7077,6 +7019,7 @@
             this.contentTargetOpacity = 0;
             this.cursor = new THREE.Object3D();
             this.needsRasterize = true;
+            this.useDOMLayout = false;
             this._lastTargetPosition = new THREE.Vector3();
             this._lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1);
             this._hover = 0;
@@ -7112,6 +7055,7 @@
             this.mesh['customDepthMaterial'] = this.depthMaterial;
             this.rootLayer._meshMap.set(this.mesh, this);
             if (this.rootLayer === this) {
+                this.useDOMLayout = true;
                 this._triggerRefresh = (e) => {
                     const layer = this.getLayerForElement(e.target);
                     if (layer) {
@@ -7534,8 +7478,8 @@
             }
             this.contentTargetOpacity = 1;
             const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS;
-            if (this.parent instanceof WebLayer3D) {
-                const parentBoundingRect = this.parent.bounds;
+            if (this.useDOMLayout) {
+                const parentBoundingRect = this.parent instanceof WebLayer3D ? this.parent.bounds : ZERO_BOUNDS;
                 const left = boundingRect.left - parentBoundingRect.left;
                 const top = boundingRect.top - parentBoundingRect.top;
                 const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);

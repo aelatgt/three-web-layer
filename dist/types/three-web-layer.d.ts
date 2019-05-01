@@ -77,6 +77,7 @@ export default class WebLayer3D extends THREE.Object3D {
     contentTargetOpacity: number;
     cursor: THREE.Object3D;
     needsRasterize: boolean;
+    useDOMLayout: boolean;
     private _lastTargetPosition;
     private _lastContentTargetScale;
     private _hover;
