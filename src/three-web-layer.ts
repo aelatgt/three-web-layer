@@ -782,7 +782,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private _tryConvertToWebLayer3D(el: HTMLElement, level: number) {
     const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE)
-    if (id !== null || el.nodeName === 'video') {
+    if (id !== null || el.nodeName === 'VIDEO') {
       let child = this.getObjectById(parseInt(id + '', 10)) as WebLayer3D
       if (!child) {
         child = new WebLayer3D(el, this.options, this.rootLayer, level)
