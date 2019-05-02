@@ -7588,7 +7588,7 @@
         }
         _tryConvertToWebLayer3D(el, level) {
             const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE);
-            if (id !== null || el.nodeName === 'video') {
+            if (id !== null || el.nodeName === 'VIDEO') {
                 let child = this.getObjectById(parseInt(id + '', 10));
                 if (!child) {
                     child = new WebLayer3D(el, this.options, this.rootLayer, level);
