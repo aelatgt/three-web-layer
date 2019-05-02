@@ -7603,7 +7603,7 @@
             const element = this.element;
             const states = this._states;
             const renderFunctions = [];
-            if (element.nodeName === 'video') {
+            if (element.nodeName === 'VIDEO') {
                 const state = states[''][0];
                 state.bounds = getBounds(element);
                 state.texture = state.texture || new THREE.VideoTexture(element);
