@@ -55,8 +55,9 @@ export default class WebLayer3D extends THREE.Object3D {
     static HOVER_DEPTH_ATTRIBUTE: string;
     private static DISABLE_TRANSFORMS_ATTRIBUTE;
     static DEFAULT_LAYER_SEPARATION: number;
-    static DEFAULT_PIXEL_DIMENSIONS: number;
+    static PIXEL_SIZE: number;
     static GEOMETRY: THREE.Geometry;
+    static computeNaturalDistance(projectionMatrix: THREE.Matrix4): number;
     static TRANSITION_DEFAULT: (layer: WebLayer3D, alpha?: number) => void;
     static transitionLayout(layer: WebLayer3D, alpha: number): void;
     static transitionVisibility(layer: WebLayer3D, alpha: number): void;
@@ -107,6 +108,18 @@ export default class WebLayer3D extends THREE.Object3D {
     readonly state: string;
     readonly texture: THREE.Texture;
     readonly bounds: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
+    _normalizedBounds: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
+    readonly normalizedBounds: {
         left: number;
         top: number;
         width: number;

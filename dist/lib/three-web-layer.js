@@ -85,6 +85,7 @@ class WebLayer3D extends THREE.Object3D {
         this._interactionRays = [];
         this._raycaster = new THREE.Raycaster();
         this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
+        this._normalizedBounds = { left: 0, top: 0, width: 0, height: 0 };
         this.element = element;
         this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString());
         this.rootLayer = rootLayer || this;
@@ -197,6 +198,13 @@ class WebLayer3D extends THREE.Object3D {
         this._resizeObserver.observe(element);
         if (this.options.onLayerCreate)
             this.options.onLayerCreate(this);
+    }
+    static computeNaturalDistance(projectionMatrix) {
+        const windowWidthPixels = document.documentElement.offsetWidth;
+        const windowWidth = WebLayer3D.PIXEL_SIZE * windowWidthPixels;
+        const horizontalFOV = getFovs(projectionMatrix).horizontal;
+        const naturalDistance = windowWidth / 2 / Math.tan(horizontalFOV / 2);
+        return naturalDistance;
     }
     static transitionLayout(layer, alpha) {
         layer.position.lerp(layer.target.position, alpha);
@@ -312,6 +320,17 @@ class WebLayer3D extends THREE.Object3D {
     get bounds() {
         const state = this._states[this.state] || this._states[''];
         return (state[this.hover] || state[0]).bounds;
+    }
+    get normalizedBounds() {
+        const documentWidth = document.documentElement.offsetWidth;
+        const documentHeight = document.documentElement.offsetHeight;
+        const bounds = this.bounds;
+        const normalizedBounds = this._normalizedBounds;
+        normalizedBounds.left = (bounds.left + window.pageXOffset) / documentWidth;
+        normalizedBounds.top = (bounds.top + window.pageYOffset) / documentHeight;
+        normalizedBounds.width = bounds.width / documentWidth;
+        normalizedBounds.height = bounds.height / documentHeight;
+        return normalizedBounds;
     }
     /**
      * A list of Rays to be used for interaction.
@@ -527,7 +546,7 @@ class WebLayer3D extends THREE.Object3D {
             return;
         }
         this.contentTargetOpacity = 1;
-        const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS;
+        const pixelSize = WebLayer3D.PIXEL_SIZE;
         if (this.useDOMLayout) {
             const parentBoundingRect = this.parent instanceof WebLayer3D ? this.parent.bounds : ZERO_BOUNDS;
             const left = boundingRect.left - parentBoundingRect.left;
@@ -704,7 +723,7 @@ WebLayer3D.STATES_ATTRIBUTE = 'data-layer-states';
 WebLayer3D.HOVER_DEPTH_ATTRIBUTE = 'data-layer-hover-depth';
 WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms';
 WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.005;
-WebLayer3D.DEFAULT_PIXEL_DIMENSIONS = 0.001;
+WebLayer3D.PIXEL_SIZE = 0.001;
 WebLayer3D.GEOMETRY = new THREE.PlaneGeometry(1, 1, 2, 2);
 WebLayer3D.TRANSITION_DEFAULT = function (layer, alpha = 1) {
     WebLayer3D.transitionLayout(layer, alpha);
@@ -766,5 +785,43 @@ function arraySubtract(a, b) {
             result.push(item);
     }
     return result;
+}
+class CameraFOVs {
+    constructor() {
+        this.top = 0;
+        this.left = 0;
+        this.bottom = 0;
+        this.right = 0;
+        this.horizontal = 0;
+        this.vertical = 0;
+    }
+}
+const _fovs = new CameraFOVs();
+const _getFovsMatrix = new THREE.Matrix4();
+const _getFovsVector = new THREE.Vector3();
+const FORWARD = new THREE.Vector3(0, 0, -1);
+function getFovs(projectionMatrix) {
+    const out = _fovs;
+    const invProjection = _getFovsMatrix.getInverse(projectionMatrix, true);
+    const vec = _getFovsVector;
+    out.left = vec
+        .set(-1, 0, -1)
+        .applyMatrix4(invProjection)
+        .angleTo(FORWARD);
+    out.right = vec
+        .set(1, 0, -1)
+        .applyMatrix4(invProjection)
+        .angleTo(FORWARD);
+    out.top = vec
+        .set(0, 1, -1)
+        .applyMatrix4(invProjection)
+        .angleTo(FORWARD);
+    out.bottom = vec
+        .set(0, -1, -1)
+        .applyMatrix4(invProjection)
+        .angleTo(FORWARD);
+    out.horizontal = out.right + out.left;
+    out.vertical = out.top + out.bottom;
+    return out;
 }
 //# sourceMappingURL=three-web-layer.js.map
