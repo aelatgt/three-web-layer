@@ -71,8 +71,16 @@ export default class WebLayer3D extends THREE.Object3D {
   private static DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms'
 
   static DEFAULT_LAYER_SEPARATION = 0.005
-  static DEFAULT_PIXEL_DIMENSIONS = 0.001
+  static PIXEL_SIZE = 0.001
   static GEOMETRY = new THREE.PlaneGeometry(1, 1, 2, 2) as THREE.Geometry
+
+  static computeNaturalDistance(projectionMatrix: THREE.Matrix4) {
+    const windowWidthPixels = document.documentElement.offsetWidth
+    const windowWidth = WebLayer3D.PIXEL_SIZE * windowWidthPixels
+    const horizontalFOV = getFovs(projectionMatrix).horizontal
+    const naturalDistance = windowWidth / 2 / Math.tan(horizontalFOV / 2)
+    return naturalDistance
+  }
 
   static TRANSITION_DEFAULT = function(layer: WebLayer3D, alpha = 1) {
     WebLayer3D.transitionLayout(layer, alpha)
@@ -411,6 +419,19 @@ export default class WebLayer3D extends THREE.Object3D {
     return (state[this.hover] || state[0]).bounds
   }
 
+  _normalizedBounds = { left: 0, top: 0, width: 0, height: 0 }
+  get normalizedBounds() {
+    const documentWidth = document.documentElement.offsetWidth
+    const documentHeight = document.documentElement.offsetHeight
+    const bounds = this.bounds
+    const normalizedBounds = this._normalizedBounds
+    normalizedBounds.left = (bounds.left + window.pageXOffset) / documentWidth
+    normalizedBounds.top = (bounds.top + window.pageYOffset) / documentHeight
+    normalizedBounds.width = bounds.width / documentWidth
+    normalizedBounds.height = bounds.height / documentHeight
+    return normalizedBounds
+  }
+
   /**
    * A list of Rays to be used for interaction.
    * Can only be set on a root WebLayer3D instance.
@@ -649,7 +670,7 @@ export default class WebLayer3D extends THREE.Object3D {
     }
 
     this.contentTargetOpacity = 1
-    const pixelSize = WebLayer3D.DEFAULT_PIXEL_DIMENSIONS
+    const pixelSize = WebLayer3D.PIXEL_SIZE
 
     if (this.useDOMLayout) {
       const parentBoundingRect =
@@ -877,4 +898,42 @@ function arraySubtract<T>(a: T[], b: T[]) {
     if (!b.includes(item)) result.push(item)
   }
   return result
+}
+
+class CameraFOVs {
+  top = 0
+  left = 0
+  bottom = 0
+  right = 0
+  horizontal = 0
+  vertical = 0
+}
+
+const _fovs = new CameraFOVs()
+const _getFovsMatrix = new THREE.Matrix4()
+const _getFovsVector = new THREE.Vector3()
+const FORWARD = new THREE.Vector3(0, 0, -1)
+function getFovs(projectionMatrix: THREE.Matrix4) {
+  const out = _fovs
+  const invProjection = _getFovsMatrix.getInverse(projectionMatrix, true)
+  const vec = _getFovsVector
+  out.left = vec
+    .set(-1, 0, -1)
+    .applyMatrix4(invProjection)
+    .angleTo(FORWARD)
+  out.right = vec
+    .set(1, 0, -1)
+    .applyMatrix4(invProjection)
+    .angleTo(FORWARD)
+  out.top = vec
+    .set(0, 1, -1)
+    .applyMatrix4(invProjection)
+    .angleTo(FORWARD)
+  out.bottom = vec
+    .set(0, -1, -1)
+    .applyMatrix4(invProjection)
+    .angleTo(FORWARD)
+  out.horizontal = out.right + out.left
+  out.vertical = out.top + out.bottom
+  return out
 }
