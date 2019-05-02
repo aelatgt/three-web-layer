@@ -799,7 +799,7 @@ export default class WebLayer3D extends THREE.Object3D {
     const states = this._states
     const renderFunctions = [] as Function[]
 
-    if (element.nodeName === 'video') {
+    if (element.nodeName === 'VIDEO') {
       const state = states[''][0]
       state.bounds = domUtils.getBounds(element)
       state.texture = state.texture || new THREE.VideoTexture(element as HTMLVideoElement)
