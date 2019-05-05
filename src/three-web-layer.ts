@@ -74,11 +74,14 @@ export default class WebLayer3D extends THREE.Object3D {
   static PIXEL_SIZE = 0.001
   static GEOMETRY = new THREE.PlaneGeometry(1, 1, 2, 2) as THREE.Geometry
 
-  static computeNaturalDistance(projectionMatrix: THREE.Matrix4) {
-    const windowWidthPixels = document.documentElement.offsetWidth
-    const windowWidth = WebLayer3D.PIXEL_SIZE * windowWidthPixels
+  static layersByElement = new WeakMap<Element, WebLayer3D>()
+
+  static computeNaturalDistance(projectionMatrix: THREE.Matrix4, renderer: THREE.WebGLRenderer) {
+    const pixelRatio = renderer.getPixelRatio()
+    const widthPixels = renderer.domElement.width / pixelRatio
+    const width = WebLayer3D.PIXEL_SIZE * widthPixels
     const horizontalFOV = getFovs(projectionMatrix).horizontal
-    const naturalDistance = windowWidth / 2 / Math.tan(horizontalFOV / 2)
+    const naturalDistance = width / 2 / Math.tan(horizontalFOV / 2)
     return naturalDistance
   }
 
