@@ -11,9 +11,22 @@ The goal of this project is to leverage the power of the 2D web for layout and d
 
 ## Installation
 
+Install via NPM:
+
 ```bash
 npm i three-web-layer
 ``` 
+
+```js
+import WebLayer3D from 'three-web-layer'
+``` 
+
+Alternatively, use the UMD build to install via script:
+
+```html
+<script src="three-web-layer.umd.js"></script>
+```
+
 
 ## API
 

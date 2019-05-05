@@ -45,9 +45,9 @@ export declare type WebLayerHit = ReturnType<typeof WebLayer3D.prototype.hitTest
  */
 export default class WebLayer3D extends THREE.Object3D {
     options: WebLayer3DOptions;
-    rootLayer: WebLayer3D;
+    parentLayer: WebLayer3D | null;
     private _level;
-    static DEBUG: boolean;
+    static DEBUG_PERFORMANCE: boolean;
     static LAYER_ATTRIBUTE: string;
     static LAYER_CONTAINER_ATTRIBUTE: string;
     static PIXEL_RATIO_ATTRIBUTE: string;
@@ -57,12 +57,15 @@ export default class WebLayer3D extends THREE.Object3D {
     static DEFAULT_LAYER_SEPARATION: number;
     static PIXEL_SIZE: number;
     static GEOMETRY: THREE.Geometry;
-    static computeNaturalDistance(projectionMatrix: THREE.Matrix4): number;
-    static TRANSITION_DEFAULT: (layer: WebLayer3D, alpha?: number) => void;
-    static transitionLayout(layer: WebLayer3D, alpha: number): void;
-    static transitionVisibility(layer: WebLayer3D, alpha: number): void;
+    static layersByElement: WeakMap<Element, WebLayer3D>;
+    static computeNaturalDistance(projectionMatrix: THREE.Matrix4, renderer: THREE.WebGLRenderer): number;
+    static UPDATE_DEFAULT: (layer: WebLayer3D, lerp?: number) => void;
+    static shouldUseTargetLayout(layer: WebLayer3D): boolean;
+    static updateLayout(layer: WebLayer3D, lerp: number): void;
+    static updateVisibility(layer: WebLayer3D, lerp: number): void;
     private static _hoverLayers;
     private static _updateInteractions;
+    private static _scheduleRefresh;
     private static _scheduleRasterizations;
     private static _clearHover;
     private static _setHover;
@@ -78,7 +81,33 @@ export default class WebLayer3D extends THREE.Object3D {
     contentTargetOpacity: number;
     cursor: THREE.Object3D;
     needsRasterize: boolean;
-    useDOMLayout: boolean;
+    rootLayer: WebLayer3D;
+    /**
+     * Specifies whether or not this layer's layout
+     * should match the layout stored in the `target` object
+     *
+     * When set to `always`, the target layout should always be applied.
+     * When set to `never`, the target layout should never be applied.
+     * When set to `auto`, the target layout should only be applied
+     * the `parentLayer` is the same as the `parent` object.
+     *
+     * It is the responsibiltiy of the update callback
+     * to follow these rules.
+     *
+     * Defaults to `auto`
+     */
+    shouldUseTargetLayout: 'always' | 'never' | 'auto';
+    /**
+     * Specifies whether or not the update callback should update
+     * the `content` layout to match the layout stored in
+     * the `contentTarget` object
+     *
+     * It is the responsibiltiy of the update callback
+     * to follow these rules.
+     *
+     * Defaults to `true`
+     */
+    shouldUseContentTargetLayout: boolean;
     private _lastTargetPosition;
     private _lastContentTargetScale;
     private _hover;
@@ -87,7 +116,6 @@ export default class WebLayer3D extends THREE.Object3D {
     private _pixelRatio;
     private _state;
     private _needsRemoval;
-    private _isUpdating;
     private _rasterizationQueue;
     private _mutationObserver?;
     private _resizeObserver?;
@@ -100,7 +128,7 @@ export default class WebLayer3D extends THREE.Object3D {
     private _processMutations?;
     private _raycaster;
     private _hitIntersections;
-    constructor(element: Element, options?: WebLayer3DOptions, rootLayer?: WebLayer3D, _level?: number);
+    constructor(element: Element, options?: WebLayer3DOptions, parentLayer?: WebLayer3D | null, _level?: number);
     /**
      * Get the texture state.
      * Note: if a state is not available, the `default` state will be rendered.
@@ -145,10 +173,10 @@ export default class WebLayer3D extends THREE.Object3D {
      * Update the pose and opacity of this layer (does not rerender the DOM).
      * This should be called each frame, and can only be called on a root WebLayer3D instance.
      *
-     * @param alpha lerp value
-     * @param transition transition function. Default is WebLayer3D.TRANSITION_DEFAULT
+     * @param lerp lerp value
+     * @param updateCallback update callback called for each layer. Default is WebLayer3D.UDPATE_DEFAULT
      */
-    update(alpha?: number, transition?: (layer: WebLayer3D, alpha: number) => void): void;
+    update(lerp?: number, updateCallback?: (layer: WebLayer3D, lerp: number) => void): void;
     traverseLayers<T extends any[]>(each: (layer: WebLayer3D, ...params: T) => void, ...params: T): void;
     traverseChildLayers<T extends any[]>(each: (layer: WebLayer3D, ...params: T) => void, ...params: T): T;
     getLayerForQuery(selector: string): WebLayer3D | undefined;
@@ -160,16 +188,16 @@ export default class WebLayer3D extends THREE.Object3D {
     } | undefined;
     refresh(forceRasterize?: boolean): void;
     dispose(): void;
-    private _updateState;
+    private _refreshState;
     private _checkRoot;
-    private _updateBounds;
-    private _updateTargetLayout;
-    private _updateMesh;
+    private _refreshBounds;
+    private _refreshTargetLayout;
+    private _refreshMesh;
     private _showChildLayers;
     private _disableTransforms;
     private _setHoverClasses;
     private _markForRemoval;
-    private _updateChildLayers;
+    private _refreshChildLayers;
     private _tryConvertToWebLayer3D;
     private _rasterize;
 }

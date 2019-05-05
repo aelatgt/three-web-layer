@@ -6958,6 +6958,7 @@ function addCSSRule(sheet, selector, rules, index) {
 const scratchVector = new Vector3();
 const scratchVector2 = new Vector3();
 const ZERO_BOUNDS = { top: 0, left: 0, width: 0, height: 0 };
+const microtask = Promise.resolve();
 /**
  * Transform a DOM tree into 3D layers.
  *
@@ -6994,10 +6995,10 @@ const ZERO_BOUNDS = { top: 0, left: 0, width: 0, height: 0 };
  *     e.g., 500px width means 0.5meters
  */
 class WebLayer3D extends Object3D {
-    constructor(element, options = {}, rootLayer = undefined, _level = 0) {
+    constructor(element, options = {}, parentLayer = null, _level = 0) {
         super();
         this.options = options;
-        this.rootLayer = rootLayer;
+        this.parentLayer = parentLayer;
         this._level = _level;
         this.content = new Object3D();
         this.mesh = new Mesh(WebLayer3D.GEOMETRY, new MeshBasicMaterial({
@@ -7015,7 +7016,32 @@ class WebLayer3D extends Object3D {
         this.contentTargetOpacity = 0;
         this.cursor = new Object3D();
         this.needsRasterize = true;
-        this.useDOMLayout = true;
+        /**
+         * Specifies whether or not this layer's layout
+         * should match the layout stored in the `target` object
+         *
+         * When set to `always`, the target layout should always be applied.
+         * When set to `never`, the target layout should never be applied.
+         * When set to `auto`, the target layout should only be applied
+         * the `parentLayer` is the same as the `parent` object.
+         *
+         * It is the responsibiltiy of the update callback
+         * to follow these rules.
+         *
+         * Defaults to `auto`
+         */
+        this.shouldUseTargetLayout = 'auto';
+        /**
+         * Specifies whether or not the update callback should update
+         * the `content` layout to match the layout stored in
+         * the `contentTarget` object
+         *
+         * It is the responsibiltiy of the update callback
+         * to follow these rules.
+         *
+         * Defaults to `true`
+         */
+        this.shouldUseContentTargetLayout = true;
         this._lastTargetPosition = new Vector3();
         this._lastContentTargetScale = new Vector3(0.1, 0.1, 0.1);
         this._hover = 0;
@@ -7025,16 +7051,16 @@ class WebLayer3D extends Object3D {
         this._state = '';
         this._needsRemoval = false;
         // the following properties are meant to be accessed on the root layer
-        this._isUpdating = false; // true while in WebLayer3D#update() function
         this._rasterizationQueue = [];
         this._meshMap = new WeakMap();
         this._interactionRays = [];
         this._raycaster = new Raycaster();
         this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
         this._normalizedBounds = { left: 0, top: 0, width: 0, height: 0 };
+        WebLayer3D.layersByElement.set(element, this);
         this.element = element;
         this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString());
-        this.rootLayer = rootLayer || this;
+        this.rootLayer = this.parentLayer ? this.parentLayer.rootLayer : this;
         this.name = element.id;
         if (!document.contains(element) && this.rootLayer === this) {
             ensureElementIsInDocument(element, options);
@@ -7052,7 +7078,6 @@ class WebLayer3D extends Object3D {
         this.mesh['customDepthMaterial'] = this.depthMaterial;
         this.rootLayer._meshMap.set(this.mesh, this);
         if (this.rootLayer === this) {
-            this.useDOMLayout = false;
             this._triggerRefresh = (e) => {
                 const layer = this.getLayerForElement(e.target);
                 if (layer) {
@@ -7070,8 +7095,6 @@ class WebLayer3D extends Object3D {
                     layer.needsRasterize = true;
             };
             this._processMutations = (records) => {
-                if (this._isUpdating)
-                    return;
                 for (const record of records) {
                     if (record.type === 'attributes' &&
                         record.target.getAttribute(record.attributeName) === record.oldValue)
@@ -7145,37 +7168,42 @@ class WebLayer3D extends Object3D {
         if (this.options.onLayerCreate)
             this.options.onLayerCreate(this);
     }
-    static computeNaturalDistance(projectionMatrix) {
-        const windowWidthPixels = document.documentElement.offsetWidth;
-        const windowWidth = WebLayer3D.PIXEL_SIZE * windowWidthPixels;
+    static computeNaturalDistance(projectionMatrix, renderer) {
+        const pixelRatio = renderer.getPixelRatio();
+        const widthPixels = renderer.domElement.width / pixelRatio;
+        const width = WebLayer3D.PIXEL_SIZE * widthPixels;
         const horizontalFOV = getFovs(projectionMatrix).horizontal;
-        const naturalDistance = windowWidth / 2 / Math.tan(horizontalFOV / 2);
+        const naturalDistance = width / 2 / Math.tan(horizontalFOV / 2);
         return naturalDistance;
     }
-    static transitionLayout(layer, alpha) {
-        layer.position.lerp(layer.target.position, alpha);
-        layer.scale.lerp(layer.target.scale, alpha);
-        layer.quaternion.slerp(layer.target.quaternion, alpha);
-        layer.content.position.lerp(layer.contentTarget.position, alpha);
-        layer.content.scale.lerp(layer.contentTarget.scale, alpha);
-        layer.content.quaternion.slerp(layer.contentTarget.quaternion, alpha);
+    static shouldUseTargetLayout(layer) {
+        const should = layer.shouldUseTargetLayout;
+        if (should === 'always')
+            return true;
+        if (should === 'never')
+            return false;
+        if (should === 'auto' && layer.parent === layer.parentLayer)
+            return true;
+        return false;
     }
-    static transitionVisibility(layer, alpha) {
-        const targetOpacity = layer.contentTargetOpacity;
+    static updateLayout(layer, lerp) {
+        if (WebLayer3D.shouldUseTargetLayout(layer)) {
+            layer.position.lerp(layer.target.position, lerp);
+            layer.scale.lerp(layer.target.scale, lerp);
+            layer.quaternion.slerp(layer.target.quaternion, lerp);
+        }
+        if (layer.shouldUseContentTargetLayout) {
+            layer.content.position.lerp(layer.contentTarget.position, lerp);
+            layer.content.scale.lerp(layer.contentTarget.scale, lerp);
+            layer.content.quaternion.slerp(layer.contentTarget.quaternion, lerp);
+        }
+    }
+    static updateVisibility(layer, lerp) {
         const material = layer.mesh.material;
         if ('opacity' in material) {
-            material.opacity = Math.min(Math$1.lerp(material.opacity, targetOpacity, alpha), 1);
+            const targetOpacity = layer.contentTargetOpacity;
+            material.opacity = Math.min(Math$1.lerp(material.opacity, targetOpacity, lerp), 1);
             material.needsUpdate = true;
-        }
-        const isHidden = !material.opacity || material.opacity < 0.005;
-        if (isHidden)
-            layer.mesh.visible = false;
-        else
-            layer.mesh.visible = true;
-        if (layer.needsRemoval && isHidden) {
-            if (layer.parent)
-                layer.parent.remove(layer);
-            layer.dispose();
         }
     }
     static _updateInteractions(rootLayer) {
@@ -7206,49 +7234,52 @@ class WebLayer3D extends Object3D {
         rootLayer.traverseLayers(WebLayer3D._setHover);
         traverseDOM(rootLayer.element, WebLayer3D._setHoverClass);
     }
+    static async _scheduleRefresh(rootLayer) {
+        await microtask; // wait for render to complete
+        rootLayer.refresh();
+    }
     static async _scheduleRasterizations(rootLayer) {
+        await microtask; // wait for render to complete
         const queue = rootLayer._rasterizationQueue;
+        if (queue.length === 0)
+            return;
         if (window.requestIdleCallback) {
-            if (queue.length)
-                window.requestIdleCallback(idleDeadline => {
-                    if (!queue.length)
-                        return;
-                    if (WebLayer3D.DEBUG)
-                        performance.mark('rasterize queue start');
-                    while (queue.length && idleDeadline.timeRemaining() > 0) {
-                        if (WebLayer3D.DEBUG)
-                            performance.mark('rasterize start');
-                        queue.shift()._rasterize();
-                        if (WebLayer3D.DEBUG)
-                            performance.mark('rasterize end');
-                        if (WebLayer3D.DEBUG)
-                            performance.measure('rasterize', 'rasterize start', 'rasterize end');
-                    }
-                    if (WebLayer3D.DEBUG)
-                        performance.mark('rasterize queue end');
-                    if (WebLayer3D.DEBUG)
-                        performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
-                });
+            window.requestIdleCallback(idleDeadline => {
+                if (!queue.length)
+                    return;
+                if (WebLayer3D.DEBUG_PERFORMANCE)
+                    performance.mark('rasterize queue start');
+                while (queue.length && idleDeadline.timeRemaining() > 0) {
+                    if (WebLayer3D.DEBUG_PERFORMANCE)
+                        performance.mark('rasterize start');
+                    queue.shift()._rasterize();
+                    if (WebLayer3D.DEBUG_PERFORMANCE)
+                        performance.mark('rasterize end');
+                    if (WebLayer3D.DEBUG_PERFORMANCE)
+                        performance.measure('rasterize', 'rasterize start', 'rasterize end');
+                }
+                if (WebLayer3D.DEBUG_PERFORMANCE)
+                    performance.mark('rasterize queue end');
+                if (WebLayer3D.DEBUG_PERFORMANCE)
+                    performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
+            });
         }
         else {
-            await null; // wait for render to complete
-            if (!queue.length)
-                return;
             const startTime = performance.now();
-            if (WebLayer3D.DEBUG)
+            if (WebLayer3D.DEBUG_PERFORMANCE)
                 performance.mark('rasterize queue start');
             while (queue.length && performance.now() - startTime < 5) {
-                if (WebLayer3D.DEBUG)
+                if (WebLayer3D.DEBUG_PERFORMANCE)
                     performance.mark('rasterize start');
                 queue.shift()._rasterize();
-                if (WebLayer3D.DEBUG)
+                if (WebLayer3D.DEBUG_PERFORMANCE)
                     performance.mark('rasterize end');
-                if (WebLayer3D.DEBUG)
+                if (WebLayer3D.DEBUG_PERFORMANCE)
                     performance.measure('rasterize', 'rasterize start', 'rasterize end');
             }
-            if (WebLayer3D.DEBUG)
+            if (WebLayer3D.DEBUG_PERFORMANCE)
                 performance.mark('rasterize queue end');
-            if (WebLayer3D.DEBUG)
+            if (WebLayer3D.DEBUG_PERFORMANCE)
                 performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
         }
     }
@@ -7310,23 +7341,21 @@ class WebLayer3D extends Object3D {
      * Update the pose and opacity of this layer (does not rerender the DOM).
      * This should be called each frame, and can only be called on a root WebLayer3D instance.
      *
-     * @param alpha lerp value
-     * @param transition transition function. Default is WebLayer3D.TRANSITION_DEFAULT
+     * @param lerp lerp value
+     * @param updateCallback update callback called for each layer. Default is WebLayer3D.UDPATE_DEFAULT
      */
-    update(alpha = 1, transition = WebLayer3D.TRANSITION_DEFAULT) {
-        if (WebLayer3D.DEBUG)
+    update(lerp = 1, updateCallback = WebLayer3D.UPDATE_DEFAULT) {
+        if (WebLayer3D.DEBUG_PERFORMANCE)
             performance.mark('update start');
-        alpha = Math.min(alpha, 1);
-        this._isUpdating = true;
+        lerp = Math.min(lerp, 1);
         this._checkRoot();
         WebLayer3D._updateInteractions(this);
-        this.refresh();
-        this.traverseLayers(transition, alpha);
-        this._isUpdating = false;
+        this.traverseLayers(updateCallback, lerp);
+        WebLayer3D._scheduleRefresh(this);
         WebLayer3D._scheduleRasterizations(this);
-        if (WebLayer3D.DEBUG)
+        if (WebLayer3D.DEBUG_PERFORMANCE)
             performance.mark('update end');
-        if (WebLayer3D.DEBUG)
+        if (WebLayer3D.DEBUG_PERFORMANCE)
             performance.measure('update', 'update start', 'update end');
     }
     traverseLayers(each, ...params) {
@@ -7334,9 +7363,8 @@ class WebLayer3D extends Object3D {
         this.traverseChildLayers(each, ...params);
     }
     traverseChildLayers(each, ...params) {
-        for (const child of this.children) {
-            if (child instanceof WebLayer3D)
-                child.traverseLayers(each, ...params);
+        for (const child of this.childLayers) {
+            child.traverseLayers(each, ...params);
         }
         return params;
     }
@@ -7349,10 +7377,7 @@ class WebLayer3D extends Object3D {
     }
     getLayerForElement(element) {
         const closestLayerElement = element.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`);
-        if (!closestLayerElement)
-            return undefined;
-        const id = parseInt(closestLayerElement.getAttribute(WebLayer3D.LAYER_ATTRIBUTE) || '', 10);
-        return this.id === id ? this : this.getObjectById(id);
+        return WebLayer3D.layersByElement.get(closestLayerElement);
     }
     hitTest(ray) {
         const raycaster = this.rootLayer._raycaster;
@@ -7394,21 +7419,31 @@ class WebLayer3D extends Object3D {
         return undefined;
     }
     refresh(forceRasterize = false) {
-        this._updateState();
-        this._updateBounds();
+        this._refreshState();
+        this._refreshBounds();
         if (this.needsRasterize || forceRasterize) {
             this.needsRasterize = false;
-            this._updateChildLayers();
+            this._refreshChildLayers();
             if (this.rootLayer._rasterizationQueue.indexOf(this) === -1) {
                 this.rootLayer._rasterizationQueue.push(this);
             }
         }
-        for (const child of this.children) {
-            if (child instanceof WebLayer3D)
-                child.refresh(forceRasterize);
+        for (const child of this.childLayers) {
+            child.refresh(forceRasterize);
         }
-        this._updateTargetLayout();
-        this._updateMesh();
+        this._refreshTargetLayout();
+        this._refreshMesh();
+        const childMaterial = this.mesh.material;
+        const isHidden = childMaterial.opacity < 0.005;
+        if (isHidden)
+            this.mesh.visible = false;
+        else
+            this.mesh.visible = true;
+        if (this.needsRemoval && isHidden) {
+            if (this.parent)
+                this.parent.remove(this);
+            this.dispose();
+        }
     }
     dispose() {
         if (this._mutationObserver)
@@ -7418,7 +7453,7 @@ class WebLayer3D extends Object3D {
         for (const child of this.childLayers)
             child.dispose();
     }
-    _updateState() {
+    _refreshState() {
         const element = this.element;
         const options = this.options;
         const window = element.ownerDocument.defaultView;
@@ -7472,10 +7507,10 @@ class WebLayer3D extends Object3D {
         if (this.rootLayer !== this)
             throw new Error('Only call `update` on a root WebLayer3D instance');
     }
-    _updateBounds() {
+    _refreshBounds() {
         getBounds(this.element, this.bounds);
     }
-    _updateTargetLayout() {
+    _refreshTargetLayout() {
         this.target.position.copy(this._lastTargetPosition);
         this.target.scale.set(1, 1, 1);
         this.target.quaternion.set(0, 0, 0, 1);
@@ -7493,22 +7528,20 @@ class WebLayer3D extends Object3D {
         }
         this.contentTargetOpacity = 1;
         const pixelSize = WebLayer3D.PIXEL_SIZE;
-        if (this.useDOMLayout) {
-            const parentBoundingRect = this.parent instanceof WebLayer3D ? this.parent.bounds : ZERO_BOUNDS;
-            const left = boundingRect.left - parentBoundingRect.left;
-            const top = boundingRect.top - parentBoundingRect.top;
-            const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
-            const parentOriginY = pixelSize * (parentBoundingRect.height / 2);
-            let layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
-            const myLeft = pixelSize * (left + boundingRect.width / 2);
-            const myTop = pixelSize * (top + boundingRect.height / 2);
-            this.target.position.set(parentOriginX + myLeft, parentOriginY - myTop, layerSeparation * this.level);
-        }
+        const parentBoundingRect = this.parent instanceof WebLayer3D ? this.parent.bounds : ZERO_BOUNDS;
+        const left = boundingRect.left - parentBoundingRect.left;
+        const top = boundingRect.top - parentBoundingRect.top;
+        const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
+        const parentOriginY = pixelSize * (parentBoundingRect.height / 2);
+        const layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
+        const myLeft = pixelSize * (left + boundingRect.width / 2);
+        const myTop = pixelSize * (top + boundingRect.height / 2);
+        this.target.position.set(parentOriginX + myLeft, parentOriginY - myTop, layerSeparation * this.level);
         this.contentTarget.scale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
         this._lastTargetPosition.copy(this.target.position);
         this._lastContentTargetScale.copy(this.contentTarget.scale);
     }
-    _updateMesh() {
+    _refreshMesh() {
         const mesh = this.mesh;
         const texture = this.texture;
         if (!texture)
@@ -7520,7 +7553,7 @@ class WebLayer3D extends Object3D {
         this.depthMaterial.needsUpdate = true;
         if (!mesh.parent) {
             this.content.add(mesh);
-            this._updateTargetLayout();
+            this._refreshTargetLayout();
             this.content.position.copy(this.contentTarget.position);
             this.content.scale.copy(this.contentTarget.scale);
         }
@@ -7566,20 +7599,21 @@ class WebLayer3D extends Object3D {
     }
     _markForRemoval() {
         this._needsRemoval = true;
-        for (const child of this.children) {
-            if (child instanceof WebLayer3D)
-                child._markForRemoval();
+        for (const child of this.childLayers) {
+            child._markForRemoval();
         }
     }
-    _updateChildLayers() {
+    _refreshChildLayers() {
         const element = this.element;
         const childLayers = this.childLayers;
         const oldChildLayers = childLayers.slice();
         childLayers.length = 0;
         traverseDOM(element, this._tryConvertToWebLayer3D, this, this.level);
         for (const child of oldChildLayers) {
-            if (childLayers.indexOf(child) === -1)
+            if (childLayers.indexOf(child) === -1) {
                 child._markForRemoval();
+                childLayers.push(child);
+            }
         }
     }
     _tryConvertToWebLayer3D(el, level) {
@@ -7587,7 +7621,7 @@ class WebLayer3D extends Object3D {
         if (id !== null || el.nodeName === 'VIDEO') {
             let child = this.getObjectById(parseInt(id + '', 10));
             if (!child) {
-                child = new WebLayer3D(el, this.options, this.rootLayer, level);
+                child = new WebLayer3D(el, this.options, this, level);
                 this.add(child);
             }
             this.childLayers.push(child);
@@ -7661,7 +7695,7 @@ class WebLayer3D extends Object3D {
             render();
     }
 }
-WebLayer3D.DEBUG = false;
+WebLayer3D.DEBUG_PERFORMANCE = false;
 WebLayer3D.LAYER_ATTRIBUTE = 'data-layer';
 WebLayer3D.LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container';
 WebLayer3D.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
@@ -7671,9 +7705,10 @@ WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms';
 WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.005;
 WebLayer3D.PIXEL_SIZE = 0.001;
 WebLayer3D.GEOMETRY = new PlaneGeometry(1, 1, 2, 2);
-WebLayer3D.TRANSITION_DEFAULT = function (layer, alpha = 1) {
-    WebLayer3D.transitionLayout(layer, alpha);
-    WebLayer3D.transitionVisibility(layer, alpha);
+WebLayer3D.layersByElement = new WeakMap();
+WebLayer3D.UPDATE_DEFAULT = function (layer, lerp = 1) {
+    WebLayer3D.updateLayout(layer, lerp);
+    WebLayer3D.updateVisibility(layer, lerp);
 };
 WebLayer3D._hoverLayers = new Set();
 WebLayer3D._clearHover = function (layer) {

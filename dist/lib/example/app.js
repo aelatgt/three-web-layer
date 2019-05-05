@@ -12,7 +12,7 @@ stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
 stats.dom.style.bottom = '0';
 stats.dom.style.top = '';
 document.body.appendChild(stats.dom);
-three_web_layer_1.default.DEBUG = true;
+three_web_layer_1.default.DEBUG_PERFORMANCE = true;
 // reload on changes during development
 if (module.hot) {
     module.hot.dispose(() => {
@@ -267,11 +267,7 @@ function animate() {
     const lerpValue = Math.min(deltaTime * Controls.lerpSpeed, 1);
     // update camera
     if (renderer.vr.enabled && renderer.vr.getDevice()) {
-        // THREEJS BUG: The VR camera updates after everything else in
-        // the scnene has been updated, meaning anyting positioned relative
-        // to the camera will be 1 frame behind. For anything in a fixed posotion
-        // relative to the camera, there is a lot of jitter. If we LERP, this
-        // is not as noticable.
+        renderer.vr.getCamera(camera);
         todoLayerTargetPosition.set(0, 0, -0.7);
         camera.localToWorld(todoLayerTargetPosition);
         todoLayer.position.lerp(todoLayerTargetPosition, lerpValue);
@@ -306,7 +302,7 @@ function animate() {
     raycaster.setFromCamera(pointer, camera);
     // update our WebLayer3D heirarchy
     // important: update interaction rays first!
-    todoLayer.update(lerpValue, (layer, alpha) => {
+    todoLayer.update(lerpValue, (layer, lerp) => {
         layer.target.position.z = Controls.layerSeparation * layer.level;
         if (layer.element.matches('.todo-list li *') && layer.contentTargetOpacity === 0) {
             if (!layer.element.matches('.destroy'))
@@ -340,7 +336,7 @@ function animate() {
                 footerLayer.target.scale.set(1.5, 1.5, 1.5);
             }
         }
-        three_web_layer_1.default.TRANSITION_DEFAULT(layer, alpha);
+        three_web_layer_1.default.UPDATE_DEFAULT(layer, lerp);
     });
     // render!
     renderer.render(scene, camera);
