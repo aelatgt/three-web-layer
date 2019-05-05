@@ -23,8 +23,8 @@ export type WebLayerHit = ReturnType<typeof WebLayer3D.prototype.hitTest> & {}
 
 const scratchVector = new THREE.Vector3()
 const scratchVector2 = new THREE.Vector3()
-
 const ZERO_BOUNDS = { top: 0, left: 0, width: 0, height: 0 }
+const microtask = Promise.resolve()
 
 /**
  * Transform a DOM tree into 3D layers.
@@ -145,6 +145,11 @@ export default class WebLayer3D extends THREE.Object3D {
     }
     rootLayer.traverseLayers(WebLayer3D._setHover)
     domUtils.traverseDOM(rootLayer.element, WebLayer3D._setHoverClass)
+  }
+
+  private static async _scheduleRefresh(rootLayer: WebLayer3D) {
+    await microtask // wait for render to complete
+    rootLayer.refresh()
   }
 
   private static async _scheduleRasterizations(rootLayer: WebLayer3D) {
@@ -484,9 +489,9 @@ export default class WebLayer3D extends THREE.Object3D {
     this._isUpdating = true
     this._checkRoot()
     WebLayer3D._updateInteractions(this)
-    this.refresh()
     this.traverseLayers(transition, alpha)
     this._isUpdating = false
+    WebLayer3D._scheduleRefresh(this)
     WebLayer3D._scheduleRasterizations(this)
     if (WebLayer3D.DEBUG) performance.mark('update end')
     if (WebLayer3D.DEBUG) performance.measure('update', 'update start', 'update end')
