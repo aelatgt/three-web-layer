@@ -82,7 +82,7 @@ export default class WebLayer3D extends THREE.Object3D {
   ) {
     let projectionMatrix = projection as THREE.Matrix4
     if ((projection as THREE.Camera).isCamera) {
-      projection = (projection as THREE.Camera).projectionMatrix
+      projectionMatrix = (projection as THREE.Camera).projectionMatrix
     }
     const pixelRatio = renderer.getPixelRatio()
     const widthPixels = renderer.domElement.width / pixelRatio
