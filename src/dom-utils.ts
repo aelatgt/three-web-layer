@@ -59,7 +59,18 @@ export function traverseDOM(
   }
 }
 
-export function getBounds(element: HTMLElement, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+export function getBounds(
+  element: HTMLElement | Window,
+  bounds = { left: 0, top: 0, width: 0, height: 0 }
+) {
+  if (element instanceof Window) {
+    bounds.left = 0
+    bounds.top = 0
+    bounds.width = element.innerWidth
+    bounds.height = element.innerHeight
+    return bounds
+  }
+
   const window = element.ownerDocument!.defaultView!
   let el = element
   let left = el.offsetLeft
@@ -76,6 +87,7 @@ export function getBounds(element: HTMLElement, bounds = { left: 0, top: 0, widt
     }
     el = el.offsetParent as any
   }
+
   bounds.left = left + window.pageXOffset
   bounds.top = top + window.pageYOffset
   bounds.width = element.offsetWidth

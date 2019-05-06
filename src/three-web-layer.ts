@@ -471,14 +471,14 @@ export default class WebLayer3D extends THREE.Object3D {
 
   _normalizedBounds = { left: 0, top: 0, width: 0, height: 0 }
   get normalizedBounds() {
-    const documentWidth = document.documentElement.offsetWidth
-    const documentHeight = document.documentElement.offsetHeight
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
     const bounds = this.bounds
     const normalizedBounds = this._normalizedBounds
-    normalizedBounds.left = (bounds.left + window.pageXOffset) / documentWidth
-    normalizedBounds.top = (bounds.top + window.pageYOffset) / documentHeight
-    normalizedBounds.width = bounds.width / documentWidth
-    normalizedBounds.height = bounds.height / documentHeight
+    normalizedBounds.left = bounds.left / windowWidth
+    normalizedBounds.top = bounds.top / windowHeight
+    normalizedBounds.width = bounds.width / windowWidth
+    normalizedBounds.height = bounds.height / windowHeight
     return normalizedBounds
   }
 
@@ -730,7 +730,7 @@ export default class WebLayer3D extends THREE.Object3D {
     const parentBoundingRect =
       this.parent instanceof WebLayer3D
         ? this.parent.bounds
-        : domUtils.getBounds(document.documentElement, scratchBounds)
+        : domUtils.getBounds(window, scratchBounds)
     const left = boundingRect.left - parentBoundingRect.left
     const top = boundingRect.top - parentBoundingRect.top
     const parentOriginX = pixelSize * (-parentBoundingRect.width / 2)
