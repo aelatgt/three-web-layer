@@ -222,7 +222,11 @@ class WebLayer3D extends THREE.Object3D {
         if (this.options.onLayerCreate)
             this.options.onLayerCreate(this);
     }
-    static computeNaturalDistance(projectionMatrix, renderer) {
+    static computeNaturalDistance(projection, renderer) {
+        let projectionMatrix = projection;
+        if (projection.isCamera) {
+            projection = projection.projectionMatrix;
+        }
         const pixelRatio = renderer.getPixelRatio();
         const widthPixels = renderer.domElement.width / pixelRatio;
         const width = WebLayer3D.PIXEL_SIZE * widthPixels;

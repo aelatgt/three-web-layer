@@ -58,7 +58,7 @@ export default class WebLayer3D extends THREE.Object3D {
     static PIXEL_SIZE: number;
     static GEOMETRY: THREE.Geometry;
     static layersByElement: WeakMap<Element, WebLayer3D>;
-    static computeNaturalDistance(projectionMatrix: THREE.Matrix4, renderer: THREE.WebGLRenderer): number;
+    static computeNaturalDistance(projection: THREE.Matrix4 | THREE.Camera, renderer: THREE.WebGLRenderer): number;
     static UPDATE_DEFAULT: (layer: WebLayer3D, lerp?: number) => void;
     static shouldUseTargetLayout(layer: WebLayer3D): boolean;
     static updateLayout(layer: WebLayer3D, lerp: number): void;
