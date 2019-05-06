@@ -471,14 +471,13 @@ export default class WebLayer3D extends THREE.Object3D {
 
   _normalizedBounds = { left: 0, top: 0, width: 0, height: 0 }
   get normalizedBounds() {
-    const windowWidth = window.innerWidth
-    const windowHeight = window.innerHeight
+    const { width, height } = domUtils.getViewportSize()
     const bounds = this.bounds
     const normalizedBounds = this._normalizedBounds
-    normalizedBounds.left = bounds.left / windowWidth
-    normalizedBounds.top = bounds.top / windowHeight
-    normalizedBounds.width = bounds.width / windowWidth
-    normalizedBounds.height = bounds.height / windowHeight
+    normalizedBounds.left = bounds.left / width
+    normalizedBounds.top = bounds.top / height
+    normalizedBounds.width = bounds.width / width
+    normalizedBounds.height = bounds.height / height
     return normalizedBounds
   }
 

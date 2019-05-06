@@ -50,12 +50,7 @@ const renderer = ((window as any).renderer = new THREE.WebGLRenderer({ antialias
 renderer.setClearColor(new THREE.Color('#151513'))
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.shadowMap.enabled = true
-const camera = ((window as any).camera = new THREE.PerspectiveCamera(
-  70,
-  window.innerWidth / window.innerHeight,
-  0.01,
-  10
-))
+const camera = ((window as any).camera = new THREE.PerspectiveCamera(70, 1, 0.01, 10))
 scene.add(camera)
 
 // setup DOM
@@ -312,10 +307,8 @@ function animate() {
     todoLayer.quaternion.slerp(camera.quaternion, lerpValue)
     todoLayer.interactionRays = immersiveRays
   } else {
-    // important: window.innerWidth/window.innerHeight changes when soft-keyboard is up!
-    // We want the fixed viewport size, so we use offsetWidth/Height of the documentElement
-    const width = document.documentElement.offsetWidth
-    const height = document.documentElement.offsetHeight
+    const width = renderer.domElement.offsetWidth
+    const height = renderer.domElement.offsetHeight
     const aspect = width / height
     camera.aspect = aspect
     camera.updateProjectionMatrix()

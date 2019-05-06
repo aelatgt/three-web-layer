@@ -64,10 +64,11 @@ export function getBounds(
   bounds = { left: 0, top: 0, width: 0, height: 0 }
 ) {
   if (element instanceof Window) {
+    const { width, height } = getViewportSize()
     bounds.left = 0
     bounds.top = 0
-    bounds.width = element.innerWidth
-    bounds.height = element.innerHeight
+    bounds.width = width
+    bounds.height = height
     return bounds
   }
 
@@ -102,3 +103,23 @@ export function addCSSRule(sheet, selector, rules, index) {
     sheet.addRule(selector, rules, index)
   }
 }
+
+/*
+ * On some mobile browsers, the value reported by window.innerHeight
+ * is not the true viewport height. This method returns
+ * the actual viewport.
+ */
+export function getViewportSize() {
+  size.width = viewport.offsetWidth
+  size.height = viewport.offsetHeight
+  return size
+}
+
+const viewport = document.createElement('div')
+viewport.id = 'VIEWPORT'
+viewport.style.position = 'absolute'
+viewport.style.width = '100vw'
+viewport.style.height = '100vh'
+viewport.style.visibility = 'hidden'
+document.documentElement.append(viewport)
+const size = { width: 0, height: 0 }
