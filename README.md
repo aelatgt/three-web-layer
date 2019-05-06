@@ -5,9 +5,10 @@ A handy tool for rendering complex and interactive 2D web content in WebGL using
 
 The goal of this project is to leverage the power of the 2D web for layout and design of content presented in a 3D environment.
 
-## DEMO
+## DEMOS
 
-[TodoMVC running in WebGL! Built with Vuejs, JSX, and WebLayer3D](http://argonjs.github.io/three-web-layer/)
+- [TodoMVC running in WebGL! Built with Vuejs, JSX, and WebLayer3D](http://argonjs.github.io/three-web-layer/)
+- [A simple demo running on Glitch!](https://three-web-layer.glitch.me)
 
 ## Installation
 
