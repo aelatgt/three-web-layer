@@ -6958,6 +6958,7 @@ function addCSSRule(sheet, selector, rules, index) {
 const scratchVector = new Vector3();
 const scratchVector2 = new Vector3();
 const microtask = Promise.resolve();
+const scratchBounds = { top: 0, left: 0, width: 0, height: 0 };
 /**
  * Transform a DOM tree into 3D layers.
  *
@@ -7022,7 +7023,7 @@ class WebLayer3D extends Object3D {
          * When set to `always`, the target layout should always be applied.
          * When set to `never`, the target layout should never be applied.
          * When set to `auto`, the target layout should only be applied
-         * the `parentLayer` is the same as the `parent` object.
+         * when the `parentLayer` is the same as the `parent` object.
          *
          * It is the responsibiltiy of the update callback
          * to follow these rules.
@@ -7404,7 +7405,7 @@ class WebLayer3D extends Object3D {
             traverseDOM(layer.element, el => {
                 if (!target.contains(el))
                     return false;
-                const elementBoundingRect = getBounds(el);
+                const elementBoundingRect = getBounds(el, scratchBounds);
                 const offsetLeft = elementBoundingRect.left - layerBoundingRect.left;
                 const offsetTop = elementBoundingRect.top - layerBoundingRect.top;
                 const { width, height } = elementBoundingRect;
@@ -7535,7 +7536,7 @@ class WebLayer3D extends Object3D {
         const pixelSize = WebLayer3D.PIXEL_SIZE;
         const parentBoundingRect = this.parent instanceof WebLayer3D
             ? this.parent.bounds
-            : document.documentElement.getBoundingClientRect();
+            : getBounds(document.documentElement, scratchBounds);
         const left = boundingRect.left - parentBoundingRect.left;
         const top = boundingRect.top - parentBoundingRect.top;
         const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
@@ -7642,7 +7643,7 @@ class WebLayer3D extends Object3D {
         const renderFunctions = [];
         if (element.nodeName === 'VIDEO') {
             const state = states[''][0];
-            state.bounds = getBounds(element);
+            getBounds(element, state.bounds);
             state.texture = state.texture || new VideoTexture(element);
             return;
         }

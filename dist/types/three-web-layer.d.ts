@@ -89,7 +89,7 @@ export default class WebLayer3D extends THREE.Object3D {
      * When set to `always`, the target layout should always be applied.
      * When set to `never`, the target layout should never be applied.
      * When set to `auto`, the target layout should only be applied
-     * the `parentLayer` is the same as the `parent` object.
+     * when the `parentLayer` is the same as the `parent` object.
      *
      * It is the responsibiltiy of the update callback
      * to follow these rules.
