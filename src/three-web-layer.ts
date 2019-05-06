@@ -444,6 +444,8 @@ export default class WebLayer3D extends THREE.Object3D {
     })
     this._resizeObserver.observe(element)
 
+    this._refreshState()
+    WebLayer3D._scheduleRefresh(this)
     if (this.options.onLayerCreate) this.options.onLayerCreate(this)
   }
 
@@ -686,7 +688,7 @@ export default class WebLayer3D extends THREE.Object3D {
         for (let i = 0; i <= this._hoverDepth; i++) {
           hoverStates[i] = hoverStates[i] || {
             texture: null,
-            bounds: {}
+            bounds: { left: 0, top: 0, width: 0, height: 0 }
           }
         }
       }
