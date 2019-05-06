@@ -7173,7 +7173,7 @@ class WebLayer3D extends Object3D {
     static computeNaturalDistance(projection, renderer) {
         let projectionMatrix = projection;
         if (projection.isCamera) {
-            projection = projection.projectionMatrix;
+            projectionMatrix = projection.projectionMatrix;
         }
         const pixelRatio = renderer.getPixelRatio();
         const widthPixels = renderer.domElement.width / pixelRatio;
