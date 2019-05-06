@@ -7577,12 +7577,10 @@ class WebLayer3D extends Object3D {
     }
     _disableTransforms(disabled) {
         if (disabled) {
-            this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
             document.documentElement.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');
         }
         else {
             document.documentElement.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
-            this.rootLayer._mutationObserver.takeRecords();
         }
     }
     _setHoverClasses(hover) {
@@ -7641,10 +7639,18 @@ class WebLayer3D extends Object3D {
         const element = this.element;
         const states = this._states;
         const renderFunctions = [];
+        this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
+        if (this.options.onBeforeRasterize) {
+            this.options.onBeforeRasterize.call(null, this);
+        }
+        const onAfterRasterize = this.options.onAfterRasterize;
         if (element.nodeName === 'VIDEO') {
             const state = states[''][0];
             getBounds(element, state.bounds);
             state.texture = state.texture || new VideoTexture(element);
+            if (onAfterRasterize)
+                onAfterRasterize(this);
+            this.rootLayer._mutationObserver.takeRecords();
             return;
         }
         this._disableTransforms(true);
@@ -7698,6 +7704,9 @@ class WebLayer3D extends Object3D {
         element.className = classValue;
         this._showChildLayers(true);
         this._disableTransforms(false);
+        if (onAfterRasterize)
+            onAfterRasterize(this);
+        this.rootLayer._mutationObserver.takeRecords();
         const imageStore = await this.rootLayer._resourceLoader.ready();
         for (const render of renderFunctions)
             render();

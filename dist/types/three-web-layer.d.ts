@@ -6,6 +6,8 @@ export interface WebLayer3DOptions {
     windowHeight?: number;
     allowTaint?: boolean;
     onLayerCreate?(layer: WebLayer3D): void;
+    onBeforeRasterize?(layer: WebLayer3D): void;
+    onAfterRasterize?(layer: WebLayer3D): void;
 }
 export declare type WebLayerHit = ReturnType<typeof WebLayer3D.prototype.hitTest> & {};
 /**
