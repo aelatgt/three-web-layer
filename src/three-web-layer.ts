@@ -17,6 +17,8 @@ export interface WebLayer3DOptions {
   windowHeight?: number
   allowTaint?: boolean
   onLayerCreate?(layer: WebLayer3D): void
+  onBeforeRasterize?(layer: WebLayer3D): void
+  onAfterRasterize?(layer: WebLayer3D): void
 }
 
 export type WebLayerHit = ReturnType<typeof WebLayer3D.prototype.hitTest> & {}
@@ -788,11 +790,9 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private _disableTransforms(disabled: boolean) {
     if (disabled) {
-      this.rootLayer._processMutations(this.rootLayer._mutationObserver!.takeRecords())
       document.documentElement.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '')
     } else {
       document.documentElement.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE)
-      this.rootLayer._mutationObserver!.takeRecords()
     }
   }
 
@@ -855,10 +855,18 @@ export default class WebLayer3D extends THREE.Object3D {
     const states = this._states
     const renderFunctions = [] as Function[]
 
+    this.rootLayer._processMutations(this.rootLayer._mutationObserver!.takeRecords())
+    if (this.options.onBeforeRasterize) {
+      this.options.onBeforeRasterize.call(null, this)
+    }
+    const onAfterRasterize = this.options.onAfterRasterize
+
     if (element.nodeName === 'VIDEO') {
       const state = states[''][0]
       domUtils.getBounds(element, state.bounds)
       state.texture = state.texture || new THREE.VideoTexture(element as HTMLVideoElement)
+      if (onAfterRasterize) onAfterRasterize(this)
+      this.rootLayer._mutationObserver!.takeRecords()
       return
     }
 
@@ -918,6 +926,8 @@ export default class WebLayer3D extends THREE.Object3D {
     element.className = classValue
     this._showChildLayers(true)
     this._disableTransforms(false)
+    if (onAfterRasterize) onAfterRasterize(this)
+    this.rootLayer._mutationObserver!.takeRecords()
 
     const imageStore = await this.rootLayer._resourceLoader.ready()
 
