@@ -359,14 +359,13 @@ class WebLayer3D extends THREE.Object3D {
         return (state[this.hover] || state[0]).bounds;
     }
     get normalizedBounds() {
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
+        const { width, height } = domUtils.getViewportSize();
         const bounds = this.bounds;
         const normalizedBounds = this._normalizedBounds;
-        normalizedBounds.left = bounds.left / windowWidth;
-        normalizedBounds.top = bounds.top / windowHeight;
-        normalizedBounds.width = bounds.width / windowWidth;
-        normalizedBounds.height = bounds.height / windowHeight;
+        normalizedBounds.left = bounds.left / width;
+        normalizedBounds.top = bounds.top / height;
+        normalizedBounds.width = bounds.width / width;
+        normalizedBounds.height = bounds.height / height;
         return normalizedBounds;
     }
     /**

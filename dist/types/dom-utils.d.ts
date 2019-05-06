@@ -13,3 +13,7 @@ export declare function getBounds(element: HTMLElement | Window, bounds?: {
     height: number;
 };
 export declare function addCSSRule(sheet: any, selector: any, rules: any, index: any): void;
+export declare function getViewportSize(): {
+    width: number;
+    height: number;
+};

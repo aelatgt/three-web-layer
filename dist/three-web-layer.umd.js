@@ -6929,10 +6929,11 @@
     }
     function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
         if (element instanceof Window) {
+            const { width, height } = getViewportSize();
             bounds.left = 0;
             bounds.top = 0;
-            bounds.width = element.innerWidth;
-            bounds.height = element.innerHeight;
+            bounds.width = width;
+            bounds.height = height;
             return bounds;
         }
         const window = element.ownerDocument.defaultView;
@@ -6965,6 +6966,24 @@
             sheet.addRule(selector, rules, index);
         }
     }
+    /*
+    * On some mobile browsers, the value reported by window.innerHeight
+    * is not the true viewport height. This method returns
+    * the actual viewport.
+    */
+    function getViewportSize() {
+        size.width = viewport.offsetWidth;
+        size.height = viewport.offsetHeight;
+        return size;
+    }
+    const viewport = document.createElement('div');
+    viewport.id = 'VIEWPORT';
+    viewport.style.position = 'absolute';
+    viewport.style.width = '100vw';
+    viewport.style.height = '100vh';
+    viewport.style.visibility = 'hidden';
+    document.documentElement.append(viewport);
+    const size = { width: 0, height: 0 };
 
     const scratchVector = new THREE.Vector3();
     const scratchVector2 = new THREE.Vector3();
@@ -7316,14 +7335,13 @@
             return (state[this.hover] || state[0]).bounds;
         }
         get normalizedBounds() {
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
+            const { width, height } = getViewportSize();
             const bounds = this.bounds;
             const normalizedBounds = this._normalizedBounds;
-            normalizedBounds.left = bounds.left / windowWidth;
-            normalizedBounds.top = bounds.top / windowHeight;
-            normalizedBounds.width = bounds.width / windowWidth;
-            normalizedBounds.height = bounds.height / windowHeight;
+            normalizedBounds.left = bounds.left / width;
+            normalizedBounds.top = bounds.top / height;
+            normalizedBounds.width = bounds.width / width;
+            normalizedBounds.height = bounds.height / height;
             return normalizedBounds;
         }
         /**

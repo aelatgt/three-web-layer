@@ -56,10 +56,11 @@ function traverseDOM(node, each, bind, level = 0) {
 exports.traverseDOM = traverseDOM;
 function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
     if (element instanceof Window) {
+        const { width, height } = getViewportSize();
         bounds.left = 0;
         bounds.top = 0;
-        bounds.width = element.innerWidth;
-        bounds.height = element.innerHeight;
+        bounds.width = width;
+        bounds.height = height;
         return bounds;
     }
     const window = element.ownerDocument.defaultView;
@@ -94,4 +95,23 @@ function addCSSRule(sheet, selector, rules, index) {
     }
 }
 exports.addCSSRule = addCSSRule;
+/*
+* On some mobile browsers, the value reported by window.innerHeight
+* is not the true viewport height. This method returns
+* the actual viewport.
+*/
+function getViewportSize() {
+    size.width = viewport.offsetWidth;
+    size.height = viewport.offsetHeight;
+    return size;
+}
+exports.getViewportSize = getViewportSize;
+const viewport = document.createElement('div');
+viewport.id = 'VIEWPORT';
+viewport.style.position = 'absolute';
+viewport.style.width = '100vw';
+viewport.style.height = '100vh';
+viewport.style.visibility = 'hidden';
+document.documentElement.append(viewport);
+const size = { width: 0, height: 0 };
 //# sourceMappingURL=dom-utils.js.map
