@@ -55,6 +55,13 @@ function traverseDOM(node, each, bind, level = 0) {
 }
 exports.traverseDOM = traverseDOM;
 function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+    if (element instanceof Window) {
+        bounds.left = 0;
+        bounds.top = 0;
+        bounds.width = element.innerWidth;
+        bounds.height = element.innerHeight;
+        return bounds;
+    }
     const window = element.ownerDocument.defaultView;
     let el = element;
     let left = el.offsetLeft;

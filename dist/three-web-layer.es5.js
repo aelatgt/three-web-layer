@@ -6924,6 +6924,13 @@ function traverseDOM(node, each, bind, level = 0) {
     }
 }
 function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+    if (element instanceof Window) {
+        bounds.left = 0;
+        bounds.top = 0;
+        bounds.width = element.innerWidth;
+        bounds.height = element.innerHeight;
+        return bounds;
+    }
     const window = element.ownerDocument.defaultView;
     let el = element;
     let left = el.offsetLeft;
@@ -7305,14 +7312,14 @@ class WebLayer3D extends Object3D {
         return (state[this.hover] || state[0]).bounds;
     }
     get normalizedBounds() {
-        const documentWidth = document.documentElement.offsetWidth;
-        const documentHeight = document.documentElement.offsetHeight;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
         const bounds = this.bounds;
         const normalizedBounds = this._normalizedBounds;
-        normalizedBounds.left = (bounds.left + window.pageXOffset) / documentWidth;
-        normalizedBounds.top = (bounds.top + window.pageYOffset) / documentHeight;
-        normalizedBounds.width = bounds.width / documentWidth;
-        normalizedBounds.height = bounds.height / documentHeight;
+        normalizedBounds.left = bounds.left / windowWidth;
+        normalizedBounds.top = bounds.top / windowHeight;
+        normalizedBounds.width = bounds.width / windowWidth;
+        normalizedBounds.height = bounds.height / windowHeight;
         return normalizedBounds;
     }
     /**
@@ -7536,7 +7543,7 @@ class WebLayer3D extends Object3D {
         const pixelSize = WebLayer3D.PIXEL_SIZE;
         const parentBoundingRect = this.parent instanceof WebLayer3D
             ? this.parent.bounds
-            : getBounds(document.documentElement, scratchBounds);
+            : getBounds(window, scratchBounds);
         const left = boundingRect.left - parentBoundingRect.left;
         const top = boundingRect.top - parentBoundingRect.top;
         const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
