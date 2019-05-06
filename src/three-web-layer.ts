@@ -76,7 +76,14 @@ export default class WebLayer3D extends THREE.Object3D {
 
   static layersByElement = new WeakMap<Element, WebLayer3D>()
 
-  static computeNaturalDistance(projectionMatrix: THREE.Matrix4, renderer: THREE.WebGLRenderer) {
+  static computeNaturalDistance(
+    projection: THREE.Matrix4 | THREE.Camera,
+    renderer: THREE.WebGLRenderer
+  ) {
+    let projectionMatrix = projection as THREE.Matrix4
+    if ((projection as THREE.Camera).isCamera) {
+      projection = (projection as THREE.Camera).projectionMatrix
+    }
     const pixelRatio = renderer.getPixelRatio()
     const widthPixels = renderer.domElement.width / pixelRatio
     const width = WebLayer3D.PIXEL_SIZE * widthPixels
