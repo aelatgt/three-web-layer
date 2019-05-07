@@ -1,6 +1,6 @@
 {
   "name": "three-web-layer",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "Use web content in three.js scenes!",
   "main": "dist/three-web-layer.umd.js",
   "module": "dist/three-web-layer.es5.js",

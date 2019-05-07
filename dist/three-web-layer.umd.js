@@ -6952,8 +6952,8 @@
             }
             el = el.offsetParent;
         }
-        bounds.left = left + window.pageXOffset;
-        bounds.top = top + window.pageYOffset;
+        bounds.left = left;
+        bounds.top = top;
         bounds.width = element.offsetWidth;
         bounds.height = element.offsetHeight;
         return bounds;
@@ -6967,23 +6967,24 @@
         }
     }
     /*
-    * On some mobile browsers, the value reported by window.innerHeight
-    * is not the true viewport height. This method returns
-    * the actual viewport.
-    */
+     * On some mobile browsers, the value reported by window.innerHeight
+     * is not the true viewport height. This method returns
+     * the actual viewport.
+     */
     function getViewportSize() {
-        size.width = viewport.offsetWidth;
-        size.height = viewport.offsetHeight;
-        return size;
+        viewportSize.width = viewport.offsetWidth;
+        viewportSize.height = viewport.offsetHeight;
+        return viewportSize;
     }
     const viewport = document.createElement('div');
     viewport.id = 'VIEWPORT';
-    viewport.style.position = 'absolute';
+    viewport.style.position = 'fixed';
     viewport.style.width = '100vw';
     viewport.style.height = '100vh';
     viewport.style.visibility = 'hidden';
+    viewport.style.pointerEvents = 'none';
     document.documentElement.append(viewport);
-    const size = { width: 0, height: 0 };
+    const viewportSize = { width: 0, height: 0 };
 
     const scratchVector = new THREE.Vector3();
     const scratchVector2 = new THREE.Vector3();
@@ -7712,8 +7713,8 @@
                             imageStore,
                             logger: this.rootLayer._logger,
                             scale: this._pixelRatio,
-                            x: bounds.left,
-                            y: bounds.top,
+                            x: bounds.left + window.pageXOffset,
+                            y: bounds.top + window.pageYOffset,
                             width: bounds.width,
                             height: bounds.height,
                             allowTaint: this.options.allowTaint || false

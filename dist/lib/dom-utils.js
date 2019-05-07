@@ -79,8 +79,8 @@ function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
         }
         el = el.offsetParent;
     }
-    bounds.left = left + window.pageXOffset;
-    bounds.top = top + window.pageYOffset;
+    bounds.left = left;
+    bounds.top = top;
     bounds.width = element.offsetWidth;
     bounds.height = element.offsetHeight;
     return bounds;
@@ -96,22 +96,32 @@ function addCSSRule(sheet, selector, rules, index) {
 }
 exports.addCSSRule = addCSSRule;
 /*
-* On some mobile browsers, the value reported by window.innerHeight
-* is not the true viewport height. This method returns
-* the actual viewport.
-*/
+ * On some mobile browsers, the value reported by window.innerHeight
+ * is not the true viewport height. This method returns
+ * the actual viewport.
+ */
 function getViewportSize() {
-    size.width = viewport.offsetWidth;
-    size.height = viewport.offsetHeight;
-    return size;
+    viewportSize.width = viewport.offsetWidth;
+    viewportSize.height = viewport.offsetHeight;
+    return viewportSize;
 }
 exports.getViewportSize = getViewportSize;
 const viewport = document.createElement('div');
 viewport.id = 'VIEWPORT';
-viewport.style.position = 'absolute';
+viewport.style.position = 'fixed';
 viewport.style.width = '100vw';
 viewport.style.height = '100vh';
 viewport.style.visibility = 'hidden';
+viewport.style.pointerEvents = 'none';
 document.documentElement.append(viewport);
-const size = { width: 0, height: 0 };
+const viewportSize = { width: 0, height: 0 };
+function getDocumentSize() {
+    const body = document.body;
+    const documentElement = document.documentElement;
+    documentSize.width = Math.max(Math.max(body.scrollWidth, documentElement.scrollWidth), Math.max(body.offsetWidth, documentElement.offsetWidth), Math.max(body.clientWidth, documentElement.clientWidth));
+    documentSize.height = Math.max(Math.max(body.scrollHeight, documentElement.scrollHeight), Math.max(body.offsetHeight, documentElement.offsetHeight), Math.max(body.clientHeight, documentElement.clientHeight));
+    return documentSize;
+}
+exports.getDocumentSize = getDocumentSize;
+const documentSize = { width: 0, height: 0 };
 //# sourceMappingURL=dom-utils.js.map

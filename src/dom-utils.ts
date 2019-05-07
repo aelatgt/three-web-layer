@@ -126,6 +126,8 @@ document.documentElement.append(viewport)
 const viewportSize = { width: 0, height: 0 }
 
 export function getDocumentSize() {
+  const body = document.body
+  const documentElement = document.documentElement
   documentSize.width = Math.max(
     Math.max(body.scrollWidth, documentElement.scrollWidth),
     Math.max(body.offsetWidth, documentElement.offsetWidth),

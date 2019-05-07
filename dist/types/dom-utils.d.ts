@@ -17,3 +17,7 @@ export declare function getViewportSize(): {
     width: number;
     height: number;
 };
+export declare function getDocumentSize(): {
+    width: number;
+    height: number;
+};
