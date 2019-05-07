@@ -59,43 +59,6 @@ export function traverseDOM(
   }
 }
 
-export function getBounds(
-  element: HTMLElement | Window,
-  bounds = { left: 0, top: 0, width: 0, height: 0 }
-) {
-  if (element instanceof Window) {
-    const { width, height } = getViewportSize()
-    bounds.left = 0
-    bounds.top = 0
-    bounds.width = width
-    bounds.height = height
-    return bounds
-  }
-
-  const window = element.ownerDocument!.defaultView!
-  let el = element
-  let left = el.offsetLeft
-  let top = el.offsetTop
-  let offsetParent = el.offsetParent
-  while (el && el.nodeType !== Node.DOCUMENT_NODE) {
-    left -= el.scrollLeft
-    top -= el.scrollTop
-    if (el === offsetParent) {
-      const style = window.getComputedStyle(el)
-      left += el.offsetLeft + parseFloat(style.borderLeftWidth!) || 0
-      top += el.offsetTop + parseFloat(style.borderTopWidth!) || 0
-      offsetParent = el.offsetParent
-    }
-    el = el.offsetParent as any
-  }
-
-  bounds.left = left
-  bounds.top = top
-  bounds.width = element.offsetWidth
-  bounds.height = element.offsetHeight
-  return bounds
-}
-
 export function addCSSRule(sheet, selector, rules, index) {
   if ('insertRule' in sheet) {
     sheet.insertRule(selector + '{' + rules + '}', index)
@@ -104,41 +67,131 @@ export function addCSSRule(sheet, selector, rules, index) {
   }
 }
 
+export interface Bounds {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export function getBounds(
+  element: HTMLElement,
+  bounds: Bounds = { left: 0, top: 0, width: 0, height: 0 }
+) {
+  const doc = element.ownerDocument!
+  const defaultView = element.ownerDocument!.defaultView!
+  const docEl = doc.documentElement
+  const body = doc.body
+
+  if (element === docEl) {
+    return getDocumentBounds(doc, bounds)
+  }
+
+  let el: HTMLElement | null = element
+
+  let computedStyle
+  let offsetParent = el.offsetParent as HTMLElement
+  let prevComputedStyle = defaultView.getComputedStyle(el, null)
+  let top = el.offsetTop
+  let left = el.offsetLeft
+
+  while ((el = el.parentNode as HTMLElement) && el !== body && el !== docEl) {
+    if (prevComputedStyle.position === 'fixed') {
+      break
+    }
+
+    computedStyle = defaultView.getComputedStyle(el, null)
+    top -= el.scrollTop
+    left -= el.scrollLeft
+
+    if (el === offsetParent) {
+      top += el.offsetTop
+      left += el.offsetLeft
+      top += parseFloat(computedStyle.borderTopWidth) || 0
+      left += parseFloat(computedStyle.borderLeftWidth) || 0
+      offsetParent = el.offsetParent as HTMLElement
+    }
+
+    prevComputedStyle = computedStyle
+  }
+
+  if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
+    getDocumentBounds(doc, bounds)
+    top += bounds.top
+    left += bounds.left
+  }
+
+  if (prevComputedStyle.position === 'fixed') {
+    top += Math.max(docEl.scrollTop, body.scrollTop)
+    left += Math.max(docEl.scrollLeft, body.scrollLeft)
+  }
+
+  // let el = element
+  // let left = el.offsetLeft
+  // let top = el.offsetTop
+  // let offsetParent = el.offsetParent
+  // while (el && el.nodeType !== Node.DOCUMENT_NODE) {
+  //   left -= el.scrollLeft
+  //   top -= el.scrollTop
+  //   if (el === offsetParent) {
+  //     const style = window.getComputedStyle(el)
+  //     left += el.offsetLeft + parseFloat(style.borderLeftWidth!) || 0
+  //     top += el.offsetTop + parseFloat(style.borderTopWidth!) || 0
+  //     offsetParent = el.offsetParent
+  //   }
+  //   el = el.offsetParent as any
+  // }
+
+  bounds.left = left
+  bounds.top = top
+  bounds.width = element.offsetWidth
+  bounds.height = element.offsetHeight
+  return bounds
+}
+
 /*
  * On some mobile browsers, the value reported by window.innerHeight
  * is not the true viewport height. This method returns
  * the actual viewport.
  */
-export function getViewportSize() {
-  viewportSize.width = viewport.offsetWidth
-  viewportSize.height = viewport.offsetHeight
-  return viewportSize
+export function getViewportBounds(bounds: Bounds) {
+  if (!viewportTester.parentNode) document.documentElement.append(viewportTester)
+  bounds.top = 0
+  bounds.left = 0
+  bounds.width = viewportTester.offsetWidth
+  bounds.height = viewportTester.offsetHeight
+  return bounds
 }
+const viewportTester = document.createElement('div')
+viewportTester.id = 'VIEWPORT'
+viewportTester.style.position = 'fixed'
+viewportTester.style.width = '100vw'
+viewportTester.style.height = '100vh'
+viewportTester.style.visibility = 'hidden'
+viewportTester.style.pointerEvents = 'none'
 
-const viewport = document.createElement('div')
-viewport.id = 'VIEWPORT'
-viewport.style.position = 'fixed'
-viewport.style.width = '100vw'
-viewport.style.height = '100vh'
-viewport.style.visibility = 'hidden'
-viewport.style.pointerEvents = 'none'
-document.documentElement.append(viewport)
-const viewportSize = { width: 0, height: 0 }
-
-export function getDocumentSize() {
-  const body = document.body
+export function getDocumentBounds(document: Document, bounds: Bounds) {
   const documentElement = document.documentElement
-  documentSize.width = Math.max(
+  const body = document.body
+  const documentElementStyle = getComputedStyle(documentElement)
+  const bodyStyle = getComputedStyle(body)
+  bounds.top =
+    body.offsetTop + parseFloat(documentElementStyle.marginTop as '') ||
+    0 + parseFloat(bodyStyle.marginTop as '') ||
+    0
+  bounds.left =
+    body.offsetLeft + parseFloat(documentElementStyle.marginLeft as '') ||
+    0 + parseFloat(bodyStyle.marginLeft as '') ||
+    0
+  bounds.width = Math.max(
     Math.max(body.scrollWidth, documentElement.scrollWidth),
     Math.max(body.offsetWidth, documentElement.offsetWidth),
     Math.max(body.clientWidth, documentElement.clientWidth)
   )
-  documentSize.height = Math.max(
+  bounds.height = Math.max(
     Math.max(body.scrollHeight, documentElement.scrollHeight),
     Math.max(body.offsetHeight, documentElement.offsetHeight),
     Math.max(body.clientHeight, documentElement.clientHeight)
   )
-  return documentSize
+  return bounds
 }
-
-const documentSize = { width: 0, height: 0 }

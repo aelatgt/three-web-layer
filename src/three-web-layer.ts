@@ -64,6 +64,8 @@ const scratchBounds = { top: 0, left: 0, width: 0, height: 0 }
  *     e.g., 500px width means 0.5meters
  */
 export default class WebLayer3D extends THREE.Object3D {
+  static domUtils = domUtils
+
   static DEBUG_PERFORMANCE = false
   static LAYER_ATTRIBUTE = 'data-layer'
   static LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container'
@@ -467,13 +469,15 @@ export default class WebLayer3D extends THREE.Object3D {
 
   _normalizedBounds = { left: 0, top: 0, width: 0, height: 0 }
   get normalizedBounds() {
-    const { width, height } = domUtils.getViewportSize()
+    const viewportBounds = domUtils.getViewportBounds(this._normalizedBounds)
+    const viewportWidth = viewportBounds.width
+    const viewportHeight = viewportBounds.height
     const bounds = this.bounds
     const normalizedBounds = this._normalizedBounds
-    normalizedBounds.left = bounds.left / width
-    normalizedBounds.top = bounds.top / height
-    normalizedBounds.width = bounds.width / width
-    normalizedBounds.height = bounds.height / height
+    normalizedBounds.left = bounds.left / viewportWidth
+    normalizedBounds.top = bounds.top / viewportHeight
+    normalizedBounds.width = bounds.width / viewportWidth
+    normalizedBounds.height = bounds.height / viewportHeight
     return normalizedBounds
   }
 
@@ -725,7 +729,7 @@ export default class WebLayer3D extends THREE.Object3D {
     const parentBoundingRect =
       this.parent instanceof WebLayer3D
         ? this.parent.bounds
-        : domUtils.getBounds(window, scratchBounds)
+        : domUtils.getViewportBounds(scratchBounds)
     const left = boundingRect.left - parentBoundingRect.left
     const top = boundingRect.top - parentBoundingRect.top
     const parentOriginX = pixelSize * (-parentBoundingRect.width / 2)
