@@ -357,13 +357,15 @@ class WebLayer3D extends THREE.Object3D {
         return (state[this.hover] || state[0]).bounds;
     }
     get normalizedBounds() {
-        const { width, height } = domUtils.getViewportSize();
+        const viewportBounds = domUtils.getViewportBounds(this._normalizedBounds);
+        const viewportWidth = viewportBounds.width;
+        const viewportHeight = viewportBounds.height;
         const bounds = this.bounds;
         const normalizedBounds = this._normalizedBounds;
-        normalizedBounds.left = bounds.left / width;
-        normalizedBounds.top = bounds.top / height;
-        normalizedBounds.width = bounds.width / width;
-        normalizedBounds.height = bounds.height / height;
+        normalizedBounds.left = bounds.left / viewportWidth;
+        normalizedBounds.top = bounds.top / viewportHeight;
+        normalizedBounds.width = bounds.width / viewportWidth;
+        normalizedBounds.height = bounds.height / viewportHeight;
         return normalizedBounds;
     }
     /**
@@ -587,7 +589,7 @@ class WebLayer3D extends THREE.Object3D {
         const pixelSize = WebLayer3D.PIXEL_SIZE;
         const parentBoundingRect = this.parent instanceof WebLayer3D
             ? this.parent.bounds
-            : domUtils.getBounds(window, scratchBounds);
+            : domUtils.getViewportBounds(scratchBounds);
         const left = boundingRect.left - parentBoundingRect.left;
         const top = boundingRect.top - parentBoundingRect.top;
         const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
@@ -763,6 +765,7 @@ class WebLayer3D extends THREE.Object3D {
             render();
     }
 }
+WebLayer3D.domUtils = domUtils;
 WebLayer3D.DEBUG_PERFORMANCE = false;
 WebLayer3D.LAYER_ATTRIBUTE = 'data-layer';
 WebLayer3D.LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container';

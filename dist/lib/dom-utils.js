@@ -54,38 +54,6 @@ function traverseDOM(node, each, bind, level = 0) {
     }
 }
 exports.traverseDOM = traverseDOM;
-function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
-    if (element instanceof Window) {
-        const { width, height } = getViewportSize();
-        bounds.left = 0;
-        bounds.top = 0;
-        bounds.width = width;
-        bounds.height = height;
-        return bounds;
-    }
-    const window = element.ownerDocument.defaultView;
-    let el = element;
-    let left = el.offsetLeft;
-    let top = el.offsetTop;
-    let offsetParent = el.offsetParent;
-    while (el && el.nodeType !== Node.DOCUMENT_NODE) {
-        left -= el.scrollLeft;
-        top -= el.scrollTop;
-        if (el === offsetParent) {
-            const style = window.getComputedStyle(el);
-            left += el.offsetLeft + parseFloat(style.borderLeftWidth) || 0;
-            top += el.offsetTop + parseFloat(style.borderTopWidth) || 0;
-            offsetParent = el.offsetParent;
-        }
-        el = el.offsetParent;
-    }
-    bounds.left = left;
-    bounds.top = top;
-    bounds.width = element.offsetWidth;
-    bounds.height = element.offsetHeight;
-    return bounds;
-}
-exports.getBounds = getBounds;
 function addCSSRule(sheet, selector, rules, index) {
     if ('insertRule' in sheet) {
         sheet.insertRule(selector + '{' + rules + '}', index);
@@ -95,33 +63,105 @@ function addCSSRule(sheet, selector, rules, index) {
     }
 }
 exports.addCSSRule = addCSSRule;
+function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+    const doc = element.ownerDocument;
+    const defaultView = element.ownerDocument.defaultView;
+    const docEl = doc.documentElement;
+    const body = doc.body;
+    if (element === docEl) {
+        return getDocumentBounds(doc, bounds);
+    }
+    let el = element;
+    let computedStyle;
+    let offsetParent = el.offsetParent;
+    let prevComputedStyle = defaultView.getComputedStyle(el, null);
+    let top = el.offsetTop;
+    let left = el.offsetLeft;
+    while ((el = el.parentNode) && el !== body && el !== docEl) {
+        if (prevComputedStyle.position === 'fixed') {
+            break;
+        }
+        computedStyle = defaultView.getComputedStyle(el, null);
+        top -= el.scrollTop;
+        left -= el.scrollLeft;
+        if (el === offsetParent) {
+            top += el.offsetTop;
+            left += el.offsetLeft;
+            top += parseFloat(computedStyle.borderTopWidth) || 0;
+            left += parseFloat(computedStyle.borderLeftWidth) || 0;
+            offsetParent = el.offsetParent;
+        }
+        prevComputedStyle = computedStyle;
+    }
+    if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
+        getDocumentBounds(doc, bounds);
+        top += bounds.top;
+        left += bounds.left;
+    }
+    if (prevComputedStyle.position === 'fixed') {
+        top += Math.max(docEl.scrollTop, body.scrollTop);
+        left += Math.max(docEl.scrollLeft, body.scrollLeft);
+    }
+    // let el = element
+    // let left = el.offsetLeft
+    // let top = el.offsetTop
+    // let offsetParent = el.offsetParent
+    // while (el && el.nodeType !== Node.DOCUMENT_NODE) {
+    //   left -= el.scrollLeft
+    //   top -= el.scrollTop
+    //   if (el === offsetParent) {
+    //     const style = window.getComputedStyle(el)
+    //     left += el.offsetLeft + parseFloat(style.borderLeftWidth!) || 0
+    //     top += el.offsetTop + parseFloat(style.borderTopWidth!) || 0
+    //     offsetParent = el.offsetParent
+    //   }
+    //   el = el.offsetParent as any
+    // }
+    bounds.left = left;
+    bounds.top = top;
+    bounds.width = element.offsetWidth;
+    bounds.height = element.offsetHeight;
+    return bounds;
+}
+exports.getBounds = getBounds;
 /*
  * On some mobile browsers, the value reported by window.innerHeight
  * is not the true viewport height. This method returns
  * the actual viewport.
  */
-function getViewportSize() {
-    viewportSize.width = viewport.offsetWidth;
-    viewportSize.height = viewport.offsetHeight;
-    return viewportSize;
+function getViewportBounds(bounds) {
+    if (!viewportTester.parentNode)
+        document.documentElement.append(viewportTester);
+    bounds.top = 0;
+    bounds.left = 0;
+    bounds.width = viewportTester.offsetWidth;
+    bounds.height = viewportTester.offsetHeight;
+    return bounds;
 }
-exports.getViewportSize = getViewportSize;
-const viewport = document.createElement('div');
-viewport.id = 'VIEWPORT';
-viewport.style.position = 'fixed';
-viewport.style.width = '100vw';
-viewport.style.height = '100vh';
-viewport.style.visibility = 'hidden';
-viewport.style.pointerEvents = 'none';
-document.documentElement.append(viewport);
-const viewportSize = { width: 0, height: 0 };
-function getDocumentSize() {
-    const body = document.body;
+exports.getViewportBounds = getViewportBounds;
+const viewportTester = document.createElement('div');
+viewportTester.id = 'VIEWPORT';
+viewportTester.style.position = 'fixed';
+viewportTester.style.width = '100vw';
+viewportTester.style.height = '100vh';
+viewportTester.style.visibility = 'hidden';
+viewportTester.style.pointerEvents = 'none';
+function getDocumentBounds(document, bounds) {
     const documentElement = document.documentElement;
-    documentSize.width = Math.max(Math.max(body.scrollWidth, documentElement.scrollWidth), Math.max(body.offsetWidth, documentElement.offsetWidth), Math.max(body.clientWidth, documentElement.clientWidth));
-    documentSize.height = Math.max(Math.max(body.scrollHeight, documentElement.scrollHeight), Math.max(body.offsetHeight, documentElement.offsetHeight), Math.max(body.clientHeight, documentElement.clientHeight));
-    return documentSize;
+    const body = document.body;
+    const documentElementStyle = getComputedStyle(documentElement);
+    const bodyStyle = getComputedStyle(body);
+    bounds.top =
+        body.offsetTop + parseFloat(documentElementStyle.marginTop) ||
+            0 + parseFloat(bodyStyle.marginTop) ||
+            0;
+    bounds.left =
+        body.offsetLeft + parseFloat(documentElementStyle.marginLeft) ||
+            0 + parseFloat(bodyStyle.marginLeft) ||
+            0;
+    bounds.width = Math.max(Math.max(body.scrollWidth, documentElement.scrollWidth), Math.max(body.offsetWidth, documentElement.offsetWidth), Math.max(body.clientWidth, documentElement.clientWidth));
+    bounds.height = Math.max(Math.max(body.scrollHeight, documentElement.scrollHeight), Math.max(body.offsetHeight, documentElement.offsetHeight), Math.max(body.clientHeight, documentElement.clientHeight));
+    return bounds;
 }
-exports.getDocumentSize = getDocumentSize;
-const documentSize = { width: 0, height: 0 };
+exports.getDocumentBounds = getDocumentBounds;
 //# sourceMappingURL=dom-utils.js.map

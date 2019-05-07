@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as domUtils from './dom-utils';
 export interface WebLayer3DOptions {
     pixelRatio?: number;
     layerSeparation?: number;
@@ -49,6 +50,7 @@ export default class WebLayer3D extends THREE.Object3D {
     options: WebLayer3DOptions;
     parentLayer: WebLayer3D | null;
     private _level;
+    static domUtils: typeof domUtils;
     static DEBUG_PERFORMANCE: boolean;
     static LAYER_ATTRIBUTE: string;
     static LAYER_CONTAINER_ATTRIBUTE: string;
