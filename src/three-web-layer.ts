@@ -437,11 +437,7 @@ export default class WebLayer3D extends THREE.Object3D {
     this._resizeObserver = new ResizeObserver(records => {
       for (const record of records) {
         const layer = this.getLayerForElement(record.target)!
-        if (
-          layer.element.offsetWidth !== layer.bounds.width ||
-          layer.element.offsetHeight !== layer.bounds.height
-        )
-          layer.needsRasterize = true
+        layer.needsRasterize = true
       }
     })
     this._resizeObserver.observe(element)
