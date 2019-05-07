@@ -903,8 +903,8 @@ export default class WebLayer3D extends THREE.Object3D {
             imageStore,
             logger: this.rootLayer._logger,
             scale: this._pixelRatio,
-            x: bounds.left,
-            y: bounds.top,
+            x: bounds.left + window.pageXOffset,
+            y: bounds.top + window.pageYOffset,
             width: bounds.width,
             height: bounds.height,
             allowTaint: this.options.allowTaint || false

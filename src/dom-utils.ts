@@ -89,8 +89,8 @@ export function getBounds(
     el = el.offsetParent as any
   }
 
-  bounds.left = left + window.pageXOffset
-  bounds.top = top + window.pageYOffset
+  bounds.left = left
+  bounds.top = top
   bounds.width = element.offsetWidth
   bounds.height = element.offsetHeight
   return bounds
@@ -110,16 +110,33 @@ export function addCSSRule(sheet, selector, rules, index) {
  * the actual viewport.
  */
 export function getViewportSize() {
-  size.width = viewport.offsetWidth
-  size.height = viewport.offsetHeight
-  return size
+  viewportSize.width = viewport.offsetWidth
+  viewportSize.height = viewport.offsetHeight
+  return viewportSize
 }
 
 const viewport = document.createElement('div')
 viewport.id = 'VIEWPORT'
-viewport.style.position = 'absolute'
+viewport.style.position = 'fixed'
 viewport.style.width = '100vw'
 viewport.style.height = '100vh'
 viewport.style.visibility = 'hidden'
+viewport.style.pointerEvents = 'none'
 document.documentElement.append(viewport)
-const size = { width: 0, height: 0 }
+const viewportSize = { width: 0, height: 0 }
+
+export function getDocumentSize() {
+  documentSize.width = Math.max(
+    Math.max(body.scrollWidth, documentElement.scrollWidth),
+    Math.max(body.offsetWidth, documentElement.offsetWidth),
+    Math.max(body.clientWidth, documentElement.clientWidth)
+  )
+  documentSize.height = Math.max(
+    Math.max(body.scrollHeight, documentElement.scrollHeight),
+    Math.max(body.offsetHeight, documentElement.offsetHeight),
+    Math.max(body.clientHeight, documentElement.clientHeight)
+  )
+  return documentSize
+}
+
+const documentSize = { width: 0, height: 0 }
