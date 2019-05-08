@@ -115,11 +115,11 @@ export function getBounds(
     prevComputedStyle = computedStyle
   }
 
-  if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
-    getDocumentBounds(doc, bounds)
-    top += bounds.top
-    left += bounds.left
-  }
+  // if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
+  //   getDocumentBounds(doc, bounds)
+  //   top += bounds.top
+  //   left += bounds.left
+  // }
 
   if (prevComputedStyle.position === 'fixed') {
     top += Math.max(docEl.scrollTop, body.scrollTop)
