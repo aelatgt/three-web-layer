@@ -7043,8 +7043,8 @@
     function getViewportBounds(bounds) {
         if (!viewportTester.parentNode)
             document.documentElement.append(viewportTester);
-        bounds.top = 0;
-        bounds.left = 0;
+        bounds.left = pageXOffset;
+        bounds.top = pageYOffset;
         bounds.width = viewportTester.offsetWidth;
         bounds.height = viewportTester.offsetHeight;
         return bounds;
