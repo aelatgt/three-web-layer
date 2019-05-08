@@ -3139,12 +3139,12 @@
                 var testElement = document.createElement('boundtest');
                 testElement.style.height = TEST_HEIGHT + 'px';
                 testElement.style.display = 'block';
-                document.body.appendChild(testElement);
+                document.documentElement.appendChild(testElement);
 
                 range.selectNode(testElement);
                 var rangeBounds = range.getBoundingClientRect();
                 var rangeHeight = Math.round(rangeBounds.height);
-                document.body.removeChild(testElement);
+                document.documentElement.removeChild(testElement);
                 if (rangeHeight === TEST_HEIGHT) {
                     return true;
                 }
@@ -5605,6 +5605,10 @@
                     } else {
                         _this4.ctx.fillText(text.text, text.bounds.left, text.bounds.top + text.bounds.height);
                     }
+                    _this4.ctx.shadowColor = '';
+                    _this4.ctx.shadowOffsetX = 0;
+                    _this4.ctx.shadowOffsetY = 0;
+                    _this4.ctx.shadowBlur = 0;
 
                     if (textDecoration$$1 !== null) {
                         var textDecorationColor = textDecoration$$1.textDecorationColor || color;
