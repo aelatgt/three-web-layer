@@ -7005,11 +7005,11 @@
             }
             prevComputedStyle = computedStyle;
         }
-        if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
-            getDocumentBounds(doc, bounds);
-            top += bounds.top;
-            left += bounds.left;
-        }
+        // if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
+        //   getDocumentBounds(doc, bounds)
+        //   top += bounds.top
+        //   left += bounds.left
+        // }
         if (prevComputedStyle.position === 'fixed') {
             top += Math.max(docEl.scrollTop, body.scrollTop);
             left += Math.max(docEl.scrollLeft, body.scrollLeft);
@@ -7811,8 +7811,8 @@
                             imageStore,
                             logger: this.rootLayer._logger,
                             scale: this._pixelRatio,
-                            x: bounds.left + window.pageXOffset,
-                            y: bounds.top + window.pageYOffset,
+                            x: bounds.left,
+                            y: bounds.top,
                             width: bounds.width,
                             height: bounds.height,
                             allowTaint: this.options.allowTaint || false

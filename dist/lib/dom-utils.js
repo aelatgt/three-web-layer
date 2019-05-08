@@ -93,11 +93,11 @@ function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
         }
         prevComputedStyle = computedStyle;
     }
-    if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
-        getDocumentBounds(doc, bounds);
-        top += bounds.top;
-        left += bounds.left;
-    }
+    // if (prevComputedStyle.position === 'relative' || prevComputedStyle.position === 'static') {
+    //   getDocumentBounds(doc, bounds)
+    //   top += bounds.top
+    //   left += bounds.left
+    // }
     if (prevComputedStyle.position === 'fixed') {
         top += Math.max(docEl.scrollTop, body.scrollTop);
         left += Math.max(docEl.scrollLeft, body.scrollLeft);
