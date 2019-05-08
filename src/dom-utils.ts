@@ -156,8 +156,8 @@ export function getBounds(
  */
 export function getViewportBounds(bounds: Bounds) {
   if (!viewportTester.parentNode) document.documentElement.append(viewportTester)
-  bounds.top = 0
-  bounds.left = 0
+  bounds.top = viewportTester.offsetTop
+  bounds.left = viewportTester.offsetLeft
   bounds.width = viewportTester.offsetWidth
   bounds.height = viewportTester.offsetHeight
   return bounds
