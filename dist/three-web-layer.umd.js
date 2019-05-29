@@ -7296,10 +7296,9 @@
                 }
             });
             this._resizeObserver.observe(element);
-            this._refreshState();
-            WebLayer3D._scheduleRefresh(this);
             if (this.options.onLayerCreate)
                 this.options.onLayerCreate(this);
+            this.refresh();
         }
         static computeNaturalDistance(projection, renderer) {
             let projectionMatrix = projection;
@@ -7561,10 +7560,10 @@
             this._refreshBounds();
             if (this.needsRasterize || forceRasterize) {
                 this.needsRasterize = false;
-                this._refreshChildLayers();
                 if (this.rootLayer._rasterizationQueue.indexOf(this) === -1) {
                     this.rootLayer._rasterizationQueue.push(this);
                 }
+                this._refreshChildLayers();
             }
             for (const child of this.childLayers) {
                 child.refresh(forceRasterize);
