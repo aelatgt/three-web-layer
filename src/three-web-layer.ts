@@ -78,8 +78,6 @@ export default class WebLayer3D extends THREE.Object3D {
   static PIXEL_SIZE = 0.001
   static GEOMETRY = new THREE.PlaneGeometry(1, 1, 2, 2) as THREE.Geometry
 
-  static layersByElement = new WeakMap<Element, WebLayer3D>()
-
   static computeNaturalDistance(
     projection: THREE.Matrix4 | THREE.Camera,
     renderer: THREE.WebGLRenderer
@@ -311,6 +309,7 @@ export default class WebLayer3D extends THREE.Object3D {
   private _processMutations?: any
   private _raycaster = new THREE.Raycaster()
   private _hitIntersections = this._raycaster.intersectObjects([]) // for type inference
+  private _layersByElement = new WeakMap<Element, WebLayer3D>()
 
   constructor(
     element: Element,
@@ -320,11 +319,11 @@ export default class WebLayer3D extends THREE.Object3D {
   ) {
     super()
 
-    WebLayer3D.layersByElement.set(element, this)
     this.element = element as HTMLElement
     this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString())
     this.rootLayer = this.parentLayer ? this.parentLayer.rootLayer : this
     this.name = element.id
+    this.layersByElement.set(element, this)
 
     if (!document.contains(element) && this.rootLayer === this) {
       ensureElementIsInDocument(element, options)
@@ -466,6 +465,10 @@ export default class WebLayer3D extends THREE.Object3D {
     return (state[this.hover] || state[0]).bounds
   }
 
+  get layersByElement() {
+    return this.rootLayer._layersByElement
+  }
+
   _normalizedBounds = { left: 0, top: 0, width: 0, height: 0 }
   get normalizedBounds() {
     const viewportBounds = domUtils.getViewportBounds(this._normalizedBounds)
@@ -560,7 +563,7 @@ export default class WebLayer3D extends THREE.Object3D {
 
   getLayerForElement(element: Element) {
     const closestLayerElement = element.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`) as HTMLElement
-    return WebLayer3D.layersByElement.get(closestLayerElement)
+    return this.layersByElement.get(closestLayerElement)
   }
 
   hitTest(ray: THREE.Ray) {
@@ -837,7 +840,7 @@ export default class WebLayer3D extends THREE.Object3D {
   private _tryConvertToWebLayer3D(el: HTMLElement, level: number) {
     const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE)
     if (id !== null || el.nodeName === 'VIDEO') {
-      let child = this.getObjectById(parseInt(id + '', 10)) as WebLayer3D
+      let child = this.layersByElement.get(el)
       if (!child) {
         child = new WebLayer3D(el, this.options, this, level)
         this.add(child)
