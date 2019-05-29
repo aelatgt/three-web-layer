@@ -61,7 +61,6 @@ export default class WebLayer3D extends THREE.Object3D {
     static DEFAULT_LAYER_SEPARATION: number;
     static PIXEL_SIZE: number;
     static GEOMETRY: THREE.Geometry;
-    static layersByElement: WeakMap<Element, WebLayer3D>;
     static computeNaturalDistance(projection: THREE.Matrix4 | THREE.Camera, renderer: THREE.WebGLRenderer): number;
     static UPDATE_DEFAULT: (layer: WebLayer3D, lerp?: number) => void;
     static shouldUseTargetLayout(layer: WebLayer3D): boolean;
@@ -132,6 +131,7 @@ export default class WebLayer3D extends THREE.Object3D {
     private _processMutations?;
     private _raycaster;
     private _hitIntersections;
+    private _layersByElement;
     constructor(element: Element, options?: WebLayer3DOptions, parentLayer?: WebLayer3D | null, _level?: number);
     /**
      * Get the texture state.
@@ -145,6 +145,7 @@ export default class WebLayer3D extends THREE.Object3D {
         width: number;
         height: number;
     };
+    readonly layersByElement: WeakMap<Element, WebLayer3D>;
     _normalizedBounds: {
         left: number;
         top: number;

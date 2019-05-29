@@ -7185,12 +7185,13 @@ class WebLayer3D extends Object3D {
         this._interactionRays = [];
         this._raycaster = new Raycaster();
         this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
+        this._layersByElement = new WeakMap();
         this._normalizedBounds = { left: 0, top: 0, width: 0, height: 0 };
-        WebLayer3D.layersByElement.set(element, this);
         this.element = element;
         this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString());
         this.rootLayer = this.parentLayer ? this.parentLayer.rootLayer : this;
         this.name = element.id;
+        this.layersByElement.set(element, this);
         if (!document.contains(element) && this.rootLayer === this) {
             ensureElementIsInDocument(element, options);
         }
@@ -7430,6 +7431,9 @@ class WebLayer3D extends Object3D {
         const state = this._states[this.state] || this._states[''];
         return (state[this.hover] || state[0]).bounds;
     }
+    get layersByElement() {
+        return this.rootLayer._layersByElement;
+    }
     get normalizedBounds() {
         const viewportBounds = getViewportBounds(this._normalizedBounds);
         const viewportWidth = viewportBounds.width;
@@ -7510,7 +7514,7 @@ class WebLayer3D extends Object3D {
     }
     getLayerForElement(element) {
         const closestLayerElement = element.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`);
-        return WebLayer3D.layersByElement.get(closestLayerElement);
+        return this.layersByElement.get(closestLayerElement);
     }
     hitTest(ray) {
         const raycaster = this.rootLayer._raycaster;
@@ -7752,7 +7756,7 @@ class WebLayer3D extends Object3D {
     _tryConvertToWebLayer3D(el, level) {
         const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE);
         if (id !== null || el.nodeName === 'VIDEO') {
-            let child = this.getObjectById(parseInt(id + '', 10));
+            let child = this.layersByElement.get(el);
             if (!child) {
                 child = new WebLayer3D(el, this.options, this, level);
                 this.add(child);
@@ -7850,7 +7854,6 @@ WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms';
 WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.005;
 WebLayer3D.PIXEL_SIZE = 0.001;
 WebLayer3D.GEOMETRY = new PlaneGeometry(1, 1, 2, 2);
-WebLayer3D.layersByElement = new WeakMap();
 WebLayer3D.UPDATE_DEFAULT = function (layer, lerp = 1) {
     WebLayer3D.updateLayout(layer, lerp);
     WebLayer3D.updateVisibility(layer, lerp);
