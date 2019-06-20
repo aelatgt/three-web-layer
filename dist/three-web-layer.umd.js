@@ -7669,8 +7669,8 @@
             }
             this.contentTargetOpacity = 1;
             const pixelSize = WebLayer3D.PIXEL_SIZE;
-            const parentBoundingRect = this.parent instanceof WebLayer3D
-                ? this.parent.bounds
+            const parentBoundingRect = this.parentLayer instanceof WebLayer3D
+                ? this.parentLayer.bounds
                 : getViewportBounds(scratchBounds);
             const left = boundingRect.left - parentBoundingRect.left;
             const top = boundingRect.top - parentBoundingRect.top;
