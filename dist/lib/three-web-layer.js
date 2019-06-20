@@ -74,9 +74,9 @@ class WebLayer3D extends THREE.Object3D {
          * Specifies whether or not this layer's layout
          * should match the layout stored in the `target` object
          *
-         * When set to `always`, the target layout should always be applied.
-         * When set to `never`, the target layout should never be applied.
-         * When set to `auto`, the target layout should only be applied
+         * When set to `true`, the target layout should always be applied.
+         * When set to `false`, the target layout should never be applied.
+         * When set to `'auto'`, the target layout should only be applied
          * when the `parentLayer` is the same as the `parent` object.
          *
          * It is the responsibiltiy of the update callback
@@ -84,7 +84,7 @@ class WebLayer3D extends THREE.Object3D {
          *
          * Defaults to `auto`
          */
-        this.shouldUseTargetLayout = 'auto';
+        this.shouldApplyTargetLayout = 'auto';
         /**
          * Specifies whether or not the update callback should update
          * the `content` layout to match the layout stored in
@@ -95,7 +95,7 @@ class WebLayer3D extends THREE.Object3D {
          *
          * Defaults to `true`
          */
-        this.shouldUseContentTargetLayout = true;
+        this.shouldApplyContentTargetLayout = true;
         this._lastTargetPosition = new THREE.Vector3();
         this._lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1);
         this._hover = 0;
@@ -234,23 +234,23 @@ class WebLayer3D extends THREE.Object3D {
         const naturalDistance = width / 2 / Math.tan(horizontalFOV / 2);
         return naturalDistance;
     }
-    static shouldUseTargetLayout(layer) {
-        const should = layer.shouldUseTargetLayout;
-        if (should === 'always')
+    static shouldApplyTargetLayout(layer) {
+        const should = layer.shouldApplyTargetLayout;
+        if (should === 'always' || should === true)
             return true;
-        if (should === 'never')
+        if (should === 'never' || should === false)
             return false;
         if (should === 'auto' && layer.parent === layer.parentLayer)
             return true;
         return false;
     }
     static updateLayout(layer, lerp) {
-        if (WebLayer3D.shouldUseTargetLayout(layer)) {
+        if (WebLayer3D.shouldApplyTargetLayout(layer)) {
             layer.position.lerp(layer.target.position, lerp);
             layer.scale.lerp(layer.target.scale, lerp);
             layer.quaternion.slerp(layer.target.quaternion, lerp);
         }
-        if (layer.shouldUseContentTargetLayout) {
+        if (layer.shouldApplyContentTargetLayout) {
             layer.content.position.lerp(layer.contentTarget.position, lerp);
             layer.content.scale.lerp(layer.contentTarget.scale, lerp);
             layer.content.quaternion.slerp(layer.contentTarget.quaternion, lerp);

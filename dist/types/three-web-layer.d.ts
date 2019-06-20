@@ -63,7 +63,7 @@ export default class WebLayer3D extends THREE.Object3D {
     static GEOMETRY: THREE.Geometry;
     static computeNaturalDistance(projection: THREE.Matrix4 | THREE.Camera, renderer: THREE.WebGLRenderer): number;
     static UPDATE_DEFAULT: (layer: WebLayer3D, lerp?: number) => void;
-    static shouldUseTargetLayout(layer: WebLayer3D): boolean;
+    static shouldApplyTargetLayout(layer: WebLayer3D): boolean;
     static updateLayout(layer: WebLayer3D, lerp: number): void;
     static updateVisibility(layer: WebLayer3D, lerp: number): void;
     private static _hoverLayers;
@@ -89,9 +89,9 @@ export default class WebLayer3D extends THREE.Object3D {
      * Specifies whether or not this layer's layout
      * should match the layout stored in the `target` object
      *
-     * When set to `always`, the target layout should always be applied.
-     * When set to `never`, the target layout should never be applied.
-     * When set to `auto`, the target layout should only be applied
+     * When set to `true`, the target layout should always be applied.
+     * When set to `false`, the target layout should never be applied.
+     * When set to `'auto'`, the target layout should only be applied
      * when the `parentLayer` is the same as the `parent` object.
      *
      * It is the responsibiltiy of the update callback
@@ -99,7 +99,7 @@ export default class WebLayer3D extends THREE.Object3D {
      *
      * Defaults to `auto`
      */
-    shouldUseTargetLayout: 'always' | 'never' | 'auto';
+    shouldApplyTargetLayout: true | false | 'always' | 'never' | 'auto';
     /**
      * Specifies whether or not the update callback should update
      * the `content` layout to match the layout stored in
@@ -110,7 +110,7 @@ export default class WebLayer3D extends THREE.Object3D {
      *
      * Defaults to `true`
      */
-    shouldUseContentTargetLayout: boolean;
+    shouldApplyContentTargetLayout: boolean;
     private _lastTargetPosition;
     private _lastContentTargetScale;
     private _hover;
