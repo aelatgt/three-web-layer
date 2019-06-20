@@ -101,8 +101,8 @@ export default class WebLayer3D extends THREE.Object3D {
 
   static shouldApplyTargetLayout(layer: WebLayer3D) {
     const should = layer.shouldApplyTargetLayout
-    if (should === 'always' || should === true) return true
-    if (should === 'never' || should === false) return false
+    if ((should as any) === 'always' || should === true) return true
+    if ((should as any) === 'never' || should === false) return false
     if (should === 'auto' && layer.parent === layer.parentLayer) return true
     return false
   }
