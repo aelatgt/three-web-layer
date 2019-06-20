@@ -10,7 +10,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/argonjs/three-web-layer.git"
+    "url": "https://github.com/aelatgt/three-web-layer.git"
   },
   "keywords": [
     "web",
@@ -24,9 +24,9 @@
   "author": "Gheric Speiginer <gheric@gatech.edu>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/argonjs/three-web-layer/issues"
+    "url": "https://github.com/aelatgt/three-web-layer/issues"
   },
-  "homepage": "https://github.com/argonjs/three-web-layer#readme",
+  "homepage": "https://github.com/aelatgt/three-web-layer#readme",
   "engines": {
     "node": ">=6.0.0"
   },
