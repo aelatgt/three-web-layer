@@ -7421,6 +7421,15 @@
             }
         }
         /**
+         * @deprecated Use `shouldApplyTargetLayout`
+         */
+        get shouldUseTargetLayout() {
+            return this.shouldApplyTargetLayout;
+        }
+        set shouldUseTargetLayout(value) {
+            this.shouldApplyTargetLayout = value;
+        }
+        /**
          * Get the texture state.
          * Note: if a state is not available, the `default` state will be rendered.
          */

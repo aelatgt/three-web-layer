@@ -99,7 +99,11 @@ export default class WebLayer3D extends THREE.Object3D {
      *
      * Defaults to `auto`
      */
-    shouldApplyTargetLayout: true | false | 'always' | 'never' | 'auto';
+    shouldApplyTargetLayout: true | false | 'auto';
+    /**
+     * @deprecated Use `shouldApplyTargetLayout`
+     */
+    shouldUseTargetLayout: any;
     /**
      * Specifies whether or not the update callback should update
      * the `content` layout to match the layout stored in
