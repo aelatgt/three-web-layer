@@ -732,11 +732,11 @@ export default class WebLayer3D extends THREE.Object3D {
         case 'scale-down':
           texture.repeat.set(1, 1)
           if (viewRatio > videoRatio) {
-            const width = this.bounds.height * videoRatio
+            const width = this.bounds.height * videoRatio || 0
             this.bounds.left += (this.bounds.width - width) / 2
             this.bounds.width = width
           } else {
-            const height = this.bounds.width / videoRatio
+            const height = this.bounds.width / videoRatio || 0
             this.bounds.top += (this.bounds.height - height) / 2
             this.bounds.height = height
           }
@@ -744,11 +744,11 @@ export default class WebLayer3D extends THREE.Object3D {
         case 'cover':
           texture.repeat.set(viewWidth / videoWidth, viewHeight / videoHeight)
           if (viewRatio < videoRatio) {
-            const width = this.bounds.height * videoRatio
+            const width = this.bounds.height * videoRatio || 0
             this.bounds.left += (this.bounds.width - width) / 2
             this.bounds.width = width
           } else {
-            const height = this.bounds.width / videoRatio
+            const height = this.bounds.width / videoRatio || 0
             this.bounds.top += (this.bounds.height - height) / 2
             this.bounds.height = height
           }
