@@ -7659,6 +7659,53 @@
         }
         _refreshBounds() {
             getBounds(this.element, this.bounds);
+            if (this.texture && this.element.nodeName === 'VIDEO') {
+                const video = this.element;
+                const texture = this.texture;
+                const computedStyle = getComputedStyle(this.element);
+                const { objectFit } = computedStyle;
+                const { width: viewWidth, height: viewHeight } = this.bounds;
+                const { videoWidth, videoHeight } = video;
+                const videoRatio = videoWidth / videoHeight;
+                const viewRatio = viewWidth / viewHeight;
+                texture.center.set(0.5, 0.5);
+                switch (objectFit) {
+                    case 'none':
+                        texture.repeat.set(viewWidth / videoWidth, viewHeight / videoHeight).clampScalar(0, 1);
+                        break;
+                    case 'contain':
+                    case 'scale-down':
+                        texture.repeat.set(1, 1);
+                        if (viewRatio > videoRatio) {
+                            const width = this.bounds.height * videoRatio;
+                            this.bounds.left += (this.bounds.width - width) / 2;
+                            this.bounds.width = width;
+                        }
+                        else {
+                            const height = this.bounds.width / videoRatio;
+                            this.bounds.top += (this.bounds.height - height) / 2;
+                            this.bounds.height = height;
+                        }
+                        break;
+                    case 'cover':
+                        texture.repeat.set(viewWidth / videoWidth, viewHeight / videoHeight);
+                        if (viewRatio < videoRatio) {
+                            const width = this.bounds.height * videoRatio;
+                            this.bounds.left += (this.bounds.width - width) / 2;
+                            this.bounds.width = width;
+                        }
+                        else {
+                            const height = this.bounds.width / videoRatio;
+                            this.bounds.top += (this.bounds.height - height) / 2;
+                            this.bounds.height = height;
+                        }
+                        break;
+                    default:
+                    case 'fill':
+                        texture.repeat.set(1, 1);
+                        break;
+                }
+            }
         }
         _refreshTargetLayout() {
             this.target.position.copy(this._lastTargetPosition);
