@@ -13,7 +13,13 @@ import * as domUtils from './dom-utils'
 export interface WebLayer3DOptions {
   pixelRatio?: number
   layerSeparation?: number
+  /**
+   * @deprecated
+   */
   windowWidth?: number
+  /**
+   * @deprecated
+   */
   windowHeight?: number
   allowTaint?: boolean
   onLayerCreate?(layer: WebLayer3D): void
@@ -1000,9 +1006,9 @@ function ensureElementIsInDocument(element: Element, options?: WebLayer3DOptions
   const container = document.createElement('div')
   container.setAttribute(WebLayer3D.LAYER_CONTAINER_ATTRIBUTE, '')
   container.style.position = 'fixed'
-  container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '550px'
+  container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '100%'
   container.style.height =
-    options && 'windowHeight' in options ? options.windowHeight + 'px' : '150px'
+    options && 'windowHeight' in options ? options.windowHeight + 'px' : '100%'
   // top -100000px allows html2canvas to render input boxes more accurately
   // on mobile safari than left -10000px
   // my guess is this has something to do with safari trying to move the viewport
