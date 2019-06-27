@@ -21,6 +21,7 @@ export interface WebLayer3DOptions {
    * @deprecated
    */
   windowHeight?: number
+  autoRefresh?: boolean
   allowTaint?: boolean
   onLayerCreate?(layer: WebLayer3D): void
   onBeforeRasterize?(layer: WebLayer3D): void
@@ -170,10 +171,6 @@ export default class WebLayer3D extends THREE.Object3D {
   private static async _scheduleRefresh(rootLayer: WebLayer3D) {
     await microtask // wait for render to complete
     rootLayer.refresh()
-  }
-
-  private static async _scheduleRasterizations(rootLayer: WebLayer3D) {
-    await microtask // wait for render to complete
     const queue = rootLayer._rasterizationQueue
     if (queue.length === 0) return
     if (window.requestIdleCallback) {
@@ -548,8 +545,7 @@ export default class WebLayer3D extends THREE.Object3D {
     this._checkRoot()
     WebLayer3D._updateInteractions(this)
     this.traverseLayers(updateCallback, lerp)
-    WebLayer3D._scheduleRefresh(this)
-    WebLayer3D._scheduleRasterizations(this)
+    if (this.options.autoRefresh !== false) WebLayer3D._scheduleRefresh(this)
     if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('update end')
     if (WebLayer3D.DEBUG_PERFORMANCE) performance.measure('update', 'update start', 'update end')
   }
