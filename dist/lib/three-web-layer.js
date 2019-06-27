@@ -295,9 +295,6 @@ class WebLayer3D extends THREE.Object3D {
     static async _scheduleRefresh(rootLayer) {
         await microtask; // wait for render to complete
         rootLayer.refresh();
-    }
-    static async _scheduleRasterizations(rootLayer) {
-        await microtask; // wait for render to complete
         const queue = rootLayer._rasterizationQueue;
         if (queue.length === 0)
             return;
@@ -422,8 +419,8 @@ class WebLayer3D extends THREE.Object3D {
         this._checkRoot();
         WebLayer3D._updateInteractions(this);
         this.traverseLayers(updateCallback, lerp);
-        WebLayer3D._scheduleRefresh(this);
-        WebLayer3D._scheduleRasterizations(this);
+        if (this.options.autoRefresh !== false)
+            WebLayer3D._scheduleRefresh(this);
         if (WebLayer3D.DEBUG_PERFORMANCE)
             performance.mark('update end');
         if (WebLayer3D.DEBUG_PERFORMANCE)
@@ -876,9 +873,8 @@ function ensureElementIsInDocument(element, options) {
     const container = document.createElement('div');
     container.setAttribute(WebLayer3D.LAYER_CONTAINER_ATTRIBUTE, '');
     container.style.position = 'fixed';
-    container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '550px';
-    container.style.height =
-        options && 'windowHeight' in options ? options.windowHeight + 'px' : '150px';
+    container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '100%';
+    container.style.height = options && 'windowHeight' in options ? options.windowHeight + 'px' : '100%';
     // top -100000px allows html2canvas to render input boxes more accurately
     // on mobile safari than left -10000px
     // my guess is this has something to do with safari trying to move the viewport

@@ -3,8 +3,15 @@ import * as domUtils from './dom-utils';
 export interface WebLayer3DOptions {
     pixelRatio?: number;
     layerSeparation?: number;
+    /**
+     * @deprecated
+     */
     windowWidth?: number;
+    /**
+     * @deprecated
+     */
     windowHeight?: number;
+    autoRefresh?: boolean;
     allowTaint?: boolean;
     onLayerCreate?(layer: WebLayer3D): void;
     onBeforeRasterize?(layer: WebLayer3D): void;
@@ -69,7 +76,6 @@ export default class WebLayer3D extends THREE.Object3D {
     private static _hoverLayers;
     private static _updateInteractions;
     private static _scheduleRefresh;
-    private static _scheduleRasterizations;
     private static _clearHover;
     private static _setHover;
     private static _setHoverClass;
