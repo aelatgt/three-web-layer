@@ -122,6 +122,17 @@ light.shadow.radius = 1
 scene.add(light)
 const shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera)
 
+const crosshair = new THREE.Mesh(
+  new THREE.RingBufferGeometry(0.02, 0.04, 32),
+  new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    opacity: 0.5,
+    transparent: true
+  })
+)
+crosshair.position.z = -2
+camera.add(crosshair)
+
 // magic: convert DOM hierarchy to WebLayer3D heirarchy
 const todoLayer = ((window as any).todoLayer = new WebLayer3D(todoVue.$el, {
   windowWidth: 500,
@@ -257,8 +268,7 @@ const arrow1 = new THREE.ArrowHelper(
   Math.random() * 0xffffff
 )
 controller1.add(arrow1)
-controller1.addEventListener('selectstart', onSelectStart)
-// controller1.addEventListener( 'selectend', onSelectEnd )
+controller1.addEventListener('select', onSelect)
 scene.add(controller1)
 
 const controller2 = (renderer.vr as any).getController(1) as THREE.Object3D
@@ -274,11 +284,14 @@ const arrow2 = new THREE.ArrowHelper(
   Math.random() * 0xffffff
 )
 controller2.add(arrow2)
-controller2.addEventListener('selectstart', onSelectStart)
-// controller2.addEventListener( 'selectend', onSelectEnd )
+controller2.addEventListener('select', onSelect)
 scene.add(controller2)
 
-function onSelectStart(evt: THREE.Event) {
+const controller5 = (renderer.vr as any).getController(2) as THREE.Object3D
+controller5.addEventListener('select', onSelect)
+scene.add(controller5)
+
+function onSelect(evt: THREE.Event) {
   const controller = evt.target as THREE.Object3D
   raycaster.ray.set(controller.position, controller.getWorldDirection(new THREE.Vector3()).negate())
   const hit = todoLayer.hitTest(raycaster.ray)
@@ -291,6 +304,8 @@ function onSelectStart(evt: THREE.Event) {
 
 const immersiveRays = [ray1, ray2]
 const todoLayerTargetPosition = new THREE.Vector3()
+const todoLayerTargetQuaternion = new THREE.Quaternion()
+const currentTargetPosition = new THREE.Vector3()
 
 // animate
 function animate() {
@@ -301,10 +316,14 @@ function animate() {
   // update camera
   if (renderer.vr.enabled && renderer.vr.getDevice()) {
     renderer.vr.getCamera(camera)
-    todoLayerTargetPosition.set(0, 0, -0.7)
-    camera.localToWorld(todoLayerTargetPosition)
+    currentTargetPosition.set(0, 0, -1.5)
+    camera.localToWorld(currentTargetPosition)
+    if (currentTargetPosition.distanceTo(todoLayerTargetPosition) > 1.5) {
+      todoLayerTargetPosition.copy(currentTargetPosition)
+      todoLayerTargetQuaternion.copy(camera.quaternion)
+    }
     todoLayer.position.lerp(todoLayerTargetPosition, lerpValue)
-    todoLayer.quaternion.slerp(camera.quaternion, lerpValue)
+    todoLayer.quaternion.slerp(todoLayerTargetQuaternion, lerpValue)
     todoLayer.interactionRays = immersiveRays
   } else {
     const width = renderer.domElement.offsetWidth

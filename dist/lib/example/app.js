@@ -114,6 +114,13 @@ light.shadow.camera.near = 1;
 light.shadow.radius = 1;
 scene.add(light);
 const shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera);
+const crosshair = new THREE.Mesh(new THREE.RingBufferGeometry(0.02, 0.04, 32), new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    opacity: 0.5,
+    transparent: true
+}));
+crosshair.position.z = -2;
+camera.add(crosshair);
 // magic: convert DOM hierarchy to WebLayer3D heirarchy
 const todoLayer = (window.todoLayer = new three_web_layer_1.default(todoVue.$el, {
     windowWidth: 500,
@@ -234,8 +241,7 @@ ray1.scale.set(1, 1, -1);
 controller1.add(ray1);
 const arrow1 = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), undefined, 100, Math.random() * 0xffffff);
 controller1.add(arrow1);
-controller1.addEventListener('selectstart', onSelectStart);
-// controller1.addEventListener( 'selectend', onSelectEnd )
+controller1.addEventListener('select', onSelect);
 scene.add(controller1);
 const controller2 = renderer.vr.getController(1);
 controller2.add(new THREE.Mesh(cursorGeometry));
@@ -245,10 +251,12 @@ ray2.scale.set(1, 1, -1);
 controller2.add(ray2);
 const arrow2 = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), undefined, 100, Math.random() * 0xffffff);
 controller2.add(arrow2);
-controller2.addEventListener('selectstart', onSelectStart);
-// controller2.addEventListener( 'selectend', onSelectEnd )
+controller2.addEventListener('select', onSelect);
 scene.add(controller2);
-function onSelectStart(evt) {
+const controller5 = renderer.vr.getController(2);
+controller5.addEventListener('select', onSelect);
+scene.add(controller5);
+function onSelect(evt) {
     const controller = evt.target;
     raycaster.ray.set(controller.position, controller.getWorldDirection(new THREE.Vector3()).negate());
     const hit = todoLayer.hitTest(raycaster.ray);
@@ -260,6 +268,8 @@ function onSelectStart(evt) {
 }
 const immersiveRays = [ray1, ray2];
 const todoLayerTargetPosition = new THREE.Vector3();
+const todoLayerTargetQuaternion = new THREE.Quaternion();
+const currentTargetPosition = new THREE.Vector3();
 // animate
 function animate() {
     stats.begin();
@@ -268,10 +278,14 @@ function animate() {
     // update camera
     if (renderer.vr.enabled && renderer.vr.getDevice()) {
         renderer.vr.getCamera(camera);
-        todoLayerTargetPosition.set(0, 0, -0.7);
-        camera.localToWorld(todoLayerTargetPosition);
+        currentTargetPosition.set(0, 0, -1.5);
+        camera.localToWorld(currentTargetPosition);
+        if (currentTargetPosition.distanceTo(todoLayerTargetPosition) > 1.5) {
+            todoLayerTargetPosition.copy(currentTargetPosition);
+            todoLayerTargetQuaternion.copy(camera.quaternion);
+        }
         todoLayer.position.lerp(todoLayerTargetPosition, lerpValue);
-        todoLayer.quaternion.slerp(camera.quaternion, lerpValue);
+        todoLayer.quaternion.slerp(todoLayerTargetQuaternion, lerpValue);
         todoLayer.interactionRays = immersiveRays;
     }
     else {
