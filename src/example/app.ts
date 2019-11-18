@@ -4,6 +4,7 @@ import TodoMVC, { filters } from './TodoMVC'
 import dat from 'dat.gui'
 import Noty from 'noty'
 import Stats from 'stats.js'
+import * as ethereal from 'ethereal'
 
 import { createXRButton } from './xr'
 
@@ -197,10 +198,10 @@ function toggleDOM(enabled) {
     containerStyle.height = '100vh'
     containerStyle.transform = 'scale(0.5)'
     containerStyle.transformOrigin = 'bottom left'
-    todoLayer.refresh(true)
+    todoLayer.needsRasterize = true
   } else {
     containerStyle.top = '-100000px'
-    todoLayer.refresh(true)
+    todoLayer.needsRasterize = true
   }
 }
 
@@ -310,7 +311,7 @@ const currentTargetPosition = new THREE.Vector3()
 // animate
 function animate() {
   stats.begin()
-  const deltaTime = clock.getDelta()
+  const deltaTime = Math.min(clock.getDelta(), 1 / 60)
   const lerpValue = Math.min(deltaTime * Controls.lerpSpeed, 1)
 
   // update camera
@@ -331,14 +332,18 @@ function animate() {
     const aspect = width / height
     camera.aspect = aspect
     camera.updateProjectionMatrix()
-    camera.position.z = 0.7
+
     if (Controls.moveCamera) {
-      camera.position.x += (pointer.x * 0.4 - camera.position.x) * 0.05
-      camera.position.y += (pointer.y * 0.4 - camera.position.y) * 0.05
+      const sphericalDirection = ethereal.vectors2.get().set(pointer.x * 45, pointer.y * 45)
+      ethereal.SpatialMetrics.getCartesianForSphericalDirection(sphericalDirection, camera.position)
+      ethereal.vectors2.pool(sphericalDirection)
+      camera.position.z *= -0.8
     } else {
       camera.position.x = 0
       camera.position.y = 0
     }
+
+    camera.updateWorldMatrix(true, true)
     camera.lookAt(scene.position)
     renderer.setSize(width, height, false)
     todoLayer.position.set(0, 0, 0)
@@ -352,16 +357,23 @@ function animate() {
 
   // update our WebLayer3D heirarchy
   // important: update interaction rays first!
-  todoLayer.update(lerpValue, (layer, lerp) => {
-    layer.target.position.z = Controls.layerSeparation * layer.level
-
-    if (layer.element.matches('.todo-list li *') && layer.contentTargetOpacity === 0) {
-      if (!layer.element.matches('.destroy')) layer.target.position.y = 0
-      layer.target.scale.y = 0.001
-    }
+  todoLayer.update(deltaTime, (layer, lerp) => {
+    layer.transitioner.multiplier = Controls.lerpSpeed
+    layer.content.transitioner.multiplier = Controls.lerpSpeed
 
     if (layer.element.matches('.destroy')) {
-      layer.position.copy(layer.target.position)
+      layer.transitioner.duration = 0.5
+      layer.content.transitioner.duration = 0.5
+    } else {
+      layer.transitioner.duration = 1
+      layer.content.transitioner.duration = 1
+    }
+
+    layer.position.z = Controls.layerSeparation * layer.level
+
+    if (layer.element.matches('.todo-list li *') && layer.contentOpacity.target === 0) {
+      if (!layer.element.matches('.destroy')) layer.position.y = 0
+      layer.scale.y = 0.001
     }
 
     if (Controls.hoverEffect) {
@@ -371,24 +383,24 @@ function animate() {
         !layer.element.matches('h1') &&
         !layer.element.matches('.todo-count')
       ) {
-        layer.contentTarget.position.z += Controls.layerSeparation * 0.3
-        layer.contentTarget.scale.multiplyScalar(1.1)
+        layer.content.position.z += Controls.layerSeparation * 0.3
+        layer.content.scale.multiplyScalar(1.1)
       }
     }
 
     if (Controls.layout === 'custom') {
       if (layer.level === 0) {
-        layer.contentTargetOpacity = 0
+        layer.contentOpacity.target = 0
         const h1Layer = layer.getLayerForQuery('h1')!
         const infoLayer = layer.getLayerForQuery('.info')!
         const mainLayer = layer.getLayerForQuery('.todoapp')!
         const footerLayer = layer.getLayerForQuery('.footer')!
-        h1Layer.target.position.set(-0.4, 0.05, 0)
-        infoLayer.target.position.set(-0.2, -0.05, 0)
-        mainLayer.target.position.set(0.2, 0, 0)
-        mainLayer.contentTargetOpacity = 0
-        footerLayer.target.position.set(-0.2, -0.2, 0)
-        footerLayer.target.scale.set(1.5, 1.5, 1.5)
+        h1Layer.position.set(-0.4, 0.05, 0)
+        infoLayer.position.set(-0.2, -0.05, 0)
+        mainLayer.position.set(0.2, 0, 0)
+        mainLayer.contentOpacity.target = 0
+        footerLayer.position.set(-0.2, -0.2, 0)
+        footerLayer.scale.set(1.5, 1.5, 1.5)
       }
     }
 

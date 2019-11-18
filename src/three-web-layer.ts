@@ -7,6 +7,7 @@ import CanvasRenderer from '@speigg/html2canvas/dist/npm/renderer/CanvasRenderer
 import Renderer from '@speigg/html2canvas/dist/npm/Renderer'
 import ResourceLoader from '@speigg/html2canvas/dist/npm/ResourceLoader'
 import { FontMetrics } from '@speigg/html2canvas/dist/npm/Font'
+import * as ethereal from 'ethereal'
 
 import * as domUtils from './dom-utils'
 
@@ -22,6 +23,7 @@ export interface WebLayer3DOptions {
    */
   windowHeight?: number
   autoRefresh?: boolean
+  autoRasterize?: boolean
   allowTaint?: boolean
   onLayerCreate?(layer: WebLayer3D): void
   onBeforeRasterize?(layer: WebLayer3D): void
@@ -101,39 +103,17 @@ export default class WebLayer3D extends THREE.Object3D {
     return naturalDistance
   }
 
-  static UPDATE_DEFAULT = function(layer: WebLayer3D, lerp = 1) {
-    WebLayer3D.updateLayout(layer, lerp)
-    WebLayer3D.updateVisibility(layer, lerp)
+  static UPDATE_DEFAULT = function(layer: WebLayer3D, deltaTime = 1) {
+    layer.transitioner.update(deltaTime)
+    layer.content.transitioner.update(deltaTime)
   }
 
   static shouldApplyTargetLayout(layer: WebLayer3D) {
     const should = layer.shouldApplyTargetLayout
     if ((should as any) === 'always' || should === true) return true
     if ((should as any) === 'never' || should === false) return false
-    if (should === 'auto' && layer.parent === layer.parentLayer) return true
+    if (should === 'auto' && layer.parentLayer && layer.parent === layer.parentLayer) return true
     return false
-  }
-
-  static updateLayout(layer: WebLayer3D, lerp: number) {
-    if (WebLayer3D.shouldApplyTargetLayout(layer)) {
-      layer.position.lerp(layer.target.position, lerp)
-      layer.scale.lerp(layer.target.scale, lerp)
-      layer.quaternion.slerp(layer.target.quaternion, lerp)
-    }
-    if (layer.shouldApplyContentTargetLayout) {
-      layer.content.position.lerp(layer.contentTarget.position, lerp)
-      layer.content.scale.lerp(layer.contentTarget.scale, lerp)
-      layer.content.quaternion.slerp(layer.contentTarget.quaternion, lerp)
-    }
-  }
-
-  static updateVisibility(layer: WebLayer3D, lerp: number) {
-    const material = layer.mesh.material as THREE.MeshBasicMaterial
-    if ('opacity' in material) {
-      const targetOpacity = layer.contentTargetOpacity
-      material.opacity = Math.min(THREE.Math.lerp(material.opacity, targetOpacity, lerp), 1)
-      material.needsUpdate = true
-    }
   }
 
   private static _hoverLayers = new Set<WebLayer3D>()
@@ -152,7 +132,7 @@ export default class WebLayer3D extends THREE.Object3D {
       rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections)
       for (const intersection of rootLayer._hitIntersections) {
         let layer = rootLayer._meshMap!.get(intersection.object as any)
-        if (layer && layer.contentTargetOpacity !== 0) {
+        if (layer && layer.contentOpacity.current !== 0) {
           layer.cursor.position.copy(intersection.point)
           layer.worldToLocal(layer.cursor.position)
           layer.cursor.visible = true
@@ -170,16 +150,16 @@ export default class WebLayer3D extends THREE.Object3D {
 
   private static async _scheduleRefresh(rootLayer: WebLayer3D) {
     await microtask // wait for render to complete
-    rootLayer.refresh()
+    rootLayer._refresh()
     const queue = rootLayer._rasterizationQueue
-    if (queue.length === 0) return
+    if (queue.length === 0 || rootLayer.options.autoRasterize === false) return
     if (window.requestIdleCallback) {
       window.requestIdleCallback(idleDeadline => {
         if (!queue.length) return
         if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize queue start')
         while (queue.length && idleDeadline.timeRemaining() > 0) {
           if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize start')
-          queue.shift()!._rasterize()
+          queue.shift()!.rasterize()
           if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize end')
           if (WebLayer3D.DEBUG_PERFORMANCE)
             performance.measure('rasterize', 'rasterize start', 'rasterize end')
@@ -193,7 +173,7 @@ export default class WebLayer3D extends THREE.Object3D {
       if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize queue start')
       while (queue.length && performance.now() - startTime < 5) {
         if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize start')
-        queue.shift()!._rasterize()
+        queue.shift()!.rasterize()
         if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize end')
         if (WebLayer3D.DEBUG_PERFORMANCE)
           performance.measure('rasterize', 'rasterize start', 'rasterize end')
@@ -251,10 +231,16 @@ export default class WebLayer3D extends THREE.Object3D {
   childLayers: WebLayer3D[] = []
   target = new THREE.Object3D()
   contentTarget = new THREE.Object3D()
-  contentTargetOpacity = 0
   cursor = new THREE.Object3D()
   needsRasterize = true
   rootLayer: WebLayer3D
+
+  contentOpacity = this.transitioner.add(
+    new ethereal.Transitionable({
+      target: 0,
+      path: 'mesh.material.opacity'
+    })
+  )
 
   /**
    * Specifies whether or not this layer's layout
@@ -295,7 +281,7 @@ export default class WebLayer3D extends THREE.Object3D {
   shouldApplyContentTargetLayout = true
 
   private _lastTargetPosition = new THREE.Vector3()
-  private _lastContentTargetScale = new THREE.Vector3(0.1, 0.1, 0.1)
+  private _lastContentTargetScale = new THREE.Vector3(0.01, 0.01, 0.01)
 
   private _hover = 0
   private _hoverDepth = 0
@@ -327,7 +313,7 @@ export default class WebLayer3D extends THREE.Object3D {
   constructor(
     element: Element,
     public options: WebLayer3DOptions = {},
-    public parentLayer: WebLayer3D | null = null,
+    public parentLayer: WebLayer3D | undefined = undefined,
     private _level = 0
   ) {
     super()
@@ -353,6 +339,13 @@ export default class WebLayer3D extends THREE.Object3D {
       )
       WebLayer3D._didInstallStyleSheet = true
     }
+
+    this.transitioner.duration = 1.2
+    this.transitioner.easing = ethereal.easing.easeInOut
+    // this.transitioner.matrixLocal.scale.start.setScalar(0.0001)
+    this.content.transitioner.duration = 1.2
+    this.content.transitioner.easing = ethereal.easing.easeInOut
+    this.content.transitioner.matrixLocal.scale.start.setScalar(0.0001)
 
     this.add(this.content)
     this.add(this.cursor)
@@ -457,7 +450,7 @@ export default class WebLayer3D extends THREE.Object3D {
     this._resizeObserver.observe(element)
 
     if (this.options.onLayerCreate) this.options.onLayerCreate(this)
-    this.refresh()
+    this._refresh()
   }
 
   /**
@@ -529,6 +522,15 @@ export default class WebLayer3D extends THREE.Object3D {
     return this._needsRemoval
   }
 
+  refresh() {
+    if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('refresh start')
+    this._checkRoot()
+    WebLayer3D._updateInteractions(this)
+    WebLayer3D._scheduleRefresh(this)
+    if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('refresh end')
+    if (WebLayer3D.DEBUG_PERFORMANCE) performance.measure('refresh', 'refresh start', 'refresh end')
+  }
+
   /**
    * Update the pose and opacity of this layer (does not rerender the DOM).
    * This should be called each frame, and can only be called on a root WebLayer3D instance.
@@ -540,14 +542,8 @@ export default class WebLayer3D extends THREE.Object3D {
     lerp = 1,
     updateCallback: (layer: WebLayer3D, lerp: number) => void = WebLayer3D.UPDATE_DEFAULT
   ) {
-    if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('update start')
-    lerp = Math.min(lerp, 1)
-    this._checkRoot()
-    WebLayer3D._updateInteractions(this)
+    if (this.options.autoRefresh !== false) this.refresh()
     this.traverseLayers(updateCallback, lerp)
-    if (this.options.autoRefresh !== false) WebLayer3D._scheduleRefresh(this)
-    if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('update end')
-    if (WebLayer3D.DEBUG_PERFORMANCE) performance.measure('update', 'update start', 'update end')
   }
 
   traverseLayers<T extends any[]>(each: (layer: WebLayer3D, ...params: T) => void, ...params: T) {
@@ -617,7 +613,7 @@ export default class WebLayer3D extends THREE.Object3D {
     return undefined
   }
 
-  refresh(forceRasterize = false) {
+  private _refresh(forceRasterize = false) {
     this._refreshState()
     this._refreshBounds()
     if (this.needsRasterize || forceRasterize) {
@@ -628,7 +624,7 @@ export default class WebLayer3D extends THREE.Object3D {
       this._refreshChildLayers()
     }
     for (const child of this.childLayers) {
-      child.refresh(forceRasterize)
+      child._refresh(forceRasterize)
     }
     this._refreshTargetLayout()
     this._refreshMesh()
@@ -640,6 +636,18 @@ export default class WebLayer3D extends THREE.Object3D {
     if (this.needsRemoval && isHidden) {
       if (this.parent) this.parent.remove(this)
       this.dispose()
+    }
+
+    if (WebLayer3D.shouldApplyTargetLayout(this)) {
+      this.position.copy(this.target.position)
+      this.quaternion.copy(this.target.quaternion)
+      this.scale.copy(this.target.scale)
+    }
+
+    if (this.shouldApplyContentTargetLayout) {
+      this.content.position.copy(this.contentTarget.position)
+      this.content.quaternion.copy(this.contentTarget.quaternion)
+      this.content.scale.copy(this.contentTarget.scale)
     }
   }
 
@@ -772,17 +780,17 @@ export default class WebLayer3D extends THREE.Object3D {
     this.contentTarget.quaternion.set(0, 0, 0, 1)
 
     if (this.needsRemoval) {
-      this.contentTargetOpacity = 0
+      this.contentOpacity.target = 0
       return
     }
 
     const boundingRect = this.bounds
     if (boundingRect.width === 0 || boundingRect.height === 0) {
-      this.contentTargetOpacity = 0
+      this.contentOpacity.target = 0
       return
     }
 
-    this.contentTargetOpacity = 1
+    this.contentOpacity.target = 1
     const pixelSize = WebLayer3D.PIXEL_SIZE
 
     const parentBoundingRect =
@@ -799,11 +807,7 @@ export default class WebLayer3D extends THREE.Object3D {
     const myLeft = pixelSize * (left + boundingRect.width / 2)
     const myTop = pixelSize * (top + boundingRect.height / 2)
 
-    this.target.position.set(
-      parentOriginX + myLeft,
-      parentOriginY - myTop,
-      layerSeparation * this.level
-    )
+    this.target.position.set(parentOriginX + myLeft, parentOriginY - myTop, layerSeparation)
 
     this.contentTarget.scale.set(
       Math.max(pixelSize * boundingRect.width, 10e-6),
@@ -834,7 +838,8 @@ export default class WebLayer3D extends THREE.Object3D {
       this.content.scale.copy(this.contentTarget.scale)
     }
 
-    mesh.renderOrder = this.level
+    const index = this.parentLayer ? this.parentLayer.childLayers.indexOf(this) : 0
+    mesh.renderOrder = this.level + index * 0.0001
   }
 
   private _showChildLayers(show: boolean) {
@@ -908,7 +913,7 @@ export default class WebLayer3D extends THREE.Object3D {
     return true
   }
 
-  private async _rasterize() {
+  public async rasterize() {
     const element = this.element
     const states = this._states
     const renderFunctions = [] as Function[]
