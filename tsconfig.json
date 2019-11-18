@@ -15,6 +15,7 @@
     "declarationDir": "dist/types",
     "outDir": "dist/lib",
     "baseUrl": "",
+    "skipLibCheck": true,
     "paths": {
       "three": ["node_modules/three/src/Three"]
     }
@@ -22,6 +23,9 @@
   "include": [
     "src",
     "src/**/*.tsx",
-    "src/**/*.vue",
+    "src/**/*.vue"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

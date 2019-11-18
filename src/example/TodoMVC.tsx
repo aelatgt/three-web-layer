@@ -100,17 +100,17 @@ const TodoMVC = Vue.extend({
   // http://vuejs.org/guide/computed.html
   computed: {
     filteredTodos: function () {
-      return filters[this.visibility](this.todos) as Todo[]
+      return filters[(this as any).visibility]((this as any).todos) as Todo[]
     },
     remaining: function () {
-      return filters.active(this.todos).length
+      return filters.active((this as any).todos).length
     },
     allDone: {
       get: function () {
         return (this as any).remaining === 0
       },
-      set: function (value) {
-        this.todos.forEach(function (todo) {
+      set: function (value:boolean) {
+        this.todos.forEach(function (todo:Todo) {
           todo.completed = value
         })
       }

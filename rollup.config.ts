@@ -15,7 +15,7 @@ export default {
     { file: pkg.main, name: 'WebLayer3D', format: 'umd', sourcemap: true },
     { file: pkg.module, format: 'es', sourcemap: true },
   ],
-  external: ['three'],
+  external: ['three', 'ethereal'],
   watch: {
     include: 'src/**',
   },

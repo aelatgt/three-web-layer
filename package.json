@@ -1,6 +1,6 @@
 {
   "name": "three-web-layer",
-  "version": "0.0.40",
+  "version": "1.0.1",
   "description": "Use web content in three.js scenes!",
   "main": "dist/three-web-layer.umd.js",
   "module": "dist/three-web-layer.es5.js",
@@ -108,7 +108,7 @@
     "tslint-config-prettier": "^1.15.0",
     "tslint-config-standard": "^8.0.1",
     "typedoc": "^0.12.0",
-    "typescript": "^3.5.3",
+    "typescript": "^3.7.2",
     "vue": "^2.6.8",
     "vue-hot-reload-api": "^2.3.3",
     "vue-template-compiler": "^2.6.8"
