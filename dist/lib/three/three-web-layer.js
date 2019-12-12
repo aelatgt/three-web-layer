@@ -15,8 +15,8 @@ const domUtils = require("../dom-utils");
 const scratchVector = new THREE.Vector3();
 const scratchVector2 = new THREE.Vector3();
 const microtask = Promise.resolve();
-const scratchBounds = new domUtils.Bounds;
-const scratchBounds2 = new domUtils.Bounds;
+const scratchBounds = new domUtils.Bounds();
+const scratchBounds2 = new domUtils.Bounds();
 class WebLayer3DBase extends THREE.Object3D {
     constructor(element, options = {}) {
         super();
@@ -24,7 +24,7 @@ class WebLayer3DBase extends THREE.Object3D {
         this.options = options;
         this._webLayer = web_renderer_1.WebRenderer.getLayerForElement(this.element);
         this.textures = new Map();
-        this.content = new THREE.Object3D;
+        this.content = new THREE.Object3D();
         this.contentMesh = new THREE.Mesh(WebLayer3D.GEOMETRY, new THREE.MeshBasicMaterial({
             transparent: true,
             alphaTest: 0.001,
@@ -136,7 +136,8 @@ class WebLayer3DBase extends THREE.Object3D {
         return this._webLayer.bounds;
     }
     get parentLayer() {
-        return this._webLayer.parentLayer && WebLayer3D.layersByElement.get(this._webLayer.parentLayer.element);
+        return (this._webLayer.parentLayer &&
+            WebLayer3D.layersByElement.get(this._webLayer.parentLayer.element));
     }
     refresh(forceRefresh = false) {
         this._webLayer.refresh(forceRefresh);
@@ -273,14 +274,17 @@ class WebLayer3DBase extends THREE.Object3D {
         const width = bounds.width;
         const height = bounds.height;
         const parentBounds = this.parentLayer instanceof WebLayer3DBase
-            ? this.parentLayer.bounds : domUtils.getViewportBounds(scratchBounds);
+            ? this.parentLayer.bounds
+            : domUtils.getViewportBounds(scratchBounds);
         const parentWidth = parentBounds.width;
         const parentHeight = parentBounds.height;
         const leftEdge = -parentWidth / 2 + width / 2;
         const topEdge = parentHeight / 2 - height / 2;
         const pixelSize = 1 / WebLayer3D.DEFAULT_PIXELS_PER_UNIT;
         const sep = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
-        this.target.position.set(pixelSize * (leftEdge + bounds.left), pixelSize * (topEdge - bounds.top), this.depth * sep + (this.parentLayer ? this.parentLayer.index * sep * 0.01 : 0) + this.index * sep * 0.001);
+        this.target.position.set(pixelSize * (leftEdge + bounds.left), pixelSize * (topEdge - bounds.top), this.depth * sep +
+            (this.parentLayer ? this.parentLayer.index * sep * 0.01 : 0) +
+            this.index * sep * 0.001);
         this.contentTarget.scale.set(Math.max(pixelSize * width, 10e-6), Math.max(pixelSize * height, 10e-6), 1);
         this._lastTargetPosition.copy(this.target.position);
         this._lastContentTargetScale.copy(this.contentTarget.scale);

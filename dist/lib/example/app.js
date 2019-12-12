@@ -329,7 +329,7 @@ function animate() {
     else {
         todoLayer.position.z = 0;
     }
-    todoLayer.traverseLayers((layer) => {
+    todoLayer.traverseLayers(layer => {
         layer.transitioner.multiplier = Controls.lerpSpeed;
         layer.content.transitioner.multiplier = Controls.lerpSpeed;
         if (layer.element.matches('.destroy')) {

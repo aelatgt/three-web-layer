@@ -3415,7 +3415,7 @@ class Edges {
         return this;
     }
 }
-function getBounds(element, bounds = new Bounds, referenceElement) {
+function getBounds(element, bounds = new Bounds(), referenceElement) {
     const doc = element.ownerDocument;
     const defaultView = element.ownerDocument.defaultView;
     const docEl = doc.documentElement;
@@ -3436,12 +3436,18 @@ function getBounds(element, bounds = new Bounds, referenceElement) {
     let prevComputedStyle = defaultView.getComputedStyle(el, null);
     let top = el.offsetTop;
     let left = el.offsetLeft;
-    if (offsetParent && referenceElement && offsetParent.contains(referenceElement) && offsetParent !== referenceElement) {
+    if (offsetParent &&
+        referenceElement &&
+        offsetParent.contains(referenceElement) &&
+        offsetParent !== referenceElement) {
         getBounds(referenceElement, bounds, offsetParent);
         left -= bounds.left;
         top -= bounds.top;
     }
-    while ((el = el.parentNode) && el !== body && el !== docEl && el !== referenceElement) {
+    while ((el = el.parentNode) &&
+        el !== body &&
+        el !== docEl &&
+        el !== referenceElement) {
         if (prevComputedStyle.position === 'fixed') {
             break;
         }
@@ -4273,8 +4279,8 @@ function ensureElementIsInDocument(element) {
     // document.body.appendChild(container)
     return element;
 }
-const scratchMat1 = new Matrix4;
-const scratchMat2 = new Matrix4;
+const scratchMat1 = new Matrix4();
+const scratchMat2 = new Matrix4();
 const textDecoder = new TextDecoder();
 const microtask = Promise.resolve();
 class WebLayer {
@@ -4286,13 +4292,13 @@ class WebLayer {
         this.cachedMargin = new Map();
         this.needsRefresh = true;
         this.needsRemoval = false;
-        this.svg = new Image;
-        this.bounds = new Bounds;
-        this.padding = new Edges;
-        this.margin = new Edges;
-        this.border = new Edges;
+        this.svg = new Image();
+        this.bounds = new Bounds();
+        this.padding = new Edges();
+        this.margin = new Edges();
+        this.border = new Edges();
         this.childLayers = [];
-        this.cssTransform = new Matrix4;
+        this.cssTransform = new Matrix4();
         this._svgDocument = '';
         this._svgSrc = '';
         this._hashingCanvas = document.createElement('canvas');
@@ -4394,7 +4400,10 @@ class WebLayer {
         if (this.element.nodeName === 'VIDEO')
             return;
         this.needsRefresh = false;
-        const [svgPageCSS] = await Promise.all([WebRenderer.getEmbeddedPageCSS(), WebRenderer.embedExternalResources(this.element)]);
+        const [svgPageCSS] = await Promise.all([
+            WebRenderer.getEmbeddedPageCSS(),
+            WebRenderer.embedExternalResources(this.element)
+        ]);
         let { width, height } = this.bounds;
         if (width * height > 0) {
             getPadding(this.element, this.padding);
@@ -4409,15 +4418,31 @@ class WebLayer {
             const layerAttribute = `data-layer="${this.id}"`;
             const layerElement = this.element;
             const needsInlineBlock = getComputedStyle(layerElement).display === 'inline';
-            const layerHTML = WebRenderer.serializer.serializeToString(layerElement).replace(layerAttribute, 'data-layer="" ' + WebRenderer.RENDERING_ATTRIBUTE + '="" ' + (needsInlineBlock ? 'data-layer-rendering-inline="" ' : ''));
+            const layerHTML = WebRenderer.serializer
+                .serializeToString(layerElement)
+                .replace(layerAttribute, 'data-layer="" ' +
+                WebRenderer.RENDERING_ATTRIBUTE +
+                '="" ' +
+                (needsInlineBlock ? 'data-layer-rendering-inline="" ' : ''));
             const parentsHTML = this._getParentsHTML(layerElement);
             parentsHTML[0] = parentsHTML[0].replace('html', 'html ' + WebRenderer.RENDERING_DOCUMENT_ATTRIBUTE + '="" ');
-            const docString = '<svg width="' + width + '" height="' + height
-                + '" xmlns="http://www.w3.org/2000/svg"><defs><style type="text/css"><![CDATA[a[href]{color:#0000EE;text-decoration:underline;}'
-                + svgPageCSS.join('') + ']]></style></defs><foreignObject x="0" y="0" width="' + width + '" height="' + height + '">'
-                + parentsHTML[0] + layerHTML + parentsHTML[1] + '</foreignObject></svg>';
+            const docString = '<svg width="' +
+                width +
+                '" height="' +
+                height +
+                '" xmlns="http://www.w3.org/2000/svg"><defs><style type="text/css"><![CDATA[a[href]{color:#0000EE;text-decoration:underline;}' +
+                svgPageCSS.join('') +
+                ']]></style></defs><foreignObject x="0" y="0" width="' +
+                width +
+                '" height="' +
+                height +
+                '">' +
+                parentsHTML[0] +
+                layerHTML +
+                parentsHTML[1] +
+                '</foreignObject></svg>';
             this._svgDocument = docString;
-            const svgSrc = this._svgSrc = "data:image/svg+xml;utf8," + encodeURIComponent(docString);
+            const svgSrc = (this._svgSrc = 'data:image/svg+xml;utf8,' + encodeURIComponent(docString));
             // check for existing canvas
             const canvasHash = WebLayer.canvasHashes.get(svgSrc);
             if (canvasHash && WebLayer.cachedCanvases.has(canvasHash)) {
@@ -4431,7 +4456,7 @@ class WebLayer {
         }
     }
     async rasterize() {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.svg.onload = () => {
                 WebRenderer.addToRenderQueue(this);
                 resolve();
@@ -4453,23 +4478,30 @@ class WebLayer {
         let { width, height } = this.cachedBounds.get(src);
         let { left, top } = this.cachedMargin.get(src);
         const hashingCanvas = this._hashingCanvas;
-        let hw = hashingCanvas.width = Math.max(width * 0.05, 40);
-        let hh = hashingCanvas.height = Math.max(height * 0.05, 40);
+        let hw = (hashingCanvas.width = Math.max(width * 0.05, 40));
+        let hh = (hashingCanvas.height = Math.max(height * 0.05, 40));
         const hctx = hashingCanvas.getContext('2d');
         hctx.clearRect(0, 0, hw, hh);
         hctx.drawImage(this.svg, left, top, width, height, 0, 0, hw, hh);
         const hashData = hctx.getImageData(0, 0, hw, hh).data;
-        const newHash = WebRenderer.arrayBufferToBase64(sha256_1(new Uint8Array(hashData))) + '?w=' + width + ';h=' + height;
+        const newHash = WebRenderer.arrayBufferToBase64(sha256_1(new Uint8Array(hashData))) +
+            '?w=' +
+            width +
+            ';h=' +
+            height;
         WebLayer.canvasHashes.set(src, newHash);
         if (WebLayer.cachedCanvases.has(newHash)) {
             this.canvas = WebLayer.cachedCanvases.get(newHash);
             return;
         }
-        const pixelRatio = this.pixelRatio || parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) || window.devicePixelRatio;
-        const newCanvas = WebLayer.cachedCanvases.size === WebLayer.cachedCanvases.limit ?
-            WebLayer.cachedCanvases.shift()[1] : document.createElement('canvas');
-        let w = newCanvas.width = width * pixelRatio;
-        let h = newCanvas.height = height * pixelRatio;
+        const pixelRatio = this.pixelRatio ||
+            parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) ||
+            window.devicePixelRatio;
+        const newCanvas = WebLayer.cachedCanvases.size === WebLayer.cachedCanvases.limit
+            ? WebLayer.cachedCanvases.shift()[1]
+            : document.createElement('canvas');
+        let w = (newCanvas.width = width * pixelRatio);
+        let h = (newCanvas.height = height * pixelRatio);
         const ctx = newCanvas.getContext('2d');
         ctx.clearRect(0, 0, w, h);
         ctx.drawImage(this.svg, left, top, width, height, 0, 0, w, h);
@@ -4493,13 +4525,22 @@ class WebLayer {
                 }
                 attributes += `${a.name}="${a.value}" `;
             }
-            const open = '<' + tag + (tag === 'html' ? ` xmlns="http://www.w3.org/1999/xhtml" style="--x-width:${this.bounds.width + 0.5}px;--x-height:${this.bounds.height}px;--x-inline-top:${this.border.top + this.margin.top + this.padding.top}px" ` : '') + attributes + ' data-layer-rendering-parent="" >';
+            const open = '<' +
+                tag +
+                (tag === 'html'
+                    ? ` xmlns="http://www.w3.org/1999/xhtml" style="--x-width:${this.bounds.width +
+                        0.5}px;--x-height:${this.bounds.height}px;--x-inline-top:${this.border.top +
+                        this.margin.top +
+                        this.padding.top}px" `
+                    : '') +
+                attributes +
+                ' data-layer-rendering-parent="" >';
             opens.unshift(open);
             const close = '</' + tag + '>';
             closes.push(close);
             if (tag == 'html')
                 break;
-        } while (parent = parent.parentElement);
+        } while ((parent = parent.parentElement));
         return [opens.join(''), closes.join('')];
     }
 }
@@ -4574,10 +4615,16 @@ class WebRenderer {
             serializeQueue.shift().serialize();
         }
         startTime = performance.now();
-        while (rasterizeQueue.length && performance.now() - startTime < this.TASK_RASTERIZE_MAX_TIME &&
+        while (rasterizeQueue.length &&
+            performance.now() - startTime < this.TASK_RASTERIZE_MAX_TIME &&
             this.rasterizeTaskCount < this.TASK_RASTERIZE_MAX_SIMULTANEOUS) {
             this.rasterizeTaskCount++;
-            rasterizeQueue.shift().rasterize().then(() => { this.rasterizeTaskCount--; });
+            rasterizeQueue
+                .shift()
+                .rasterize()
+                .then(() => {
+                this.rasterizeTaskCount--;
+            });
         }
         startTime = performance.now();
         while (renderQueue.length && performance.now() - startTime < this.TASK_RENDER_MAX_TIME / 2) {
@@ -4636,12 +4683,15 @@ class WebRenderer {
         const closestLayerElement = element && element.closest(`[${WebRenderer.LAYER_ATTRIBUTE}]`);
         return this.layers.get(closestLayerElement);
     }
-    static getCSSTransformForElement(element, out = new Matrix4) {
+    static getCSSTransformForElement(element, out = new Matrix4()) {
         const styles = getComputedStyle(element);
-        var transformcss = styles["transform"];
-        if (transformcss.indexOf("matrix(") == 0) {
+        var transformcss = styles['transform'];
+        if (transformcss.indexOf('matrix(') == 0) {
             out.identity();
-            var mat = transformcss.substring(7, transformcss.length - 1).split(", ").map(parseFloat);
+            var mat = transformcss
+                .substring(7, transformcss.length - 1)
+                .split(', ')
+                .map(parseFloat);
             out.elements[0] = mat[0];
             out.elements[1] = mat[1];
             out.elements[4] = mat[2];
@@ -4649,15 +4699,18 @@ class WebRenderer {
             out.elements[12] = mat[4];
             out.elements[13] = mat[5];
         }
-        else if (transformcss.indexOf("matrix3d(") == 0) {
-            var mat = transformcss.substring(9, transformcss.length - 1).split(", ").map(parseFloat);
+        else if (transformcss.indexOf('matrix3d(') == 0) {
+            var mat = transformcss
+                .substring(9, transformcss.length - 1)
+                .split(', ')
+                .map(parseFloat);
             out.fromArray(mat);
         }
         else {
             return out.identity();
         }
-        var origincss = styles["transform-origin"];
-        origincss = origincss.split(" ").map(parseFloat);
+        var origincss = styles['transform-origin'];
+        origincss = origincss.split(' ').map(parseFloat);
         var ox = origincss[0];
         var oy = origincss[1];
         var oz = origincss[2] || 0;
@@ -4667,32 +4720,32 @@ class WebRenderer {
     }
     static async embedExternalResources(element) {
         const promises = [];
-        const elements = element.querySelectorAll("*");
+        const elements = element.querySelectorAll('*');
         for (const element of elements) {
-            const link = element.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+            const link = element.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
             if (link) {
                 promises.push(WebRenderer.getDataURL(link).then(dataURL => {
-                    element.removeAttributeNS("http://www.w3.org/1999/xlink", "href");
-                    element.setAttribute("href", dataURL);
+                    element.removeAttributeNS('http://www.w3.org/1999/xlink', 'href');
+                    element.setAttribute('href', dataURL);
                 }));
             }
             const imgElement = element;
-            if (element.tagName == "IMG" && imgElement.src.substr(0, 4) != "data") {
+            if (element.tagName == 'IMG' && imgElement.src.substr(0, 4) != 'data') {
                 promises.push(WebRenderer.getDataURL(imgElement.src).then(dataURL => {
-                    element.setAttribute("src", dataURL);
+                    element.setAttribute('src', dataURL);
                 }));
             }
-            if (element.namespaceURI == "http://www.w3.org/1999/xhtml" && element.hasAttribute("style")) {
-                const style = element.getAttribute("style");
-                promises.push(WebRenderer.generateEmbeddedCSS(window.location, style).then((css) => {
+            if (element.namespaceURI == 'http://www.w3.org/1999/xhtml' && element.hasAttribute('style')) {
+                const style = element.getAttribute('style');
+                promises.push(WebRenderer.generateEmbeddedCSS(window.location, style).then(css => {
                     if (style != css)
-                        element.setAttribute("style", css);
+                        element.setAttribute('style', css);
                 }));
             }
         }
-        const styles = element.querySelectorAll("style");
+        const styles = element.querySelectorAll('style');
         for (const style of styles) {
-            promises.push(WebRenderer.generateEmbeddedCSS(window.location, style.innerHTML).then((css) => {
+            promises.push(WebRenderer.generateEmbeddedCSS(window.location, style.innerHTML).then(css => {
                 if (style.innerHTML != css)
                     style.innerHTML = css;
             }));
@@ -4719,7 +4772,7 @@ class WebRenderer {
             subtree: true,
             characterData: true,
             characterDataOldValue: true,
-            attributeOldValue: true,
+            attributeOldValue: true
         });
     }
     static _addDynamicPseudoClassRulesToPage() {
@@ -4731,16 +4784,16 @@ class WebRenderer {
                 const newRules = [];
                 for (var j = 0; j < rules.length; j++) {
                     if (rules[j].cssText.indexOf(':hover') > -1) {
-                        newRules.push(rules[j].cssText.replace(new RegExp(":hover", "g"), ".x-hover"));
+                        newRules.push(rules[j].cssText.replace(new RegExp(':hover', 'g'), '.x-hover'));
                     }
                     if (rules[j].cssText.indexOf(':active') > -1) {
-                        newRules.push(rules[j].cssText.replace(new RegExp(":active", "g"), ".x-active"));
+                        newRules.push(rules[j].cssText.replace(new RegExp(':active', 'g'), '.x-active'));
                     }
                     if (rules[j].cssText.indexOf(':focus') > -1) {
-                        newRules.push(rules[j].cssText.replace(new RegExp(":focus", "g"), ".x-focus"));
+                        newRules.push(rules[j].cssText.replace(new RegExp(':focus', 'g'), '.x-focus'));
                     }
                     if (rules[j].cssText.indexOf(':target') > -1) {
-                        newRules.push(rules[j].cssText.replace(new RegExp(":target", "g"), ".x-target"));
+                        newRules.push(rules[j].cssText.replace(new RegExp(':target', 'g'), '.x-target'));
                     }
                     var idx = newRules.indexOf(rules[j].cssText);
                     if (idx > -1) {
@@ -4766,13 +4819,13 @@ class WebRenderer {
         let found;
         const promises = [];
         // Add classes for psuedo-classes
-        css = css.replace(new RegExp(":hover", "g"), ".x-hover");
-        css = css.replace(new RegExp(":active", "g"), ".x-active");
-        css = css.replace(new RegExp(":focus", "g"), ".x-focus");
-        css = css.replace(new RegExp(":target", "g"), ".x-target");
+        css = css.replace(new RegExp(':hover', 'g'), '.x-hover');
+        css = css.replace(new RegExp(':active', 'g'), '.x-active');
+        css = css.replace(new RegExp(':focus', 'g'), '.x-focus');
+        css = css.replace(new RegExp(':target', 'g'), '.x-target');
         // Replace all urls in the css
         const regEx = RegExp(/url\((?!['"]?(?:data):)['"]?([^'"\)]*)['"]?\)/gi);
-        while (found = regEx.exec(css)) {
+        while ((found = regEx.exec(css))) {
             promises.push(this.getDataURL(new URL(found[1], url)).then(url => {
                 css = css.replace(found[1], url);
             }));
@@ -4781,7 +4834,7 @@ class WebRenderer {
         return css;
     }
     static async getURL(url) {
-        url = (new URL(url, window.location.href)).href;
+        url = new URL(url, window.location.href).href;
         return new Promise(resolve => {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', url, true);
@@ -4799,7 +4852,7 @@ class WebRenderer {
         for (const element of styleElements) {
             if (!embedded.has(element)) {
                 foundNewStyles = true;
-                if (element.tagName == "STYLE") {
+                if (element.tagName == 'STYLE') {
                     const sheet = element.sheet;
                     let cssText = '';
                     for (const rule of sheet.cssRules) {
@@ -4808,7 +4861,7 @@ class WebRenderer {
                     embedded.set(element, this.generateEmbeddedCSS(window.location, cssText));
                 }
                 else {
-                    embedded.set(element, this.getURL(element.getAttribute("href")).then(xhr => {
+                    embedded.set(element, this.getURL(element.getAttribute('href')).then(xhr => {
                         var css = textDecoder.decode(xhr.response);
                         return this.generateEmbeddedCSS(window.location, css);
                     }));
@@ -4823,8 +4876,8 @@ class WebRenderer {
     static async getDataURL(url) {
         const xhr = await this.getURL(url);
         const arr = new Uint8Array(xhr.response);
-        const contentType = xhr.getResponseHeader("Content-Type").split(";")[0];
-        if (contentType == "text/css") {
+        const contentType = xhr.getResponseHeader('Content-Type').split(';')[0];
+        if (contentType == 'text/css') {
             let css = textDecoder.decode(arr);
             css = await this.generateEmbeddedCSS(url, css);
             const base64 = window.btoa(css);
@@ -4842,10 +4895,13 @@ class WebRenderer {
     // Transforms a point into an elements frame of reference
     static transformPoint(elementStyles, x, y, offsetX, offsetY) {
         // Get the elements tranform matrix
-        var transformcss = elementStyles["transform"];
-        if (transformcss.indexOf("matrix(") == 0) {
+        var transformcss = elementStyles['transform'];
+        if (transformcss.indexOf('matrix(') == 0) {
             var transform = new Matrix4();
-            var mat = transformcss.substring(7, transformcss.length - 1).split(", ").map(parseFloat);
+            var mat = transformcss
+                .substring(7, transformcss.length - 1)
+                .split(', ')
+                .map(parseFloat);
             transform.elements[0] = mat[0];
             transform.elements[1] = mat[1];
             transform.elements[4] = mat[2];
@@ -4853,17 +4909,23 @@ class WebRenderer {
             transform.elements[12] = mat[4];
             transform.elements[13] = mat[5];
         }
-        else if (transformcss.indexOf("matrix3d(") == 0) {
+        else if (transformcss.indexOf('matrix3d(') == 0) {
             var transform = new Matrix4();
-            var mat = transformcss.substring(9, transformcss.length - 1).split(", ").map(parseFloat);
+            var mat = transformcss
+                .substring(9, transformcss.length - 1)
+                .split(', ')
+                .map(parseFloat);
             transform.elements = mat;
         }
         else {
             return [x, y];
         }
         // Get the elements tranform origin
-        var origincss = elementStyles["transform-origin"];
-        origincss = origincss.replace(new RegExp("px", "g"), "").split(" ").map(parseFloat);
+        var origincss = elementStyles['transform-origin'];
+        origincss = origincss
+            .replace(new RegExp('px', 'g'), '')
+            .split(' ')
+            .map(parseFloat);
         // Apply the transform to the origin
         var ox = offsetX + origincss[0];
         var oy = offsetY + origincss[1];
@@ -4893,7 +4955,12 @@ class WebRenderer {
         return [result.x, result.y];
     }
     static getBorderRadii(element, style) {
-        var properties = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
+        var properties = [
+            'border-top-left-radius',
+            'border-top-right-radius',
+            'border-bottom-right-radius',
+            'border-bottom-left-radius'
+        ];
         var result;
         // Parse the css results
         var corners = [];
@@ -4901,7 +4968,7 @@ class WebRenderer {
             var borderRadiusString = style[properties[i]];
             var reExp = /(\d*)([a-z%]{1,3})/gi;
             var rec = [];
-            while (result = reExp.exec(borderRadiusString)) {
+            while ((result = reExp.exec(borderRadiusString))) {
                 rec.push({
                     value: result[1],
                     unit: result[2]
@@ -4912,7 +4979,7 @@ class WebRenderer {
             corners.push(rec);
         }
         const unitConv = {
-            'px': 1,
+            px: 1,
             '%': element.offsetWidth / 100
         };
         // Convert all corners into pixels
@@ -4933,28 +5000,28 @@ class WebRenderer {
         // Change scales of top left and top right corners based on offsetWidth
         var borderTop = pixelCorners[0][0] + pixelCorners[1][0];
         if (borderTop > element.offsetWidth) {
-            var f = 1 / borderTop * element.offsetWidth;
+            var f = (1 / borderTop) * element.offsetWidth;
             c1scale = Math.min(c1scale, f);
             c2scale = Math.min(c2scale, f);
         }
         // Change scales of bottom right and top right corners based on offsetHeight
         var borderLeft = pixelCorners[1][1] + pixelCorners[2][1];
         if (borderLeft > element.offsetHeight) {
-            f = 1 / borderLeft * element.offsetHeight;
+            f = (1 / borderLeft) * element.offsetHeight;
             c3scale = Math.min(c3scale, f);
             c2scale = Math.min(c2scale, f);
         }
         // Change scales of bottom left and bottom right corners based on offsetWidth
         var borderBottom = pixelCorners[2][0] + pixelCorners[3][0];
         if (borderBottom > element.offsetWidth) {
-            f = 1 / borderBottom * element.offsetWidth;
+            f = (1 / borderBottom) * element.offsetWidth;
             c3scale = Math.min(c3scale, f);
             c4scale = Math.min(c4scale, f);
         }
         // Change scales of bottom left and top right corners based on offsetHeight
         var borderRight = pixelCorners[0][1] + pixelCorners[3][1];
         if (borderRight > element.offsetHeight) {
-            f = 1 / borderRight * element.offsetHeight;
+            f = (1 / borderRight) * element.offsetHeight;
             c1scale = Math.min(c1scale, f);
             c4scale = Math.min(c4scale, f);
         }
@@ -4971,7 +5038,7 @@ class WebRenderer {
     }
     // Check that the element is with the confines of rounded corners
     static checkInBorder(element, style, x, y, left, top) {
-        if (style['border-radius'] == "0px")
+        if (style['border-radius'] == '0px')
             return true;
         var width = element.offsetWidth;
         var height = element.offsetHeight;
@@ -5037,7 +5104,8 @@ class WebRenderer {
         //     if (zIndex == 'auto') offsetz += 1
         // }
         // If there is a transform then transform point
-        if ((style['display'] == "block" || style['display'] == "inline-block") && style['transform'] != 'none') {
+        if ((style['display'] == 'block' || style['display'] == 'inline-block') &&
+            style['transform'] != 'none') {
             // Apply css transforms to click point
             var newcoord = this.transformPoint(style, x, y, left, top);
             if (!newcoord)
@@ -5052,7 +5120,9 @@ class WebRenderer {
             // Check if in confines of rounded corders
             if (this.checkInBorder(element, style, x, y, left, top)) {
                 //check if above other elements
-                if ((offsetz >= result.zIndex || level > result.level) && level >= result.level && style['pointer-events'] != "none") {
+                if ((offsetz >= result.zIndex || level > result.level) &&
+                    level >= result.level &&
+                    style['pointer-events'] != 'none') {
                     result.zIndex = offsetz;
                     result.element = element;
                     result.level = level;
@@ -5075,7 +5145,7 @@ class WebRenderer {
                         this.checkElement(x, y, offsetx, offsety, offsetz, level, child, result);
                     }
                 }
-            } while (child = child.nextSibling);
+            } while ((child = child.nextSibling));
     }
     static elementAt(element, x, y) {
         element.style.display = 'block';
@@ -5119,17 +5189,17 @@ class WebRenderer {
                         break;
                     if (this.overElements.indexOf(current) == -1) {
                         if (current.classList)
-                            current.classList.add("x-hover");
+                            current.classList.add('x-hover');
                         current.dispatchEvent(new MouseEvent('mouseenter', mouseStateHover));
                         this.overElements.push(current);
                     }
                     parents.push(current);
-                } while (current = current.parentNode);
+                } while ((current = current.parentNode));
                 for (var i = 0; i < this.overElements.length; i++) {
                     var element = this.overElements[i];
                     if (parents.indexOf(element) == -1) {
                         if (element.classList)
-                            element.classList.remove("x-hover");
+                            element.classList.remove('x-hover');
                         element.dispatchEvent(new MouseEvent('mouseleave', mouseStateHover));
                         this.overElements.splice(i, 1);
                         i--;
@@ -5137,9 +5207,9 @@ class WebRenderer {
                 }
             }
             else {
-                while (element = this.overElements.pop()) {
+                while ((element = this.overElements.pop())) {
                     if (element.classList)
-                        element.classList.remove("x-hover");
+                        element.classList.remove('x-hover');
                     element.dispatchEvent(new MouseEvent('mouseout', mouseState));
                 }
             }
@@ -5164,8 +5234,8 @@ class WebRenderer {
         var ele = this.elementAt(layer.element, x, y);
         if (ele) {
             this.activeElement = ele;
-            ele.classList.add("x-active");
-            ele.classList.remove("x-hover");
+            ele.classList.add('x-active');
+            ele.classList.remove('x-hover');
             ele.dispatchEvent(new MouseEvent('mousedown', mouseState));
         }
         this.mousedownElement = ele;
@@ -5173,19 +5243,19 @@ class WebRenderer {
     static updateInputAttributes(element) {
         if (element.matches('input'))
             this._updateInputAttribute(element);
-        for (const e of element.getElementsByTagName("input"))
+        for (const e of element.getElementsByTagName('input'))
             this._updateInputAttribute(e);
     }
     static _updateInputAttribute(inputElement) {
-        if (inputElement.hasAttribute("checked")) {
+        if (inputElement.hasAttribute('checked')) {
             if (!inputElement.checked)
-                inputElement.removeAttribute("checked");
+                inputElement.removeAttribute('checked');
         }
         else {
             if (inputElement.checked)
-                inputElement.setAttribute("checked", "");
+                inputElement.setAttribute('checked', '');
         }
-        inputElement.setAttribute("value", inputElement.value);
+        inputElement.setAttribute('value', inputElement.value);
     }
     static setFocus(ele) {
         ele.dispatchEvent(new FocusEvent('focus'));
@@ -5198,7 +5268,7 @@ class WebRenderer {
     }
     static setBlur() {
         if (this.focusElement) {
-            this.focusElement.classList.remove("x-focus");
+            this.focusElement.classList.remove('x-focus');
             this.focusElement.dispatchEvent(new FocusEvent('blur'));
             this.focusElement.dispatchEvent(new CustomEvent('focusout', {
                 bubbles: true,
@@ -5208,9 +5278,9 @@ class WebRenderer {
     }
     static clearHover() {
         let element;
-        while (element = this.overElements.pop()) {
+        while ((element = this.overElements.pop())) {
             if (element.classList)
-                element.classList.remove("x-hover");
+                element.classList.remove('x-hover');
             element.dispatchEvent(new MouseEvent('mouseout', {
                 bubbles: true,
                 cancelable: true
@@ -5222,9 +5292,9 @@ class WebRenderer {
                 cancelable: true
             }));
         this.mouseoverElement = null;
-        const activeElement = document.querySelector(".x-active");
+        const activeElement = document.querySelector('.x-active');
         if (activeElement) {
-            activeElement.classList.remove("x-active");
+            activeElement.classList.remove('x-active');
             this.activeElement = null;
         }
     }
@@ -5240,9 +5310,9 @@ class WebRenderer {
         };
         const ele = WebRenderer.elementAt(layer.element, x, y);
         if (this.activeElement) {
-            this.activeElement.classList.remove("x-active");
+            this.activeElement.classList.remove('x-active');
             if (ele) {
-                ele.classList.add("x-hover");
+                ele.classList.add('x-hover');
                 if (this.overElements.indexOf(ele) == -1)
                     this.overElements.push(ele);
             }
@@ -5258,7 +5328,7 @@ class WebRenderer {
                 ele.dispatchEvent(new MouseEvent('click', mouseState));
                 // if (ele.tagName == "INPUT") this.updateCheckedAttributes(ele)
                 // If the element requires some sort of keyboard interaction then notify of an input requirment
-                if (ele.tagName == "INPUT" || ele.tagName == "TEXTAREA" || ele.tagName == "SELECT") {
+                if (ele.tagName == 'INPUT' || ele.tagName == 'TEXTAREA' || ele.tagName == 'SELECT') {
                     if (layer.eventCallback)
                         layer.eventCallback('inputrequired', {
                             target: ele
@@ -5279,10 +5349,10 @@ WebRenderer.RENDERING_ATTRIBUTE = 'data-layer-rendering';
 WebRenderer.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
 WebRenderer.RENDERING_DOCUMENT_ATTRIBUTE = 'data-layer-rendering-document';
 WebRenderer.serializer = new XMLSerializer();
-WebRenderer.rootLayers = new Map;
-WebRenderer.layers = new Map;
-WebRenderer.mutationObservers = new Map;
-WebRenderer.resizeObservers = new Map;
+WebRenderer.rootLayers = new Map();
+WebRenderer.layers = new Map();
+WebRenderer.mutationObservers = new Map();
+WebRenderer.resizeObservers = new Map();
 WebRenderer.serializeQueue = [];
 WebRenderer.rasterizeQueue = [];
 WebRenderer.renderQueue = [];
@@ -5295,9 +5365,9 @@ WebRenderer._didInit = false;
 WebRenderer.TASK_SERIALIZE_MAX_TIME = 2; // serialization is synchronous
 WebRenderer.TASK_RASTERIZE_MAX_TIME = 2; // processing of data:svg is async
 WebRenderer.TASK_RASTERIZE_MAX_SIMULTANEOUS = 2; // since rasterization is async, limit simultaneous rasterizations
-WebRenderer.TASK_RENDER_MAX_TIME = 3; // rendering to canvas is synchronous 
+WebRenderer.TASK_RENDER_MAX_TIME = 3; // rendering to canvas is synchronous
 WebRenderer.rasterizeTaskCount = 0;
-WebRenderer._onmousemove = (e) => {
+WebRenderer._onmousemove = e => {
     e.stopPropagation();
 };
 WebRenderer.handleMutations = (records) => {
@@ -5329,9 +5399,9 @@ WebRenderer.handleMutations = (records) => {
                 continue;
         }
         // layer.traverseParentLayers(WebRenderer.setLayerNeedsRasterize) // may be needed to support :focus-within() and future :has() selector support
-        layer.parentLayer ?
-            layer.parentLayer.traverseChildLayers(WebRenderer.setLayerNeedsUpdate) :
-            layer.traverseLayers(WebRenderer.setLayerNeedsUpdate);
+        layer.parentLayer
+            ? layer.parentLayer.traverseChildLayers(WebRenderer.setLayerNeedsUpdate)
+            : layer.traverseLayers(WebRenderer.setLayerNeedsUpdate);
     }
 };
 WebRenderer._triggerRefresh = async (e) => {
@@ -5340,9 +5410,9 @@ WebRenderer._triggerRefresh = async (e) => {
     WebRenderer.updateInputAttributes(e.target);
     if (layer) {
         // layer.traverseParentLayers(WebRenderer.setLayerNeedsRasterize) // may be needed to support :focus-within() and future :has() selector support
-        layer.parentLayer ?
-            layer.parentLayer.traverseChildLayers(WebRenderer.setLayerNeedsUpdate) :
-            layer.traverseLayers(WebRenderer.setLayerNeedsUpdate);
+        layer.parentLayer
+            ? layer.parentLayer.traverseChildLayers(WebRenderer.setLayerNeedsUpdate)
+            : layer.traverseLayers(WebRenderer.setLayerNeedsUpdate);
     }
 };
 WebRenderer._embeddedPageCSS = new Map();
@@ -5350,8 +5420,8 @@ WebRenderer._embeddedPageCSS = new Map();
 const scratchVector = new Vector3$1();
 const scratchVector2 = new Vector3$1();
 const microtask$1 = Promise.resolve();
-const scratchBounds = new Bounds;
-const scratchBounds2 = new Bounds;
+const scratchBounds = new Bounds();
+const scratchBounds2 = new Bounds();
 class WebLayer3DBase extends Object3D {
     constructor(element, options = {}) {
         super();
@@ -5359,7 +5429,7 @@ class WebLayer3DBase extends Object3D {
         this.options = options;
         this._webLayer = WebRenderer.getLayerForElement(this.element);
         this.textures = new Map();
-        this.content = new Object3D;
+        this.content = new Object3D();
         this.contentMesh = new Mesh(WebLayer3D.GEOMETRY, new MeshBasicMaterial({
             transparent: true,
             alphaTest: 0.001,
@@ -5471,7 +5541,8 @@ class WebLayer3DBase extends Object3D {
         return this._webLayer.bounds;
     }
     get parentLayer() {
-        return this._webLayer.parentLayer && WebLayer3D.layersByElement.get(this._webLayer.parentLayer.element);
+        return (this._webLayer.parentLayer &&
+            WebLayer3D.layersByElement.get(this._webLayer.parentLayer.element));
     }
     refresh(forceRefresh = false) {
         this._webLayer.refresh(forceRefresh);
@@ -5608,14 +5679,17 @@ class WebLayer3DBase extends Object3D {
         const width = bounds.width;
         const height = bounds.height;
         const parentBounds = this.parentLayer instanceof WebLayer3DBase
-            ? this.parentLayer.bounds : getViewportBounds(scratchBounds);
+            ? this.parentLayer.bounds
+            : getViewportBounds(scratchBounds);
         const parentWidth = parentBounds.width;
         const parentHeight = parentBounds.height;
         const leftEdge = -parentWidth / 2 + width / 2;
         const topEdge = parentHeight / 2 - height / 2;
         const pixelSize = 1 / WebLayer3D.DEFAULT_PIXELS_PER_UNIT;
         const sep = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
-        this.target.position.set(pixelSize * (leftEdge + bounds.left), pixelSize * (topEdge - bounds.top), this.depth * sep + (this.parentLayer ? this.parentLayer.index * sep * 0.01 : 0) + this.index * sep * 0.001);
+        this.target.position.set(pixelSize * (leftEdge + bounds.left), pixelSize * (topEdge - bounds.top), this.depth * sep +
+            (this.parentLayer ? this.parentLayer.index * sep * 0.01 : 0) +
+            this.index * sep * 0.001);
         this.contentTarget.scale.set(Math.max(pixelSize * width, 10e-6), Math.max(pixelSize * height, 10e-6), 1);
         this._lastTargetPosition.copy(this.target.position);
         this._lastContentTargetScale.copy(this.contentTarget.scale);

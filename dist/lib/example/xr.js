@@ -35,7 +35,9 @@ function createXRButton(renderer, options) {
             currentSession = session;
         }
         function onSessionEnded(event) {
-            currentSession.removeEventListener('end', onSessionEnded)(renderer.vr).setSession(null);
+            currentSession
+                .removeEventListener('end', onSessionEnded)(renderer.vr)
+                .setSession(null);
             button.textContent = 'ENTER XR';
             currentSession = null;
         }

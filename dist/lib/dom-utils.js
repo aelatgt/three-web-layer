@@ -95,7 +95,7 @@ class Edges {
     }
 }
 exports.Edges = Edges;
-function getBounds(element, bounds = new Bounds, referenceElement) {
+function getBounds(element, bounds = new Bounds(), referenceElement) {
     const doc = element.ownerDocument;
     const defaultView = element.ownerDocument.defaultView;
     const docEl = doc.documentElement;
@@ -116,12 +116,18 @@ function getBounds(element, bounds = new Bounds, referenceElement) {
     let prevComputedStyle = defaultView.getComputedStyle(el, null);
     let top = el.offsetTop;
     let left = el.offsetLeft;
-    if (offsetParent && referenceElement && offsetParent.contains(referenceElement) && offsetParent !== referenceElement) {
+    if (offsetParent &&
+        referenceElement &&
+        offsetParent.contains(referenceElement) &&
+        offsetParent !== referenceElement) {
         getBounds(referenceElement, bounds, offsetParent);
         left -= bounds.left;
         top -= bounds.top;
     }
-    while ((el = el.parentNode) && el !== body && el !== docEl && el !== referenceElement) {
+    while ((el = el.parentNode) &&
+        el !== body &&
+        el !== docEl &&
+        el !== referenceElement) {
         if (prevComputedStyle.position === 'fixed') {
             break;
         }
