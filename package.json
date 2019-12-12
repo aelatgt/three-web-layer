@@ -5,7 +5,7 @@
   "main": "dist/three-web-layer.umd.js",
   "amdName": "WebLayer3D",
   "module": "dist/three-web-layer.es5.js",
-  "types": "dist/types/three/three-web-layer.d.ts",
+  "typings": "dist/types/three/three-web-layer.d.ts",
   "files": [
     "/dist"
   ],
