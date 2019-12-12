@@ -1,6 +1,6 @@
 {
   "name": "three-web-layer",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Use web content in three.js scenes!",
   "main": "dist/three-web-layer.umd.js",
   "amdName": "WebLayer3D",

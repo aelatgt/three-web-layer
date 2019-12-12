@@ -378,7 +378,7 @@ class WebLayer3D extends WebLayer3DBase {
         });
         if (this.options.onLayerCreate)
             this.options.onLayerCreate(this);
-        this._webLayer.refresh(true);
+        this.refresh(true);
         // if (!WebLayer3D._didInstallStyleSheet) {
         //   const style = document.createElement('style')
         //   document.head.append(style)
