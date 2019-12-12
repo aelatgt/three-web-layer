@@ -113,7 +113,11 @@
     "typescript": "^3.7.2",
     "vue": "^2.6.8",
     "vue-hot-reload-api": "^2.3.3",
-    "vue-template-compiler": "^2.6.8"
+    "vue-template-compiler": "^2.6.8",
+    "fast-sha256": "^1.1.1",
+    "html2canvas": "^1.0.0-rc.5",
+    "lru_map": "^0.3.3",
+    "rollup-plugin-amd": "^4.0.0"
   },
   "peerDependencies": {
     "three": "> 0.103",
@@ -130,11 +134,5 @@
     "last 2 ios versions",
     "last 2 chrome versions",
     "last 2 firefox versions"
-  ],
-  "dependencies": {
-    "fast-sha256": "^1.1.1",
-    "html2canvas": "^1.0.0-rc.5",
-    "lru_map": "^0.3.3",
-    "rollup-plugin-amd": "^4.0.0"
-  }
+  ]
 }
