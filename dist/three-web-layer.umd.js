@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('three'), require('ethereal')) :
-    typeof define === 'function' && define.amd ? define(['three', 'ethereal'], factory) :
-    (global.WebLayer3D = factory(global.THREE,global.ethereal));
-}(this, (function (THREE,ethereal) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('three'), require('ethereal')) :
+    typeof define === 'function' && define.amd ? define(['exports', 'three', 'ethereal'], factory) :
+    (global = global || self, factory(global.WebLayer3D = {}, global.THREE, global.ethereal));
+}(this, (function (exports, THREE, ethereal) { 'use strict';
 
     /**
      * A collection of shims that provide minimal functionality of the ES6 collections.
@@ -931,5994 +931,2403 @@
         return ResizeObserver;
     })();
 
-    function unwrapExports (x) {
-    	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x.default : x;
+    /**
+     * @author alteredq / http://alteredqualia.com/
+     * @author mrdoob / http://mrdoob.com/
+     */
+
+    var _lut = [];
+
+    for ( var i = 0; i < 256; i ++ ) {
+
+    	_lut[ i ] = ( i < 16 ? '0' : '' ) + ( i ).toString( 16 );
+
     }
 
-    function createCommonjsModule(fn, module) {
-    	return module = { exports: {} }, fn(module, module.exports), module.exports;
+    var _Math = {
+
+    	DEG2RAD: Math.PI / 180,
+    	RAD2DEG: 180 / Math.PI,
+
+    	generateUUID: function () {
+
+    		// http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript/21963136#21963136
+
+    		var d0 = Math.random() * 0xffffffff | 0;
+    		var d1 = Math.random() * 0xffffffff | 0;
+    		var d2 = Math.random() * 0xffffffff | 0;
+    		var d3 = Math.random() * 0xffffffff | 0;
+    		var uuid = _lut[ d0 & 0xff ] + _lut[ d0 >> 8 & 0xff ] + _lut[ d0 >> 16 & 0xff ] + _lut[ d0 >> 24 & 0xff ] + '-' +
+    			_lut[ d1 & 0xff ] + _lut[ d1 >> 8 & 0xff ] + '-' + _lut[ d1 >> 16 & 0x0f | 0x40 ] + _lut[ d1 >> 24 & 0xff ] + '-' +
+    			_lut[ d2 & 0x3f | 0x80 ] + _lut[ d2 >> 8 & 0xff ] + '-' + _lut[ d2 >> 16 & 0xff ] + _lut[ d2 >> 24 & 0xff ] +
+    			_lut[ d3 & 0xff ] + _lut[ d3 >> 8 & 0xff ] + _lut[ d3 >> 16 & 0xff ] + _lut[ d3 >> 24 & 0xff ];
+
+    		// .toUpperCase() here flattens concatenated strings to save heap memory space.
+    		return uuid.toUpperCase();
+
+    	},
+
+    	clamp: function ( value, min, max ) {
+
+    		return Math.max( min, Math.min( max, value ) );
+
+    	},
+
+    	// compute euclidian modulo of m % n
+    	// https://en.wikipedia.org/wiki/Modulo_operation
+
+    	euclideanModulo: function ( n, m ) {
+
+    		return ( ( n % m ) + m ) % m;
+
+    	},
+
+    	// Linear mapping from range <a1, a2> to range <b1, b2>
+
+    	mapLinear: function ( x, a1, a2, b1, b2 ) {
+
+    		return b1 + ( x - a1 ) * ( b2 - b1 ) / ( a2 - a1 );
+
+    	},
+
+    	// https://en.wikipedia.org/wiki/Linear_interpolation
+
+    	lerp: function ( x, y, t ) {
+
+    		return ( 1 - t ) * x + t * y;
+
+    	},
+
+    	// http://en.wikipedia.org/wiki/Smoothstep
+
+    	smoothstep: function ( x, min, max ) {
+
+    		if ( x <= min ) return 0;
+    		if ( x >= max ) return 1;
+
+    		x = ( x - min ) / ( max - min );
+
+    		return x * x * ( 3 - 2 * x );
+
+    	},
+
+    	smootherstep: function ( x, min, max ) {
+
+    		if ( x <= min ) return 0;
+    		if ( x >= max ) return 1;
+
+    		x = ( x - min ) / ( max - min );
+
+    		return x * x * x * ( x * ( x * 6 - 15 ) + 10 );
+
+    	},
+
+    	// Random integer from <low, high> interval
+
+    	randInt: function ( low, high ) {
+
+    		return low + Math.floor( Math.random() * ( high - low + 1 ) );
+
+    	},
+
+    	// Random float from <low, high> interval
+
+    	randFloat: function ( low, high ) {
+
+    		return low + Math.random() * ( high - low );
+
+    	},
+
+    	// Random float from <-range/2, range/2> interval
+
+    	randFloatSpread: function ( range ) {
+
+    		return range * ( 0.5 - Math.random() );
+
+    	},
+
+    	degToRad: function ( degrees ) {
+
+    		return degrees * _Math.DEG2RAD;
+
+    	},
+
+    	radToDeg: function ( radians ) {
+
+    		return radians * _Math.RAD2DEG;
+
+    	},
+
+    	isPowerOfTwo: function ( value ) {
+
+    		return ( value & ( value - 1 ) ) === 0 && value !== 0;
+
+    	},
+
+    	ceilPowerOfTwo: function ( value ) {
+
+    		return Math.pow( 2, Math.ceil( Math.log( value ) / Math.LN2 ) );
+
+    	},
+
+    	floorPowerOfTwo: function ( value ) {
+
+    		return Math.pow( 2, Math.floor( Math.log( value ) / Math.LN2 ) );
+
+    	}
+
+    };
+
+    /**
+     * @author mikael emtinger / http://gomo.se/
+     * @author alteredq / http://alteredqualia.com/
+     * @author WestLangley / http://github.com/WestLangley
+     * @author bhouston / http://clara.io
+     */
+
+    function Quaternion( x, y, z, w ) {
+
+    	this._x = x || 0;
+    	this._y = y || 0;
+    	this._z = z || 0;
+    	this._w = ( w !== undefined ) ? w : 1;
+
     }
 
-    var Color_1 = createCommonjsModule(function (module, exports) {
-
-    // http://dev.w3.org/csswg/css-color/
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var HEX3 = /^#([a-f0-9]{3})$/i;
-    var hex3 = function hex3(value) {
-        var match = value.match(HEX3);
-        if (match) {
-            return [parseInt(match[1][0] + match[1][0], 16), parseInt(match[1][1] + match[1][1], 16), parseInt(match[1][2] + match[1][2], 16), null];
-        }
-        return false;
-    };
-
-    var HEX6 = /^#([a-f0-9]{6})$/i;
-    var hex6 = function hex6(value) {
-        var match = value.match(HEX6);
-        if (match) {
-            return [parseInt(match[1].substring(0, 2), 16), parseInt(match[1].substring(2, 4), 16), parseInt(match[1].substring(4, 6), 16), null];
-        }
-        return false;
-    };
-
-    var RGB = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
-    var rgb = function rgb(value) {
-        var match = value.match(RGB);
-        if (match) {
-            return [Number(match[1]), Number(match[2]), Number(match[3]), null];
-        }
-        return false;
-    };
-
-    var RGBA = /^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d?\.?\d+)\s*\)$/;
-    var rgba = function rgba(value) {
-        var match = value.match(RGBA);
-        if (match && match.length > 4) {
-            return [Number(match[1]), Number(match[2]), Number(match[3]), Number(match[4])];
-        }
-        return false;
-    };
-
-    var fromArray = function fromArray(array) {
-        return [Math.min(array[0], 255), Math.min(array[1], 255), Math.min(array[2], 255), array.length > 3 ? array[3] : null];
-    };
-
-    var namedColor = function namedColor(name) {
-        var color = NAMED_COLORS[name.toLowerCase()];
-        return color ? color : false;
-    };
-
-    var Color = function () {
-        function Color(value) {
-            _classCallCheck(this, Color);
-
-            var _ref = Array.isArray(value) ? fromArray(value) : hex3(value) || rgb(value) || rgba(value) || namedColor(value) || hex6(value) || [0, 0, 0, null],
-                _ref2 = _slicedToArray(_ref, 4),
-                r = _ref2[0],
-                g = _ref2[1],
-                b = _ref2[2],
-                a = _ref2[3];
-
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.a = a;
-        }
-
-        _createClass(Color, [{
-            key: 'isTransparent',
-            value: function isTransparent() {
-                return this.a === 0;
-            }
-        }, {
-            key: 'toString',
-            value: function toString() {
-                return this.a !== null && this.a !== 1 ? 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')' : 'rgb(' + this.r + ',' + this.g + ',' + this.b + ')';
-            }
-        }]);
-
-        return Color;
-    }();
-
-    exports.default = Color;
-
-
-    var NAMED_COLORS = {
-        transparent: [0, 0, 0, 0],
-        aliceblue: [240, 248, 255, null],
-        antiquewhite: [250, 235, 215, null],
-        aqua: [0, 255, 255, null],
-        aquamarine: [127, 255, 212, null],
-        azure: [240, 255, 255, null],
-        beige: [245, 245, 220, null],
-        bisque: [255, 228, 196, null],
-        black: [0, 0, 0, null],
-        blanchedalmond: [255, 235, 205, null],
-        blue: [0, 0, 255, null],
-        blueviolet: [138, 43, 226, null],
-        brown: [165, 42, 42, null],
-        burlywood: [222, 184, 135, null],
-        cadetblue: [95, 158, 160, null],
-        chartreuse: [127, 255, 0, null],
-        chocolate: [210, 105, 30, null],
-        coral: [255, 127, 80, null],
-        cornflowerblue: [100, 149, 237, null],
-        cornsilk: [255, 248, 220, null],
-        crimson: [220, 20, 60, null],
-        cyan: [0, 255, 255, null],
-        darkblue: [0, 0, 139, null],
-        darkcyan: [0, 139, 139, null],
-        darkgoldenrod: [184, 134, 11, null],
-        darkgray: [169, 169, 169, null],
-        darkgreen: [0, 100, 0, null],
-        darkgrey: [169, 169, 169, null],
-        darkkhaki: [189, 183, 107, null],
-        darkmagenta: [139, 0, 139, null],
-        darkolivegreen: [85, 107, 47, null],
-        darkorange: [255, 140, 0, null],
-        darkorchid: [153, 50, 204, null],
-        darkred: [139, 0, 0, null],
-        darksalmon: [233, 150, 122, null],
-        darkseagreen: [143, 188, 143, null],
-        darkslateblue: [72, 61, 139, null],
-        darkslategray: [47, 79, 79, null],
-        darkslategrey: [47, 79, 79, null],
-        darkturquoise: [0, 206, 209, null],
-        darkviolet: [148, 0, 211, null],
-        deeppink: [255, 20, 147, null],
-        deepskyblue: [0, 191, 255, null],
-        dimgray: [105, 105, 105, null],
-        dimgrey: [105, 105, 105, null],
-        dodgerblue: [30, 144, 255, null],
-        firebrick: [178, 34, 34, null],
-        floralwhite: [255, 250, 240, null],
-        forestgreen: [34, 139, 34, null],
-        fuchsia: [255, 0, 255, null],
-        gainsboro: [220, 220, 220, null],
-        ghostwhite: [248, 248, 255, null],
-        gold: [255, 215, 0, null],
-        goldenrod: [218, 165, 32, null],
-        gray: [128, 128, 128, null],
-        green: [0, 128, 0, null],
-        greenyellow: [173, 255, 47, null],
-        grey: [128, 128, 128, null],
-        honeydew: [240, 255, 240, null],
-        hotpink: [255, 105, 180, null],
-        indianred: [205, 92, 92, null],
-        indigo: [75, 0, 130, null],
-        ivory: [255, 255, 240, null],
-        khaki: [240, 230, 140, null],
-        lavender: [230, 230, 250, null],
-        lavenderblush: [255, 240, 245, null],
-        lawngreen: [124, 252, 0, null],
-        lemonchiffon: [255, 250, 205, null],
-        lightblue: [173, 216, 230, null],
-        lightcoral: [240, 128, 128, null],
-        lightcyan: [224, 255, 255, null],
-        lightgoldenrodyellow: [250, 250, 210, null],
-        lightgray: [211, 211, 211, null],
-        lightgreen: [144, 238, 144, null],
-        lightgrey: [211, 211, 211, null],
-        lightpink: [255, 182, 193, null],
-        lightsalmon: [255, 160, 122, null],
-        lightseagreen: [32, 178, 170, null],
-        lightskyblue: [135, 206, 250, null],
-        lightslategray: [119, 136, 153, null],
-        lightslategrey: [119, 136, 153, null],
-        lightsteelblue: [176, 196, 222, null],
-        lightyellow: [255, 255, 224, null],
-        lime: [0, 255, 0, null],
-        limegreen: [50, 205, 50, null],
-        linen: [250, 240, 230, null],
-        magenta: [255, 0, 255, null],
-        maroon: [128, 0, 0, null],
-        mediumaquamarine: [102, 205, 170, null],
-        mediumblue: [0, 0, 205, null],
-        mediumorchid: [186, 85, 211, null],
-        mediumpurple: [147, 112, 219, null],
-        mediumseagreen: [60, 179, 113, null],
-        mediumslateblue: [123, 104, 238, null],
-        mediumspringgreen: [0, 250, 154, null],
-        mediumturquoise: [72, 209, 204, null],
-        mediumvioletred: [199, 21, 133, null],
-        midnightblue: [25, 25, 112, null],
-        mintcream: [245, 255, 250, null],
-        mistyrose: [255, 228, 225, null],
-        moccasin: [255, 228, 181, null],
-        navajowhite: [255, 222, 173, null],
-        navy: [0, 0, 128, null],
-        oldlace: [253, 245, 230, null],
-        olive: [128, 128, 0, null],
-        olivedrab: [107, 142, 35, null],
-        orange: [255, 165, 0, null],
-        orangered: [255, 69, 0, null],
-        orchid: [218, 112, 214, null],
-        palegoldenrod: [238, 232, 170, null],
-        palegreen: [152, 251, 152, null],
-        paleturquoise: [175, 238, 238, null],
-        palevioletred: [219, 112, 147, null],
-        papayawhip: [255, 239, 213, null],
-        peachpuff: [255, 218, 185, null],
-        peru: [205, 133, 63, null],
-        pink: [255, 192, 203, null],
-        plum: [221, 160, 221, null],
-        powderblue: [176, 224, 230, null],
-        purple: [128, 0, 128, null],
-        rebeccapurple: [102, 51, 153, null],
-        red: [255, 0, 0, null],
-        rosybrown: [188, 143, 143, null],
-        royalblue: [65, 105, 225, null],
-        saddlebrown: [139, 69, 19, null],
-        salmon: [250, 128, 114, null],
-        sandybrown: [244, 164, 96, null],
-        seagreen: [46, 139, 87, null],
-        seashell: [255, 245, 238, null],
-        sienna: [160, 82, 45, null],
-        silver: [192, 192, 192, null],
-        skyblue: [135, 206, 235, null],
-        slateblue: [106, 90, 205, null],
-        slategray: [112, 128, 144, null],
-        slategrey: [112, 128, 144, null],
-        snow: [255, 250, 250, null],
-        springgreen: [0, 255, 127, null],
-        steelblue: [70, 130, 180, null],
-        tan: [210, 180, 140, null],
-        teal: [0, 128, 128, null],
-        thistle: [216, 191, 216, null],
-        tomato: [255, 99, 71, null],
-        turquoise: [64, 224, 208, null],
-        violet: [238, 130, 238, null],
-        wheat: [245, 222, 179, null],
-        white: [255, 255, 255, null],
-        whitesmoke: [245, 245, 245, null],
-        yellow: [255, 255, 0, null],
-        yellowgreen: [154, 205, 50, null]
-    };
-
-    var TRANSPARENT = exports.TRANSPARENT = new Color([0, 0, 0, 0]);
-    });
-
-    unwrapExports(Color_1);
-    var Color_2 = Color_1.TRANSPARENT;
-
-    var Util = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var contains = exports.contains = function contains(bit, value) {
-        return (bit & value) !== 0;
-    };
-
-    var distance = exports.distance = function distance(a, b) {
-        return Math.sqrt(a * a + b * b);
-    };
-
-    var copyCSSStyles = exports.copyCSSStyles = function copyCSSStyles(style, target) {
-        // Edge does not provide value for cssText
-        for (var i = style.length - 1; i >= 0; i--) {
-            var property = style.item(i);
-            // Safari shows pseudoelements if content is set
-            if (property !== 'content') {
-                target.style.setProperty(property, style.getPropertyValue(property));
-            }
-        }
-        return target;
-    };
-
-    var SMALL_IMAGE = exports.SMALL_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-    });
-
-    unwrapExports(Util);
-    var Util_1 = Util.contains;
-    var Util_2 = Util.distance;
-    var Util_3 = Util.copyCSSStyles;
-    var Util_4 = Util.SMALL_IMAGE;
-
-    var Length_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var LENGTH_TYPE = exports.LENGTH_TYPE = {
-        PX: 0,
-        PERCENTAGE: 1
-    };
-
-    var Length = function () {
-        function Length(value) {
-            _classCallCheck(this, Length);
-
-            this.type = value.substr(value.length - 1) === '%' ? LENGTH_TYPE.PERCENTAGE : LENGTH_TYPE.PX;
-            var parsedValue = parseFloat(value);
-            this.value = isNaN(parsedValue) ? 0 : parsedValue;
-        }
-
-        _createClass(Length, [{
-            key: 'isPercentage',
-            value: function isPercentage() {
-                return this.type === LENGTH_TYPE.PERCENTAGE;
-            }
-        }, {
-            key: 'getAbsoluteValue',
-            value: function getAbsoluteValue(parentLength) {
-                return this.isPercentage() ? parentLength * (this.value / 100) : this.value;
-            }
-        }], [{
-            key: 'create',
-            value: function create(v) {
-                return new Length(v);
-            }
-        }]);
-
-        return Length;
-    }();
-
-    exports.default = Length;
-
-
-    var getRootFontSize = function getRootFontSize(container) {
-        var parent = container.parent;
-        return parent ? getRootFontSize(parent) : parseFloat(container.style.font.fontSize);
-    };
-
-    var calculateLengthFromValueWithUnit = exports.calculateLengthFromValueWithUnit = function calculateLengthFromValueWithUnit(container, value, unit) {
-        switch (unit) {
-            case 'px':
-            case '%':
-                return new Length(value + unit);
-            case 'em':
-            case 'rem':
-                var length = new Length(value);
-                length.value *= unit === 'em' ? parseFloat(container.style.font.fontSize) : getRootFontSize(container);
-                return length;
-            default:
-                // TODO: handle correctly if unknown unit is used
-                return new Length('0');
-        }
-    };
-    });
-
-    unwrapExports(Length_1);
-    var Length_2 = Length_1.LENGTH_TYPE;
-    var Length_3 = Length_1.calculateLengthFromValueWithUnit;
-
-    var Size_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var Size = function Size(width, height) {
-        _classCallCheck(this, Size);
-
-        this.width = width;
-        this.height = height;
-    };
-
-    exports.default = Size;
-    });
-
-    unwrapExports(Size_1);
-
-    var Path = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var PATH = exports.PATH = {
-        VECTOR: 0,
-        BEZIER_CURVE: 1,
-        CIRCLE: 2
-    };
-    });
-
-    unwrapExports(Path);
-    var Path_1 = Path.PATH;
-
-    var Vector_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var Vector = function Vector(x, y) {
-        _classCallCheck(this, Vector);
-
-        this.type = Path.PATH.VECTOR;
-        this.x = x;
-        this.y = y;
-    };
-
-    exports.default = Vector;
-    });
-
-    unwrapExports(Vector_1);
-
-    var BezierCurve_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-
-
-    var _Vector2 = _interopRequireDefault(Vector_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var lerp = function lerp(a, b, t) {
-        return new _Vector2.default(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
-    };
-
-    var BezierCurve = function () {
-        function BezierCurve(start, startControl, endControl, end) {
-            _classCallCheck(this, BezierCurve);
-
-            this.type = Path.PATH.BEZIER_CURVE;
-            this.start = start;
-            this.startControl = startControl;
-            this.endControl = endControl;
-            this.end = end;
-        }
-
-        _createClass(BezierCurve, [{
-            key: 'subdivide',
-            value: function subdivide(t, firstHalf) {
-                var ab = lerp(this.start, this.startControl, t);
-                var bc = lerp(this.startControl, this.endControl, t);
-                var cd = lerp(this.endControl, this.end, t);
-                var abbc = lerp(ab, bc, t);
-                var bccd = lerp(bc, cd, t);
-                var dest = lerp(abbc, bccd, t);
-                return firstHalf ? new BezierCurve(this.start, ab, abbc, dest) : new BezierCurve(dest, bccd, cd, this.end);
-            }
-        }, {
-            key: 'reverse',
-            value: function reverse() {
-                return new BezierCurve(this.end, this.endControl, this.startControl, this.start);
-            }
-        }]);
-
-        return BezierCurve;
-    }();
-
-    exports.default = BezierCurve;
-    });
-
-    unwrapExports(BezierCurve_1);
-
-    var Bounds_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseBoundCurves = exports.calculatePaddingBoxPath = exports.calculateBorderBoxPath = exports.parsePathForBorder = exports.parseDocumentSize = exports.calculateContentBox = exports.calculatePaddingBox = exports.parseBounds = exports.Bounds = undefined;
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-    var _Vector2 = _interopRequireDefault(Vector_1);
-
-
-
-    var _BezierCurve2 = _interopRequireDefault(BezierCurve_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var TOP = 0;
-    var RIGHT = 1;
-    var BOTTOM = 2;
-    var LEFT = 3;
-
-    var H = 0;
-    var V = 1;
-
-    var Bounds = exports.Bounds = function () {
-        function Bounds(x, y, w, h) {
-            _classCallCheck(this, Bounds);
-
-            this.left = x;
-            this.top = y;
-            this.width = w;
-            this.height = h;
-        }
-
-        _createClass(Bounds, null, [{
-            key: 'fromClientRect',
-            value: function fromClientRect(clientRect, scrollX, scrollY) {
-                return new Bounds(clientRect.left + scrollX, clientRect.top + scrollY, clientRect.width, clientRect.height);
-            }
-        }]);
-
-        return Bounds;
-    }();
-
-    var parseBounds = exports.parseBounds = function parseBounds(node, scrollX, scrollY) {
-        return Bounds.fromClientRect(node.getBoundingClientRect(), scrollX, scrollY);
-    };
-
-    var calculatePaddingBox = exports.calculatePaddingBox = function calculatePaddingBox(bounds, borders) {
-        return new Bounds(bounds.left + borders[LEFT].borderWidth, bounds.top + borders[TOP].borderWidth, bounds.width - (borders[RIGHT].borderWidth + borders[LEFT].borderWidth), bounds.height - (borders[TOP].borderWidth + borders[BOTTOM].borderWidth));
-    };
-
-    var calculateContentBox = exports.calculateContentBox = function calculateContentBox(bounds, padding, borders) {
-        // TODO support percentage paddings
-        var paddingTop = padding[TOP].value;
-        var paddingRight = padding[RIGHT].value;
-        var paddingBottom = padding[BOTTOM].value;
-        var paddingLeft = padding[LEFT].value;
-
-        return new Bounds(bounds.left + paddingLeft + borders[LEFT].borderWidth, bounds.top + paddingTop + borders[TOP].borderWidth, bounds.width - (borders[RIGHT].borderWidth + borders[LEFT].borderWidth + paddingLeft + paddingRight), bounds.height - (borders[TOP].borderWidth + borders[BOTTOM].borderWidth + paddingTop + paddingBottom));
-    };
-
-    var parseDocumentSize = exports.parseDocumentSize = function parseDocumentSize(document) {
-        var body = document.body;
-        var documentElement = document.documentElement;
-
-        if (!body || !documentElement) {
-            throw new Error('');
-        }
-        var width = Math.max(Math.max(body.scrollWidth, documentElement.scrollWidth), Math.max(body.offsetWidth, documentElement.offsetWidth), Math.max(body.clientWidth, documentElement.clientWidth));
-
-        var height = Math.max(Math.max(body.scrollHeight, documentElement.scrollHeight), Math.max(body.offsetHeight, documentElement.offsetHeight), Math.max(body.clientHeight, documentElement.clientHeight));
-
-        return new Bounds(0, 0, width, height);
-    };
-
-    var parsePathForBorder = exports.parsePathForBorder = function parsePathForBorder(curves, borderSide) {
-        switch (borderSide) {
-            case TOP:
-                return createPathFromCurves(curves.topLeftOuter, curves.topLeftInner, curves.topRightOuter, curves.topRightInner);
-            case RIGHT:
-                return createPathFromCurves(curves.topRightOuter, curves.topRightInner, curves.bottomRightOuter, curves.bottomRightInner);
-            case BOTTOM:
-                return createPathFromCurves(curves.bottomRightOuter, curves.bottomRightInner, curves.bottomLeftOuter, curves.bottomLeftInner);
-            case LEFT:
-            default:
-                return createPathFromCurves(curves.bottomLeftOuter, curves.bottomLeftInner, curves.topLeftOuter, curves.topLeftInner);
-        }
-    };
-
-    var createPathFromCurves = function createPathFromCurves(outer1, inner1, outer2, inner2) {
-        var path = [];
-        if (outer1 instanceof _BezierCurve2.default) {
-            path.push(outer1.subdivide(0.5, false));
-        } else {
-            path.push(outer1);
-        }
-
-        if (outer2 instanceof _BezierCurve2.default) {
-            path.push(outer2.subdivide(0.5, true));
-        } else {
-            path.push(outer2);
-        }
-
-        if (inner2 instanceof _BezierCurve2.default) {
-            path.push(inner2.subdivide(0.5, true).reverse());
-        } else {
-            path.push(inner2);
-        }
-
-        if (inner1 instanceof _BezierCurve2.default) {
-            path.push(inner1.subdivide(0.5, false).reverse());
-        } else {
-            path.push(inner1);
-        }
-
-        return path;
-    };
-
-    var calculateBorderBoxPath = exports.calculateBorderBoxPath = function calculateBorderBoxPath(curves) {
-        return [curves.topLeftOuter, curves.topRightOuter, curves.bottomRightOuter, curves.bottomLeftOuter];
-    };
-
-    var calculatePaddingBoxPath = exports.calculatePaddingBoxPath = function calculatePaddingBoxPath(curves) {
-        return [curves.topLeftInner, curves.topRightInner, curves.bottomRightInner, curves.bottomLeftInner];
-    };
-
-    var parseBoundCurves = exports.parseBoundCurves = function parseBoundCurves(bounds, borders, borderRadius) {
-        var tlh = borderRadius[CORNER.TOP_LEFT][H].getAbsoluteValue(bounds.width);
-        var tlv = borderRadius[CORNER.TOP_LEFT][V].getAbsoluteValue(bounds.height);
-        var trh = borderRadius[CORNER.TOP_RIGHT][H].getAbsoluteValue(bounds.width);
-        var trv = borderRadius[CORNER.TOP_RIGHT][V].getAbsoluteValue(bounds.height);
-        var brh = borderRadius[CORNER.BOTTOM_RIGHT][H].getAbsoluteValue(bounds.width);
-        var brv = borderRadius[CORNER.BOTTOM_RIGHT][V].getAbsoluteValue(bounds.height);
-        var blh = borderRadius[CORNER.BOTTOM_LEFT][H].getAbsoluteValue(bounds.width);
-        var blv = borderRadius[CORNER.BOTTOM_LEFT][V].getAbsoluteValue(bounds.height);
-
-        var factors = [];
-        factors.push((tlh + trh) / bounds.width);
-        factors.push((blh + brh) / bounds.width);
-        factors.push((tlv + blv) / bounds.height);
-        factors.push((trv + brv) / bounds.height);
-        var maxFactor = Math.max.apply(Math, factors);
-
-        if (maxFactor > 1) {
-            tlh /= maxFactor;
-            tlv /= maxFactor;
-            trh /= maxFactor;
-            trv /= maxFactor;
-            brh /= maxFactor;
-            brv /= maxFactor;
-            blh /= maxFactor;
-            blv /= maxFactor;
-        }
-
-        var topWidth = bounds.width - trh;
-        var rightHeight = bounds.height - brv;
-        var bottomWidth = bounds.width - brh;
-        var leftHeight = bounds.height - blv;
-
-        return {
-            topLeftOuter: tlh > 0 || tlv > 0 ? getCurvePoints(bounds.left, bounds.top, tlh, tlv, CORNER.TOP_LEFT) : new _Vector2.default(bounds.left, bounds.top),
-            topLeftInner: tlh > 0 || tlv > 0 ? getCurvePoints(bounds.left + borders[LEFT].borderWidth, bounds.top + borders[TOP].borderWidth, Math.max(0, tlh - borders[LEFT].borderWidth), Math.max(0, tlv - borders[TOP].borderWidth), CORNER.TOP_LEFT) : new _Vector2.default(bounds.left + borders[LEFT].borderWidth, bounds.top + borders[TOP].borderWidth),
-            topRightOuter: trh > 0 || trv > 0 ? getCurvePoints(bounds.left + topWidth, bounds.top, trh, trv, CORNER.TOP_RIGHT) : new _Vector2.default(bounds.left + bounds.width, bounds.top),
-            topRightInner: trh > 0 || trv > 0 ? getCurvePoints(bounds.left + Math.min(topWidth, bounds.width + borders[LEFT].borderWidth), bounds.top + borders[TOP].borderWidth, topWidth > bounds.width + borders[LEFT].borderWidth ? 0 : trh - borders[LEFT].borderWidth, trv - borders[TOP].borderWidth, CORNER.TOP_RIGHT) : new _Vector2.default(bounds.left + bounds.width - borders[RIGHT].borderWidth, bounds.top + borders[TOP].borderWidth),
-            bottomRightOuter: brh > 0 || brv > 0 ? getCurvePoints(bounds.left + bottomWidth, bounds.top + rightHeight, brh, brv, CORNER.BOTTOM_RIGHT) : new _Vector2.default(bounds.left + bounds.width, bounds.top + bounds.height),
-            bottomRightInner: brh > 0 || brv > 0 ? getCurvePoints(bounds.left + Math.min(bottomWidth, bounds.width - borders[LEFT].borderWidth), bounds.top + Math.min(rightHeight, bounds.height + borders[TOP].borderWidth), Math.max(0, brh - borders[RIGHT].borderWidth), brv - borders[BOTTOM].borderWidth, CORNER.BOTTOM_RIGHT) : new _Vector2.default(bounds.left + bounds.width - borders[RIGHT].borderWidth, bounds.top + bounds.height - borders[BOTTOM].borderWidth),
-            bottomLeftOuter: blh > 0 || blv > 0 ? getCurvePoints(bounds.left, bounds.top + leftHeight, blh, blv, CORNER.BOTTOM_LEFT) : new _Vector2.default(bounds.left, bounds.top + bounds.height),
-            bottomLeftInner: blh > 0 || blv > 0 ? getCurvePoints(bounds.left + borders[LEFT].borderWidth, bounds.top + leftHeight, Math.max(0, blh - borders[LEFT].borderWidth), blv - borders[BOTTOM].borderWidth, CORNER.BOTTOM_LEFT) : new _Vector2.default(bounds.left + borders[LEFT].borderWidth, bounds.top + bounds.height - borders[BOTTOM].borderWidth)
-        };
-    };
-
-    var CORNER = {
-        TOP_LEFT: 0,
-        TOP_RIGHT: 1,
-        BOTTOM_RIGHT: 2,
-        BOTTOM_LEFT: 3
-    };
-
-    var getCurvePoints = function getCurvePoints(x, y, r1, r2, position) {
-        var kappa = 4 * ((Math.sqrt(2) - 1) / 3);
-        var ox = r1 * kappa; // control point offset horizontal
-        var oy = r2 * kappa; // control point offset vertical
-        var xm = x + r1; // x-middle
-        var ym = y + r2; // y-middle
-
-        switch (position) {
-            case CORNER.TOP_LEFT:
-                return new _BezierCurve2.default(new _Vector2.default(x, ym), new _Vector2.default(x, ym - oy), new _Vector2.default(xm - ox, y), new _Vector2.default(xm, y));
-            case CORNER.TOP_RIGHT:
-                return new _BezierCurve2.default(new _Vector2.default(x, y), new _Vector2.default(x + ox, y), new _Vector2.default(xm, ym - oy), new _Vector2.default(xm, ym));
-            case CORNER.BOTTOM_RIGHT:
-                return new _BezierCurve2.default(new _Vector2.default(xm, y), new _Vector2.default(xm, y + oy), new _Vector2.default(x + ox, ym), new _Vector2.default(x, ym));
-            case CORNER.BOTTOM_LEFT:
-            default:
-                return new _BezierCurve2.default(new _Vector2.default(xm, ym), new _Vector2.default(xm - ox, ym), new _Vector2.default(x, y + oy), new _Vector2.default(x, y));
-        }
-    };
-    });
-
-    unwrapExports(Bounds_1);
-    var Bounds_2 = Bounds_1.parseBoundCurves;
-    var Bounds_3 = Bounds_1.calculatePaddingBoxPath;
-    var Bounds_4 = Bounds_1.calculateBorderBoxPath;
-    var Bounds_5 = Bounds_1.parsePathForBorder;
-    var Bounds_6 = Bounds_1.parseDocumentSize;
-    var Bounds_7 = Bounds_1.calculateContentBox;
-    var Bounds_8 = Bounds_1.calculatePaddingBox;
-    var Bounds_9 = Bounds_1.parseBounds;
-    var Bounds_10 = Bounds_1.Bounds;
-
-    var padding = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parsePadding = exports.PADDING_SIDES = undefined;
-
-
-
-    var _Length2 = _interopRequireDefault(Length_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var PADDING_SIDES = exports.PADDING_SIDES = {
-        TOP: 0,
-        RIGHT: 1,
-        BOTTOM: 2,
-        LEFT: 3
-    };
-
-    var SIDES = ['top', 'right', 'bottom', 'left'];
-
-    var parsePadding = exports.parsePadding = function parsePadding(style) {
-        return SIDES.map(function (side) {
-            return new _Length2.default(style.getPropertyValue('padding-' + side));
-        });
-    };
-    });
-
-    unwrapExports(padding);
-    var padding_1 = padding.parsePadding;
-    var padding_2 = padding.PADDING_SIDES;
-
-    var background = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseBackgroundImage = exports.parseBackground = exports.calculateBackgroundRepeatPath = exports.calculateBackgroundPosition = exports.calculateBackgroungPositioningArea = exports.calculateBackgroungPaintingArea = exports.calculateGradientBackgroundSize = exports.calculateBackgroundSize = exports.BACKGROUND_ORIGIN = exports.BACKGROUND_CLIP = exports.BACKGROUND_SIZE = exports.BACKGROUND_REPEAT = undefined;
-
-
-
-    var _Color2 = _interopRequireDefault(Color_1);
-
-
-
-    var _Length2 = _interopRequireDefault(Length_1);
-
-
-
-    var _Size2 = _interopRequireDefault(Size_1);
-
-
-
-    var _Vector2 = _interopRequireDefault(Vector_1);
-
-
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var BACKGROUND_REPEAT = exports.BACKGROUND_REPEAT = {
-        REPEAT: 0,
-        NO_REPEAT: 1,
-        REPEAT_X: 2,
-        REPEAT_Y: 3
-    };
-
-    var BACKGROUND_SIZE = exports.BACKGROUND_SIZE = {
-        AUTO: 0,
-        CONTAIN: 1,
-        COVER: 2,
-        LENGTH: 3
-    };
-
-    var BACKGROUND_CLIP = exports.BACKGROUND_CLIP = {
-        BORDER_BOX: 0,
-        PADDING_BOX: 1,
-        CONTENT_BOX: 2
-    };
-
-    var BACKGROUND_ORIGIN = exports.BACKGROUND_ORIGIN = BACKGROUND_CLIP;
-
-    var AUTO = 'auto';
-
-    var BackgroundSize = function BackgroundSize(size) {
-        _classCallCheck(this, BackgroundSize);
-
-        switch (size) {
-            case 'contain':
-                this.size = BACKGROUND_SIZE.CONTAIN;
-                break;
-            case 'cover':
-                this.size = BACKGROUND_SIZE.COVER;
-                break;
-            case 'auto':
-                this.size = BACKGROUND_SIZE.AUTO;
-                break;
-            default:
-                this.value = new _Length2.default(size);
-        }
-    };
-
-    var calculateBackgroundSize = exports.calculateBackgroundSize = function calculateBackgroundSize(backgroundImage, image, bounds) {
-        var width = 0;
-        var height = 0;
-        var size = backgroundImage.size;
-        if (size[0].size === BACKGROUND_SIZE.CONTAIN || size[0].size === BACKGROUND_SIZE.COVER) {
-            var targetRatio = bounds.width / bounds.height;
-            var currentRatio = image.width / image.height;
-            return targetRatio < currentRatio !== (size[0].size === BACKGROUND_SIZE.COVER) ? new _Size2.default(bounds.width, bounds.width / currentRatio) : new _Size2.default(bounds.height * currentRatio, bounds.height);
-        }
-
-        if (size[0].value) {
-            width = size[0].value.getAbsoluteValue(bounds.width);
-        }
-
-        if (size[0].size === BACKGROUND_SIZE.AUTO && size[1].size === BACKGROUND_SIZE.AUTO) {
-            height = image.height;
-        } else if (size[1].size === BACKGROUND_SIZE.AUTO) {
-            height = width / image.width * image.height;
-        } else if (size[1].value) {
-            height = size[1].value.getAbsoluteValue(bounds.height);
-        }
-
-        if (size[0].size === BACKGROUND_SIZE.AUTO) {
-            width = height / image.height * image.width;
-        }
-
-        return new _Size2.default(width, height);
-    };
-
-    var calculateGradientBackgroundSize = exports.calculateGradientBackgroundSize = function calculateGradientBackgroundSize(backgroundImage, bounds) {
-        var size = backgroundImage.size;
-        var width = size[0].value ? size[0].value.getAbsoluteValue(bounds.width) : bounds.width;
-        var height = size[1].value ? size[1].value.getAbsoluteValue(bounds.height) : size[0].value ? width : bounds.height;
-
-        return new _Size2.default(width, height);
-    };
-
-    var AUTO_SIZE = new BackgroundSize(AUTO);
-
-    var calculateBackgroungPaintingArea = exports.calculateBackgroungPaintingArea = function calculateBackgroungPaintingArea(curves, clip) {
-        switch (clip) {
-            case BACKGROUND_CLIP.BORDER_BOX:
-                return (0, Bounds_1.calculateBorderBoxPath)(curves);
-            case BACKGROUND_CLIP.PADDING_BOX:
-            default:
-                return (0, Bounds_1.calculatePaddingBoxPath)(curves);
-        }
-    };
-
-    var calculateBackgroungPositioningArea = exports.calculateBackgroungPositioningArea = function calculateBackgroungPositioningArea(backgroundOrigin, bounds, padding$$1, border) {
-        var paddingBox = (0, Bounds_1.calculatePaddingBox)(bounds, border);
-
-        switch (backgroundOrigin) {
-            case BACKGROUND_ORIGIN.BORDER_BOX:
-                return bounds;
-            case BACKGROUND_ORIGIN.CONTENT_BOX:
-                var paddingLeft = padding$$1[padding.PADDING_SIDES.LEFT].getAbsoluteValue(bounds.width);
-                var paddingRight = padding$$1[padding.PADDING_SIDES.RIGHT].getAbsoluteValue(bounds.width);
-                var paddingTop = padding$$1[padding.PADDING_SIDES.TOP].getAbsoluteValue(bounds.width);
-                var paddingBottom = padding$$1[padding.PADDING_SIDES.BOTTOM].getAbsoluteValue(bounds.width);
-                return new Bounds_1.Bounds(paddingBox.left + paddingLeft, paddingBox.top + paddingTop, paddingBox.width - paddingLeft - paddingRight, paddingBox.height - paddingTop - paddingBottom);
-            case BACKGROUND_ORIGIN.PADDING_BOX:
-            default:
-                return paddingBox;
-        }
-    };
-
-    var calculateBackgroundPosition = exports.calculateBackgroundPosition = function calculateBackgroundPosition(position, size, bounds) {
-        return new _Vector2.default(position[0].getAbsoluteValue(bounds.width - size.width), position[1].getAbsoluteValue(bounds.height - size.height));
-    };
-
-    var calculateBackgroundRepeatPath = exports.calculateBackgroundRepeatPath = function calculateBackgroundRepeatPath(background, position, size, backgroundPositioningArea, bounds) {
-        var repeat = background.repeat;
-        switch (repeat) {
-            case BACKGROUND_REPEAT.REPEAT_X:
-                return [new _Vector2.default(Math.round(bounds.left), Math.round(backgroundPositioningArea.top + position.y)), new _Vector2.default(Math.round(bounds.left + bounds.width), Math.round(backgroundPositioningArea.top + position.y)), new _Vector2.default(Math.round(bounds.left + bounds.width), Math.round(size.height + backgroundPositioningArea.top + position.y)), new _Vector2.default(Math.round(bounds.left), Math.round(size.height + backgroundPositioningArea.top + position.y))];
-            case BACKGROUND_REPEAT.REPEAT_Y:
-                return [new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x), Math.round(bounds.top)), new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x + size.width), Math.round(bounds.top)), new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x + size.width), Math.round(bounds.height + bounds.top)), new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x), Math.round(bounds.height + bounds.top))];
-            case BACKGROUND_REPEAT.NO_REPEAT:
-                return [new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x), Math.round(backgroundPositioningArea.top + position.y)), new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x + size.width), Math.round(backgroundPositioningArea.top + position.y)), new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x + size.width), Math.round(backgroundPositioningArea.top + position.y + size.height)), new _Vector2.default(Math.round(backgroundPositioningArea.left + position.x), Math.round(backgroundPositioningArea.top + position.y + size.height))];
-            default:
-                return [new _Vector2.default(Math.round(bounds.left), Math.round(bounds.top)), new _Vector2.default(Math.round(bounds.left + bounds.width), Math.round(bounds.top)), new _Vector2.default(Math.round(bounds.left + bounds.width), Math.round(bounds.height + bounds.top)), new _Vector2.default(Math.round(bounds.left), Math.round(bounds.height + bounds.top))];
-        }
-    };
-
-    var parseBackground = exports.parseBackground = function parseBackground(style, resourceLoader) {
-        return {
-            backgroundColor: new _Color2.default(style.backgroundColor),
-            backgroundImage: parseBackgroundImages(style, resourceLoader),
-            backgroundClip: parseBackgroundClip(style.backgroundClip),
-            backgroundOrigin: parseBackgroundOrigin(style.backgroundOrigin)
-        };
-    };
-
-    var parseBackgroundClip = function parseBackgroundClip(backgroundClip) {
-        switch (backgroundClip) {
-            case 'padding-box':
-                return BACKGROUND_CLIP.PADDING_BOX;
-            case 'content-box':
-                return BACKGROUND_CLIP.CONTENT_BOX;
-        }
-        return BACKGROUND_CLIP.BORDER_BOX;
-    };
-
-    var parseBackgroundOrigin = function parseBackgroundOrigin(backgroundOrigin) {
-        switch (backgroundOrigin) {
-            case 'padding-box':
-                return BACKGROUND_ORIGIN.PADDING_BOX;
-            case 'content-box':
-                return BACKGROUND_ORIGIN.CONTENT_BOX;
-        }
-        return BACKGROUND_ORIGIN.BORDER_BOX;
-    };
-
-    var parseBackgroundRepeat = function parseBackgroundRepeat(backgroundRepeat) {
-        switch (backgroundRepeat.trim()) {
-            case 'no-repeat':
-                return BACKGROUND_REPEAT.NO_REPEAT;
-            case 'repeat-x':
-            case 'repeat no-repeat':
-                return BACKGROUND_REPEAT.REPEAT_X;
-            case 'repeat-y':
-            case 'no-repeat repeat':
-                return BACKGROUND_REPEAT.REPEAT_Y;
-            case 'repeat':
-                return BACKGROUND_REPEAT.REPEAT;
-        }
-
-        return BACKGROUND_REPEAT.REPEAT;
-    };
-
-    var parseBackgroundImages = function parseBackgroundImages(style, resourceLoader) {
-        var sources = parseBackgroundImage(style.backgroundImage).map(function (backgroundImage) {
-            if (backgroundImage.method === 'url') {
-                var key = resourceLoader.loadImage(backgroundImage.args[0]);
-                backgroundImage.args = key ? [key] : [];
-            }
-            return backgroundImage;
-        });
-        var positions = style.backgroundPosition.split(',');
-        var repeats = style.backgroundRepeat.split(',');
-        var sizes = style.backgroundSize.split(',');
-
-        return sources.map(function (source, index) {
-            var size = (sizes[index] || AUTO).trim().split(' ').map(parseBackgroundSize);
-            var position = (positions[index] || AUTO).trim().split(' ').map(parseBackgoundPosition);
-
-            return {
-                source: source,
-                repeat: parseBackgroundRepeat(typeof repeats[index] === 'string' ? repeats[index] : repeats[0]),
-                size: size.length < 2 ? [size[0], AUTO_SIZE] : [size[0], size[1]],
-                position: position.length < 2 ? [position[0], position[0]] : [position[0], position[1]]
-            };
-        });
-    };
-
-    var parseBackgroundSize = function parseBackgroundSize(size) {
-        return size === 'auto' ? AUTO_SIZE : new BackgroundSize(size);
-    };
-
-    var parseBackgoundPosition = function parseBackgoundPosition(position) {
-        switch (position) {
-            case 'bottom':
-            case 'right':
-                return new _Length2.default('100%');
-            case 'left':
-            case 'top':
-                return new _Length2.default('0%');
-            case 'auto':
-                return new _Length2.default('0');
-        }
-        return new _Length2.default(position);
-    };
-
-    var parseBackgroundImage = exports.parseBackgroundImage = function parseBackgroundImage(image) {
-        var whitespace = /^\s$/;
-        var results = [];
-
-        var args = [];
-        var method = '';
-        var quote = null;
-        var definition = '';
-        var mode = 0;
-        var numParen = 0;
-
-        var appendResult = function appendResult() {
-            var prefix = '';
-            if (method) {
-                if (definition.substr(0, 1) === '"') {
-                    definition = definition.substr(1, definition.length - 2);
-                }
-
-                if (definition) {
-                    args.push(definition.trim());
-                }
-
-                var prefix_i = method.indexOf('-', 1) + 1;
-                if (method.substr(0, 1) === '-' && prefix_i > 0) {
-                    prefix = method.substr(0, prefix_i).toLowerCase();
-                    method = method.substr(prefix_i);
-                }
-                method = method.toLowerCase();
-                if (method !== 'none') {
-                    results.push({
-                        prefix: prefix,
-                        method: method,
-                        args: args
-                    });
-                }
-            }
-            args = [];
-            method = definition = '';
-        };
-
-        image.split('').forEach(function (c) {
-            if (mode === 0 && whitespace.test(c)) {
-                return;
-            }
-            switch (c) {
-                case '"':
-                    if (!quote) {
-                        quote = c;
-                    } else if (quote === c) {
-                        quote = null;
-                    }
-                    break;
-                case '(':
-                    if (quote) {
-                        break;
-                    } else if (mode === 0) {
-                        mode = 1;
-                        return;
-                    } else {
-                        numParen++;
-                    }
-                    break;
-                case ')':
-                    if (quote) {
-                        break;
-                    } else if (mode === 1) {
-                        if (numParen === 0) {
-                            mode = 0;
-                            appendResult();
-                            return;
-                        } else {
-                            numParen--;
-                        }
-                    }
-                    break;
-
-                case ',':
-                    if (quote) {
-                        break;
-                    } else if (mode === 0) {
-                        appendResult();
-                        return;
-                    } else if (mode === 1) {
-                        if (numParen === 0 && !method.match(/^url$/i)) {
-                            args.push(definition.trim());
-                            definition = '';
-                            return;
-                        }
-                    }
-                    break;
-            }
-
-            if (mode === 0) {
-                method += c;
-            } else {
-                definition += c;
-            }
-        });
-
-        appendResult();
-        return results;
-    };
-    });
-
-    unwrapExports(background);
-    var background_1 = background.parseBackgroundImage;
-    var background_2 = background.parseBackground;
-    var background_3 = background.calculateBackgroundRepeatPath;
-    var background_4 = background.calculateBackgroundPosition;
-    var background_5 = background.calculateBackgroungPositioningArea;
-    var background_6 = background.calculateBackgroungPaintingArea;
-    var background_7 = background.calculateGradientBackgroundSize;
-    var background_8 = background.calculateBackgroundSize;
-    var background_9 = background.BACKGROUND_ORIGIN;
-    var background_10 = background.BACKGROUND_CLIP;
-    var background_11 = background.BACKGROUND_SIZE;
-    var background_12 = background.BACKGROUND_REPEAT;
-
-    var border = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseBorder = exports.BORDER_SIDES = exports.BORDER_STYLE = undefined;
-
-
-
-    var _Color2 = _interopRequireDefault(Color_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var BORDER_STYLE = exports.BORDER_STYLE = {
-        NONE: 0,
-        SOLID: 1
-    };
-
-    var BORDER_SIDES = exports.BORDER_SIDES = {
-        TOP: 0,
-        RIGHT: 1,
-        BOTTOM: 2,
-        LEFT: 3
-    };
-
-    var SIDES = Object.keys(BORDER_SIDES).map(function (s) {
-        return s.toLowerCase();
-    });
-
-    var parseBorderStyle = function parseBorderStyle(style) {
-        switch (style) {
-            case 'none':
-                return BORDER_STYLE.NONE;
-        }
-        return BORDER_STYLE.SOLID;
-    };
-
-    var parseBorder = exports.parseBorder = function parseBorder(style) {
-        return SIDES.map(function (side) {
-            var borderColor = new _Color2.default(style.getPropertyValue('border-' + side + '-color'));
-            var borderStyle = parseBorderStyle(style.getPropertyValue('border-' + side + '-style'));
-            var borderWidth = parseFloat(style.getPropertyValue('border-' + side + '-width'));
-            return {
-                borderColor: borderColor,
-                borderStyle: borderStyle,
-                borderWidth: isNaN(borderWidth) ? 0 : borderWidth
-            };
-        });
-    };
-    });
-
-    unwrapExports(border);
-    var border_1 = border.parseBorder;
-    var border_2 = border.BORDER_SIDES;
-    var border_3 = border.BORDER_STYLE;
-
-    var borderRadius = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseBorderRadius = undefined;
-
-    var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-
-
-    var _Length2 = _interopRequireDefault(Length_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var SIDES = ['top-left', 'top-right', 'bottom-right', 'bottom-left'];
-
-    var parseBorderRadius = exports.parseBorderRadius = function parseBorderRadius(style) {
-        return SIDES.map(function (side) {
-            var value = style.getPropertyValue('border-' + side + '-radius');
-
-            var _value$split$map = value.split(' ').map(_Length2.default.create),
-                _value$split$map2 = _slicedToArray(_value$split$map, 2),
-                horizontal = _value$split$map2[0],
-                vertical = _value$split$map2[1];
-
-            return typeof vertical === 'undefined' ? [horizontal, horizontal] : [horizontal, vertical];
-        });
-    };
-    });
-
-    unwrapExports(borderRadius);
-    var borderRadius_1 = borderRadius.parseBorderRadius;
-
-    var display = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var DISPLAY = exports.DISPLAY = {
-        NONE: 1 << 0,
-        BLOCK: 1 << 1,
-        INLINE: 1 << 2,
-        RUN_IN: 1 << 3,
-        FLOW: 1 << 4,
-        FLOW_ROOT: 1 << 5,
-        TABLE: 1 << 6,
-        FLEX: 1 << 7,
-        GRID: 1 << 8,
-        RUBY: 1 << 9,
-        SUBGRID: 1 << 10,
-        LIST_ITEM: 1 << 11,
-        TABLE_ROW_GROUP: 1 << 12,
-        TABLE_HEADER_GROUP: 1 << 13,
-        TABLE_FOOTER_GROUP: 1 << 14,
-        TABLE_ROW: 1 << 15,
-        TABLE_CELL: 1 << 16,
-        TABLE_COLUMN_GROUP: 1 << 17,
-        TABLE_COLUMN: 1 << 18,
-        TABLE_CAPTION: 1 << 19,
-        RUBY_BASE: 1 << 20,
-        RUBY_TEXT: 1 << 21,
-        RUBY_BASE_CONTAINER: 1 << 22,
-        RUBY_TEXT_CONTAINER: 1 << 23,
-        CONTENTS: 1 << 24,
-        INLINE_BLOCK: 1 << 25,
-        INLINE_LIST_ITEM: 1 << 26,
-        INLINE_TABLE: 1 << 27,
-        INLINE_FLEX: 1 << 28,
-        INLINE_GRID: 1 << 29
-    };
-
-    var parseDisplayValue = function parseDisplayValue(display) {
-        switch (display) {
-            case 'block':
-                return DISPLAY.BLOCK;
-            case 'inline':
-                return DISPLAY.INLINE;
-            case 'run-in':
-                return DISPLAY.RUN_IN;
-            case 'flow':
-                return DISPLAY.FLOW;
-            case 'flow-root':
-                return DISPLAY.FLOW_ROOT;
-            case 'table':
-                return DISPLAY.TABLE;
-            case 'flex':
-                return DISPLAY.FLEX;
-            case 'grid':
-                return DISPLAY.GRID;
-            case 'ruby':
-                return DISPLAY.RUBY;
-            case 'subgrid':
-                return DISPLAY.SUBGRID;
-            case 'list-item':
-                return DISPLAY.LIST_ITEM;
-            case 'table-row-group':
-                return DISPLAY.TABLE_ROW_GROUP;
-            case 'table-header-group':
-                return DISPLAY.TABLE_HEADER_GROUP;
-            case 'table-footer-group':
-                return DISPLAY.TABLE_FOOTER_GROUP;
-            case 'table-row':
-                return DISPLAY.TABLE_ROW;
-            case 'table-cell':
-                return DISPLAY.TABLE_CELL;
-            case 'table-column-group':
-                return DISPLAY.TABLE_COLUMN_GROUP;
-            case 'table-column':
-                return DISPLAY.TABLE_COLUMN;
-            case 'table-caption':
-                return DISPLAY.TABLE_CAPTION;
-            case 'ruby-base':
-                return DISPLAY.RUBY_BASE;
-            case 'ruby-text':
-                return DISPLAY.RUBY_TEXT;
-            case 'ruby-base-container':
-                return DISPLAY.RUBY_BASE_CONTAINER;
-            case 'ruby-text-container':
-                return DISPLAY.RUBY_TEXT_CONTAINER;
-            case 'contents':
-                return DISPLAY.CONTENTS;
-            case 'inline-block':
-                return DISPLAY.INLINE_BLOCK;
-            case 'inline-list-item':
-                return DISPLAY.INLINE_LIST_ITEM;
-            case 'inline-table':
-                return DISPLAY.INLINE_TABLE;
-            case 'inline-flex':
-                return DISPLAY.INLINE_FLEX;
-            case 'inline-grid':
-                return DISPLAY.INLINE_GRID;
-        }
-
-        return DISPLAY.NONE;
-    };
-
-    var setDisplayBit = function setDisplayBit(bit, display) {
-        return bit | parseDisplayValue(display);
-    };
-
-    var parseDisplay = exports.parseDisplay = function parseDisplay(display) {
-        return display.split(' ').reduce(setDisplayBit, 0);
-    };
-    });
-
-    unwrapExports(display);
-    var display_1 = display.DISPLAY;
-    var display_2 = display.parseDisplay;
-
-    var float_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var FLOAT = exports.FLOAT = {
-        NONE: 0,
-        LEFT: 1,
-        RIGHT: 2,
-        INLINE_START: 3,
-        INLINE_END: 4
-    };
-
-    var parseCSSFloat = exports.parseCSSFloat = function parseCSSFloat(float) {
-        switch (float) {
-            case 'left':
-                return FLOAT.LEFT;
-            case 'right':
-                return FLOAT.RIGHT;
-            case 'inline-start':
-                return FLOAT.INLINE_START;
-            case 'inline-end':
-                return FLOAT.INLINE_END;
-        }
-        return FLOAT.NONE;
-    };
-    });
-
-    unwrapExports(float_1);
-    var float_2 = float_1.FLOAT;
-    var float_3 = float_1.parseCSSFloat;
-
-    var font = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-
-    var parseFontWeight = function parseFontWeight(weight) {
-        switch (weight) {
-            case 'normal':
-                return 400;
-            case 'bold':
-                return 700;
-        }
-
-        var value = parseInt(weight, 10);
-        return isNaN(value) ? 400 : value;
-    };
-
-    var parseFont = exports.parseFont = function parseFont(style) {
-        var fontFamily = style.fontFamily;
-        var fontSize = style.fontSize;
-        var fontStyle = style.fontStyle;
-        var fontVariant = style.fontVariant;
-        var fontWeight = parseFontWeight(style.fontWeight);
-
-        return {
-            fontFamily: fontFamily,
-            fontSize: fontSize,
-            fontStyle: fontStyle,
-            fontVariant: fontVariant,
-            fontWeight: fontWeight
-        };
-    };
-    });
-
-    unwrapExports(font);
-    var font_1 = font.parseFont;
-
-    var letterSpacing = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var parseLetterSpacing = exports.parseLetterSpacing = function parseLetterSpacing(letterSpacing) {
-        if (letterSpacing === 'normal') {
-            return 0;
-        }
-        var value = parseFloat(letterSpacing);
-        return isNaN(value) ? 0 : value;
-    };
-    });
-
-    unwrapExports(letterSpacing);
-    var letterSpacing_1 = letterSpacing.parseLetterSpacing;
-
-    var lineBreak = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var LINE_BREAK = exports.LINE_BREAK = {
-        NORMAL: 'normal',
-        STRICT: 'strict'
-    };
-
-    var parseLineBreak = exports.parseLineBreak = function parseLineBreak(wordBreak) {
-        switch (wordBreak) {
-            case 'strict':
-                return LINE_BREAK.STRICT;
-            case 'normal':
-            default:
-                return LINE_BREAK.NORMAL;
-        }
-    };
-    });
-
-    unwrapExports(lineBreak);
-    var lineBreak_1 = lineBreak.LINE_BREAK;
-    var lineBreak_2 = lineBreak.parseLineBreak;
-
-    var listStyle = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseListStyle = exports.parseListStyleType = exports.LIST_STYLE_TYPE = exports.LIST_STYLE_POSITION = undefined;
-
-
-
-    var LIST_STYLE_POSITION = exports.LIST_STYLE_POSITION = {
-        INSIDE: 0,
-        OUTSIDE: 1
-    };
-
-    var LIST_STYLE_TYPE = exports.LIST_STYLE_TYPE = {
-        NONE: -1,
-        DISC: 0,
-        CIRCLE: 1,
-        SQUARE: 2,
-        DECIMAL: 3,
-        CJK_DECIMAL: 4,
-        DECIMAL_LEADING_ZERO: 5,
-        LOWER_ROMAN: 6,
-        UPPER_ROMAN: 7,
-        LOWER_GREEK: 8,
-        LOWER_ALPHA: 9,
-        UPPER_ALPHA: 10,
-        ARABIC_INDIC: 11,
-        ARMENIAN: 12,
-        BENGALI: 13,
-        CAMBODIAN: 14,
-        CJK_EARTHLY_BRANCH: 15,
-        CJK_HEAVENLY_STEM: 16,
-        CJK_IDEOGRAPHIC: 17,
-        DEVANAGARI: 18,
-        ETHIOPIC_NUMERIC: 19,
-        GEORGIAN: 20,
-        GUJARATI: 21,
-        GURMUKHI: 22,
-        HEBREW: 22,
-        HIRAGANA: 23,
-        HIRAGANA_IROHA: 24,
-        JAPANESE_FORMAL: 25,
-        JAPANESE_INFORMAL: 26,
-        KANNADA: 27,
-        KATAKANA: 28,
-        KATAKANA_IROHA: 29,
-        KHMER: 30,
-        KOREAN_HANGUL_FORMAL: 31,
-        KOREAN_HANJA_FORMAL: 32,
-        KOREAN_HANJA_INFORMAL: 33,
-        LAO: 34,
-        LOWER_ARMENIAN: 35,
-        MALAYALAM: 36,
-        MONGOLIAN: 37,
-        MYANMAR: 38,
-        ORIYA: 39,
-        PERSIAN: 40,
-        SIMP_CHINESE_FORMAL: 41,
-        SIMP_CHINESE_INFORMAL: 42,
-        TAMIL: 43,
-        TELUGU: 44,
-        THAI: 45,
-        TIBETAN: 46,
-        TRAD_CHINESE_FORMAL: 47,
-        TRAD_CHINESE_INFORMAL: 48,
-        UPPER_ARMENIAN: 49,
-        DISCLOSURE_OPEN: 50,
-        DISCLOSURE_CLOSED: 51
-    };
-
-    var parseListStyleType = exports.parseListStyleType = function parseListStyleType(type) {
-        switch (type) {
-            case 'disc':
-                return LIST_STYLE_TYPE.DISC;
-            case 'circle':
-                return LIST_STYLE_TYPE.CIRCLE;
-            case 'square':
-                return LIST_STYLE_TYPE.SQUARE;
-            case 'decimal':
-                return LIST_STYLE_TYPE.DECIMAL;
-            case 'cjk-decimal':
-                return LIST_STYLE_TYPE.CJK_DECIMAL;
-            case 'decimal-leading-zero':
-                return LIST_STYLE_TYPE.DECIMAL_LEADING_ZERO;
-            case 'lower-roman':
-                return LIST_STYLE_TYPE.LOWER_ROMAN;
-            case 'upper-roman':
-                return LIST_STYLE_TYPE.UPPER_ROMAN;
-            case 'lower-greek':
-                return LIST_STYLE_TYPE.LOWER_GREEK;
-            case 'lower-alpha':
-                return LIST_STYLE_TYPE.LOWER_ALPHA;
-            case 'upper-alpha':
-                return LIST_STYLE_TYPE.UPPER_ALPHA;
-            case 'arabic-indic':
-                return LIST_STYLE_TYPE.ARABIC_INDIC;
-            case 'armenian':
-                return LIST_STYLE_TYPE.ARMENIAN;
-            case 'bengali':
-                return LIST_STYLE_TYPE.BENGALI;
-            case 'cambodian':
-                return LIST_STYLE_TYPE.CAMBODIAN;
-            case 'cjk-earthly-branch':
-                return LIST_STYLE_TYPE.CJK_EARTHLY_BRANCH;
-            case 'cjk-heavenly-stem':
-                return LIST_STYLE_TYPE.CJK_HEAVENLY_STEM;
-            case 'cjk-ideographic':
-                return LIST_STYLE_TYPE.CJK_IDEOGRAPHIC;
-            case 'devanagari':
-                return LIST_STYLE_TYPE.DEVANAGARI;
-            case 'ethiopic-numeric':
-                return LIST_STYLE_TYPE.ETHIOPIC_NUMERIC;
-            case 'georgian':
-                return LIST_STYLE_TYPE.GEORGIAN;
-            case 'gujarati':
-                return LIST_STYLE_TYPE.GUJARATI;
-            case 'gurmukhi':
-                return LIST_STYLE_TYPE.GURMUKHI;
-            case 'hebrew':
-                return LIST_STYLE_TYPE.HEBREW;
-            case 'hiragana':
-                return LIST_STYLE_TYPE.HIRAGANA;
-            case 'hiragana-iroha':
-                return LIST_STYLE_TYPE.HIRAGANA_IROHA;
-            case 'japanese-formal':
-                return LIST_STYLE_TYPE.JAPANESE_FORMAL;
-            case 'japanese-informal':
-                return LIST_STYLE_TYPE.JAPANESE_INFORMAL;
-            case 'kannada':
-                return LIST_STYLE_TYPE.KANNADA;
-            case 'katakana':
-                return LIST_STYLE_TYPE.KATAKANA;
-            case 'katakana-iroha':
-                return LIST_STYLE_TYPE.KATAKANA_IROHA;
-            case 'khmer':
-                return LIST_STYLE_TYPE.KHMER;
-            case 'korean-hangul-formal':
-                return LIST_STYLE_TYPE.KOREAN_HANGUL_FORMAL;
-            case 'korean-hanja-formal':
-                return LIST_STYLE_TYPE.KOREAN_HANJA_FORMAL;
-            case 'korean-hanja-informal':
-                return LIST_STYLE_TYPE.KOREAN_HANJA_INFORMAL;
-            case 'lao':
-                return LIST_STYLE_TYPE.LAO;
-            case 'lower-armenian':
-                return LIST_STYLE_TYPE.LOWER_ARMENIAN;
-            case 'malayalam':
-                return LIST_STYLE_TYPE.MALAYALAM;
-            case 'mongolian':
-                return LIST_STYLE_TYPE.MONGOLIAN;
-            case 'myanmar':
-                return LIST_STYLE_TYPE.MYANMAR;
-            case 'oriya':
-                return LIST_STYLE_TYPE.ORIYA;
-            case 'persian':
-                return LIST_STYLE_TYPE.PERSIAN;
-            case 'simp-chinese-formal':
-                return LIST_STYLE_TYPE.SIMP_CHINESE_FORMAL;
-            case 'simp-chinese-informal':
-                return LIST_STYLE_TYPE.SIMP_CHINESE_INFORMAL;
-            case 'tamil':
-                return LIST_STYLE_TYPE.TAMIL;
-            case 'telugu':
-                return LIST_STYLE_TYPE.TELUGU;
-            case 'thai':
-                return LIST_STYLE_TYPE.THAI;
-            case 'tibetan':
-                return LIST_STYLE_TYPE.TIBETAN;
-            case 'trad-chinese-formal':
-                return LIST_STYLE_TYPE.TRAD_CHINESE_FORMAL;
-            case 'trad-chinese-informal':
-                return LIST_STYLE_TYPE.TRAD_CHINESE_INFORMAL;
-            case 'upper-armenian':
-                return LIST_STYLE_TYPE.UPPER_ARMENIAN;
-            case 'disclosure-open':
-                return LIST_STYLE_TYPE.DISCLOSURE_OPEN;
-            case 'disclosure-closed':
-                return LIST_STYLE_TYPE.DISCLOSURE_CLOSED;
-            case 'none':
-            default:
-                return LIST_STYLE_TYPE.NONE;
-        }
-    };
-
-    var parseListStyle = exports.parseListStyle = function parseListStyle(style) {
-        var listStyleImage = (0, background.parseBackgroundImage)(style.getPropertyValue('list-style-image'));
-        return {
-            listStyleType: parseListStyleType(style.getPropertyValue('list-style-type')),
-            listStyleImage: listStyleImage.length ? listStyleImage[0] : null,
-            listStylePosition: parseListStylePosition(style.getPropertyValue('list-style-position'))
-        };
-    };
-
-    var parseListStylePosition = function parseListStylePosition(position) {
-        switch (position) {
-            case 'inside':
-                return LIST_STYLE_POSITION.INSIDE;
-            case 'outside':
-            default:
-                return LIST_STYLE_POSITION.OUTSIDE;
-        }
-    };
-    });
-
-    unwrapExports(listStyle);
-    var listStyle_1 = listStyle.parseListStyle;
-    var listStyle_2 = listStyle.parseListStyleType;
-    var listStyle_3 = listStyle.LIST_STYLE_TYPE;
-    var listStyle_4 = listStyle.LIST_STYLE_POSITION;
-
-    var margin = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseMargin = undefined;
-
-
-
-    var _Length2 = _interopRequireDefault(Length_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var SIDES = ['top', 'right', 'bottom', 'left'];
-
-    var parseMargin = exports.parseMargin = function parseMargin(style) {
-        return SIDES.map(function (side) {
-            return new _Length2.default(style.getPropertyValue('margin-' + side));
-        });
-    };
-    });
-
-    unwrapExports(margin);
-    var margin_1 = margin.parseMargin;
-
-    var overflow = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var OVERFLOW = exports.OVERFLOW = {
-        VISIBLE: 0,
-        HIDDEN: 1,
-        SCROLL: 2,
-        AUTO: 3
-    };
-
-    var parseOverflow = exports.parseOverflow = function parseOverflow(overflow) {
-        switch (overflow) {
-            case 'hidden':
-                return OVERFLOW.HIDDEN;
-            case 'scroll':
-                return OVERFLOW.SCROLL;
-            case 'auto':
-                return OVERFLOW.AUTO;
-            case 'visible':
-            default:
-                return OVERFLOW.VISIBLE;
-        }
-    };
-    });
-
-    unwrapExports(overflow);
-    var overflow_1 = overflow.OVERFLOW;
-    var overflow_2 = overflow.parseOverflow;
-
-    var overflowWrap = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var OVERFLOW_WRAP = exports.OVERFLOW_WRAP = {
-        NORMAL: 0,
-        BREAK_WORD: 1
-    };
-
-    var parseOverflowWrap = exports.parseOverflowWrap = function parseOverflowWrap(overflow) {
-        switch (overflow) {
-            case 'break-word':
-                return OVERFLOW_WRAP.BREAK_WORD;
-            case 'normal':
-            default:
-                return OVERFLOW_WRAP.NORMAL;
-        }
-    };
-    });
-
-    unwrapExports(overflowWrap);
-    var overflowWrap_1 = overflowWrap.OVERFLOW_WRAP;
-    var overflowWrap_2 = overflowWrap.parseOverflowWrap;
-
-    var position = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var POSITION = exports.POSITION = {
-        STATIC: 0,
-        RELATIVE: 1,
-        ABSOLUTE: 2,
-        FIXED: 3,
-        STICKY: 4
-    };
-
-    var parsePosition = exports.parsePosition = function parsePosition(position) {
-        switch (position) {
-            case 'relative':
-                return POSITION.RELATIVE;
-            case 'absolute':
-                return POSITION.ABSOLUTE;
-            case 'fixed':
-                return POSITION.FIXED;
-            case 'sticky':
-                return POSITION.STICKY;
-        }
-
-        return POSITION.STATIC;
-    };
-    });
-
-    unwrapExports(position);
-    var position_1 = position.POSITION;
-    var position_2 = position.parsePosition;
-
-    var textDecoration = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseTextDecoration = exports.TEXT_DECORATION_LINE = exports.TEXT_DECORATION = exports.TEXT_DECORATION_STYLE = undefined;
-
-
-
-    var _Color2 = _interopRequireDefault(Color_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var TEXT_DECORATION_STYLE = exports.TEXT_DECORATION_STYLE = {
-        SOLID: 0,
-        DOUBLE: 1,
-        DOTTED: 2,
-        DASHED: 3,
-        WAVY: 4
-    };
-
-    var TEXT_DECORATION = exports.TEXT_DECORATION = {
-        NONE: null
-    };
-
-    var TEXT_DECORATION_LINE = exports.TEXT_DECORATION_LINE = {
-        UNDERLINE: 1,
-        OVERLINE: 2,
-        LINE_THROUGH: 3,
-        BLINK: 4
-    };
-
-    var parseLine = function parseLine(line) {
-        switch (line) {
-            case 'underline':
-                return TEXT_DECORATION_LINE.UNDERLINE;
-            case 'overline':
-                return TEXT_DECORATION_LINE.OVERLINE;
-            case 'line-through':
-                return TEXT_DECORATION_LINE.LINE_THROUGH;
-        }
-        return TEXT_DECORATION_LINE.BLINK;
-    };
-
-    var parseTextDecorationLine = function parseTextDecorationLine(line) {
-        if (line === 'none') {
-            return null;
-        }
-
-        return line.split(' ').map(parseLine);
-    };
-
-    var parseTextDecorationStyle = function parseTextDecorationStyle(style) {
-        switch (style) {
-            case 'double':
-                return TEXT_DECORATION_STYLE.DOUBLE;
-            case 'dotted':
-                return TEXT_DECORATION_STYLE.DOTTED;
-            case 'dashed':
-                return TEXT_DECORATION_STYLE.DASHED;
-            case 'wavy':
-                return TEXT_DECORATION_STYLE.WAVY;
-        }
-        return TEXT_DECORATION_STYLE.SOLID;
-    };
-
-    var parseTextDecoration = exports.parseTextDecoration = function parseTextDecoration(style) {
-        var textDecorationLine = parseTextDecorationLine(style.textDecorationLine ? style.textDecorationLine : style.textDecoration);
-        if (textDecorationLine === null) {
-            return TEXT_DECORATION.NONE;
-        }
-
-        var textDecorationColor = style.textDecorationColor ? new _Color2.default(style.textDecorationColor) : null;
-        var textDecorationStyle = parseTextDecorationStyle(style.textDecorationStyle);
-
-        return {
-            textDecorationLine: textDecorationLine,
-            textDecorationColor: textDecorationColor,
-            textDecorationStyle: textDecorationStyle
-        };
-    };
-    });
-
-    unwrapExports(textDecoration);
-    var textDecoration_1 = textDecoration.parseTextDecoration;
-    var textDecoration_2 = textDecoration.TEXT_DECORATION_LINE;
-    var textDecoration_3 = textDecoration.TEXT_DECORATION;
-    var textDecoration_4 = textDecoration.TEXT_DECORATION_STYLE;
-
-    var textShadow = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseTextShadow = undefined;
-
-
-
-    var _Color2 = _interopRequireDefault(Color_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var NUMBER = /^([+-]|\d|\.)$/i;
-
-    var parseTextShadow = exports.parseTextShadow = function parseTextShadow(textShadow) {
-        if (textShadow === 'none' || typeof textShadow !== 'string') {
-            return null;
-        }
-
-        var currentValue = '';
-        var isLength = false;
-        var values = [];
-        var shadows = [];
-        var numParens = 0;
-        var color = null;
-
-        var appendValue = function appendValue() {
-            if (currentValue.length) {
-                if (isLength) {
-                    values.push(parseFloat(currentValue));
-                } else {
-                    color = new _Color2.default(currentValue);
-                }
-            }
-            isLength = false;
-            currentValue = '';
-        };
-
-        var appendShadow = function appendShadow() {
-            if (values.length && color !== null) {
-                shadows.push({
-                    color: color,
-                    offsetX: values[0] || 0,
-                    offsetY: values[1] || 0,
-                    blur: values[2] || 0
-                });
-            }
-            values.splice(0, values.length);
-            color = null;
-        };
-
-        for (var i = 0; i < textShadow.length; i++) {
-            var c = textShadow[i];
-            switch (c) {
-                case '(':
-                    currentValue += c;
-                    numParens++;
-                    break;
-                case ')':
-                    currentValue += c;
-                    numParens--;
-                    break;
-                case ',':
-                    if (numParens === 0) {
-                        appendValue();
-                        appendShadow();
-                    } else {
-                        currentValue += c;
-                    }
-                    break;
-                case ' ':
-                    if (numParens === 0) {
-                        appendValue();
-                    } else {
-                        currentValue += c;
-                    }
-                    break;
-                default:
-                    if (currentValue.length === 0 && NUMBER.test(c)) {
-                        isLength = true;
-                    }
-                    currentValue += c;
-            }
-        }
-
-        appendValue();
-        appendShadow();
-
-        if (shadows.length === 0) {
-            return null;
-        }
-
-        return shadows;
-    };
-    });
-
-    unwrapExports(textShadow);
-    var textShadow_1 = textShadow.parseTextShadow;
-
-    var textTransform = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var TEXT_TRANSFORM = exports.TEXT_TRANSFORM = {
-        NONE: 0,
-        LOWERCASE: 1,
-        UPPERCASE: 2,
-        CAPITALIZE: 3
-    };
-
-    var parseTextTransform = exports.parseTextTransform = function parseTextTransform(textTransform) {
-        switch (textTransform) {
-            case 'uppercase':
-                return TEXT_TRANSFORM.UPPERCASE;
-            case 'lowercase':
-                return TEXT_TRANSFORM.LOWERCASE;
-            case 'capitalize':
-                return TEXT_TRANSFORM.CAPITALIZE;
-        }
-
-        return TEXT_TRANSFORM.NONE;
-    };
-    });
-
-    unwrapExports(textTransform);
-    var textTransform_1 = textTransform.TEXT_TRANSFORM;
-    var textTransform_2 = textTransform.parseTextTransform;
-
-    var transform = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseTransform = undefined;
-
-
-
-    var _Length2 = _interopRequireDefault(Length_1);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var toFloat = function toFloat(s) {
-        return parseFloat(s.trim());
-    };
-
-    var MATRIX = /(matrix|matrix3d)\((.+)\)/;
-
-    var parseTransform = exports.parseTransform = function parseTransform(style) {
-        var transform = parseTransformMatrix(style.transform || style.webkitTransform || style.mozTransform ||
-        // $FlowFixMe
-        style.msTransform ||
-        // $FlowFixMe
-        style.oTransform);
-        if (transform === null) {
-            return null;
-        }
-
-        return {
-            transform: transform,
-            transformOrigin: parseTransformOrigin(style.transformOrigin || style.webkitTransformOrigin || style.mozTransformOrigin ||
-            // $FlowFixMe
-            style.msTransformOrigin ||
-            // $FlowFixMe
-            style.oTransformOrigin)
-        };
-    };
-
-    // $FlowFixMe
-    var parseTransformOrigin = function parseTransformOrigin(origin) {
-        if (typeof origin !== 'string') {
-            var v = new _Length2.default('0');
-            return [v, v];
-        }
-        var values = origin.split(' ').map(_Length2.default.create);
-        return [values[0], values[1]];
-    };
-
-    // $FlowFixMe
-    var parseTransformMatrix = function parseTransformMatrix(transform) {
-        if (transform === 'none' || typeof transform !== 'string') {
-            return null;
-        }
-
-        var match = transform.match(MATRIX);
-        if (match) {
-            if (match[1] === 'matrix') {
-                var matrix = match[2].split(',').map(toFloat);
-                return [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]];
-            } else {
-                var matrix3d = match[2].split(',').map(toFloat);
-                return [matrix3d[0], matrix3d[1], matrix3d[4], matrix3d[5], matrix3d[12], matrix3d[13]];
-            }
-        }
-        return null;
-    };
-    });
-
-    unwrapExports(transform);
-    var transform_1 = transform.parseTransform;
-
-    var visibility = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var VISIBILITY = exports.VISIBILITY = {
-        VISIBLE: 0,
-        HIDDEN: 1,
-        COLLAPSE: 2
-    };
-
-    var parseVisibility = exports.parseVisibility = function parseVisibility(visibility) {
-        switch (visibility) {
-            case 'hidden':
-                return VISIBILITY.HIDDEN;
-            case 'collapse':
-                return VISIBILITY.COLLAPSE;
-            case 'visible':
-            default:
-                return VISIBILITY.VISIBLE;
-        }
-    };
-    });
-
-    unwrapExports(visibility);
-    var visibility_1 = visibility.VISIBILITY;
-    var visibility_2 = visibility.parseVisibility;
-
-    var wordBreak = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var WORD_BREAK = exports.WORD_BREAK = {
-        NORMAL: 'normal',
-        BREAK_ALL: 'break-all',
-        KEEP_ALL: 'keep-all'
-    };
-
-    var parseWordBreak = exports.parseWordBreak = function parseWordBreak(wordBreak) {
-        switch (wordBreak) {
-            case 'break-all':
-                return WORD_BREAK.BREAK_ALL;
-            case 'keep-all':
-                return WORD_BREAK.KEEP_ALL;
-            case 'normal':
-            default:
-                return WORD_BREAK.NORMAL;
-        }
-    };
-    });
-
-    unwrapExports(wordBreak);
-    var wordBreak_1 = wordBreak.WORD_BREAK;
-    var wordBreak_2 = wordBreak.parseWordBreak;
-
-    var zIndex = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var parseZIndex = exports.parseZIndex = function parseZIndex(zIndex) {
-        var auto = zIndex === 'auto';
-        return {
-            auto: auto,
-            order: auto ? 0 : parseInt(zIndex, 10)
-        };
-    };
-    });
-
-    unwrapExports(zIndex);
-    var zIndex_1 = zIndex.parseZIndex;
-
-    var ForeignObjectRenderer_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var ForeignObjectRenderer = function () {
-        function ForeignObjectRenderer(element) {
-            _classCallCheck(this, ForeignObjectRenderer);
-
-            this.element = element;
-        }
-
-        _createClass(ForeignObjectRenderer, [{
-            key: 'render',
-            value: function render(options) {
-                var _this = this;
-
-                this.options = options;
-                this.canvas = document.createElement('canvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.canvas.width = Math.floor(options.width) * options.scale;
-                this.canvas.height = Math.floor(options.height) * options.scale;
-                this.canvas.style.width = options.width + 'px';
-                this.canvas.style.height = options.height + 'px';
-
-                options.logger.log('ForeignObject renderer initialized (' + options.width + 'x' + options.height + ' at ' + options.x + ',' + options.y + ') with scale ' + options.scale);
-                var svg = createForeignObjectSVG(Math.max(options.windowWidth, options.width) * options.scale, Math.max(options.windowHeight, options.height) * options.scale, options.scrollX * options.scale, options.scrollY * options.scale, this.element);
-
-                return loadSerializedSVG(svg).then(function (img) {
-                    if (options.backgroundColor) {
-                        _this.ctx.fillStyle = options.backgroundColor.toString();
-                        _this.ctx.fillRect(0, 0, options.width * options.scale, options.height * options.scale);
-                    }
-
-                    _this.ctx.drawImage(img, -options.x * options.scale, -options.y * options.scale);
-                    return _this.canvas;
-                });
-            }
-        }]);
-
-        return ForeignObjectRenderer;
-    }();
-
-    exports.default = ForeignObjectRenderer;
-    var createForeignObjectSVG = exports.createForeignObjectSVG = function createForeignObjectSVG(width, height, x, y, node) {
-        var xmlns = 'http://www.w3.org/2000/svg';
-        var svg = document.createElementNS(xmlns, 'svg');
-        var foreignObject = document.createElementNS(xmlns, 'foreignObject');
-        svg.setAttributeNS(null, 'width', width);
-        svg.setAttributeNS(null, 'height', height);
-
-        foreignObject.setAttributeNS(null, 'width', '100%');
-        foreignObject.setAttributeNS(null, 'height', '100%');
-        foreignObject.setAttributeNS(null, 'x', x);
-        foreignObject.setAttributeNS(null, 'y', y);
-        foreignObject.setAttributeNS(null, 'externalResourcesRequired', 'true');
-        svg.appendChild(foreignObject);
-
-        foreignObject.appendChild(node);
-
-        return svg;
-    };
-
-    var loadSerializedSVG = exports.loadSerializedSVG = function loadSerializedSVG(svg) {
-        return new Promise(function (resolve, reject) {
-            var img = new Image();
-            img.onload = function () {
-                return resolve(img);
-            };
-            img.onerror = reject;
-
-            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
-        });
-    };
-    });
-
-    unwrapExports(ForeignObjectRenderer_1);
-    var ForeignObjectRenderer_2 = ForeignObjectRenderer_1.createForeignObjectSVG;
-    var ForeignObjectRenderer_3 = ForeignObjectRenderer_1.loadSerializedSVG;
-
-    var Feature = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-
-
-    var testRangeBounds = function testRangeBounds(document) {
-        var TEST_HEIGHT = 123;
-
-        if (document.createRange) {
-            var range = document.createRange();
-            if (range.getBoundingClientRect) {
-                var testElement = document.createElement('boundtest');
-                testElement.style.height = TEST_HEIGHT + 'px';
-                testElement.style.display = 'block';
-                document.documentElement.appendChild(testElement);
-
-                range.selectNode(testElement);
-                var rangeBounds = range.getBoundingClientRect();
-                var rangeHeight = Math.round(rangeBounds.height);
-                document.documentElement.removeChild(testElement);
-                if (rangeHeight === TEST_HEIGHT) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    };
-
-    // iOS 10.3 taints canvas with base64 images unless crossOrigin = 'anonymous'
-    var testBase64 = function testBase64(document, src) {
-        var img = new Image();
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-
-        return new Promise(function (resolve) {
-            // Single pixel base64 image renders fine on iOS 10.3???
-            img.src = src;
-
-            var onload = function onload() {
-                try {
-                    ctx.drawImage(img, 0, 0);
-                    canvas.toDataURL();
-                } catch (e) {
-                    return resolve(false);
-                }
-
-                return resolve(true);
-            };
-
-            img.onload = onload;
-            img.onerror = function () {
-                return resolve(false);
-            };
-
-            if (img.complete === true) {
-                setTimeout(function () {
-                    onload();
-                }, 500);
-            }
-        });
-    };
-
-    var testCORS = function testCORS() {
-        return typeof new Image().crossOrigin !== 'undefined';
-    };
-
-    var testResponseType = function testResponseType() {
-        return typeof new XMLHttpRequest().responseType === 'string';
-    };
-
-    var testSVG = function testSVG(document) {
-        var img = new Image();
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        img.src = 'data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\'></svg>';
-
-        try {
-            ctx.drawImage(img, 0, 0);
-            canvas.toDataURL();
-        } catch (e) {
-            return false;
-        }
-        return true;
-    };
-
-    var isGreenPixel = function isGreenPixel(data) {
-        return data[0] === 0 && data[1] === 255 && data[2] === 0 && data[3] === 255;
-    };
-
-    var testForeignObject = function testForeignObject(document) {
-        var canvas = document.createElement('canvas');
-        var size = 100;
-        canvas.width = size;
-        canvas.height = size;
-        var ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgb(0, 255, 0)';
-        ctx.fillRect(0, 0, size, size);
-
-        var img = new Image();
-        var greenImageSrc = canvas.toDataURL();
-        img.src = greenImageSrc;
-        var svg = (0, ForeignObjectRenderer_1.createForeignObjectSVG)(size, size, 0, 0, img);
-        ctx.fillStyle = 'red';
-        ctx.fillRect(0, 0, size, size);
-
-        return (0, ForeignObjectRenderer_1.loadSerializedSVG)(svg).then(function (img) {
-            ctx.drawImage(img, 0, 0);
-            var data = ctx.getImageData(0, 0, size, size).data;
-            ctx.fillStyle = 'red';
-            ctx.fillRect(0, 0, size, size);
-
-            var node = document.createElement('div');
-            node.style.backgroundImage = 'url(' + greenImageSrc + ')';
-            node.style.height = size + 'px';
-            // Firefox 55 does not render inline <img /> tags
-            return isGreenPixel(data) ? (0, ForeignObjectRenderer_1.loadSerializedSVG)((0, ForeignObjectRenderer_1.createForeignObjectSVG)(size, size, 0, 0, node)) : Promise.reject(false);
-        }).then(function (img) {
-            ctx.drawImage(img, 0, 0);
-            // Edge does not render background-images
-            return isGreenPixel(ctx.getImageData(0, 0, size, size).data);
-        }).catch(function (e) {
-            return false;
-        });
-    };
-
-    var FEATURES = {
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_RANGE_BOUNDS() {
-
-            var value = testRangeBounds(document);
-            Object.defineProperty(FEATURES, 'SUPPORT_RANGE_BOUNDS', { value: value });
-            return value;
-        },
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_SVG_DRAWING() {
-
-            var value = testSVG(document);
-            Object.defineProperty(FEATURES, 'SUPPORT_SVG_DRAWING', { value: value });
-            return value;
-        },
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_BASE64_DRAWING() {
-
-            return function (src) {
-                var _value = testBase64(document, src);
-                Object.defineProperty(FEATURES, 'SUPPORT_BASE64_DRAWING', { value: function value() {
-                        return _value;
-                    } });
-                return _value;
-            };
-        },
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_FOREIGNOBJECT_DRAWING() {
-
-            var value = typeof Array.from === 'function' && typeof window.fetch === 'function' ? testForeignObject(document) : Promise.resolve(false);
-            Object.defineProperty(FEATURES, 'SUPPORT_FOREIGNOBJECT_DRAWING', { value: value });
-            return value;
-        },
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_CORS_IMAGES() {
-
-            var value = testCORS();
-            Object.defineProperty(FEATURES, 'SUPPORT_CORS_IMAGES', { value: value });
-            return value;
-        },
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_RESPONSE_TYPE() {
-
-            var value = testResponseType();
-            Object.defineProperty(FEATURES, 'SUPPORT_RESPONSE_TYPE', { value: value });
-            return value;
-        },
-        // $FlowFixMe - get/set properties not yet supported
-        get SUPPORT_CORS_XHR() {
-
-            var value = 'withCredentials' in new XMLHttpRequest();
-            Object.defineProperty(FEATURES, 'SUPPORT_CORS_XHR', { value: value });
-            return value;
-        }
-    };
-
-    exports.default = FEATURES;
-    });
-
-    unwrapExports(Feature);
-
-    var Util$2 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var toCodePoints = exports.toCodePoints = function toCodePoints(str) {
-        var codePoints = [];
-        var i = 0;
-        var length = str.length;
-        while (i < length) {
-            var value = str.charCodeAt(i++);
-            if (value >= 0xd800 && value <= 0xdbff && i < length) {
-                var extra = str.charCodeAt(i++);
-                if ((extra & 0xfc00) === 0xdc00) {
-                    codePoints.push(((value & 0x3ff) << 10) + (extra & 0x3ff) + 0x10000);
-                } else {
-                    codePoints.push(value);
-                    i--;
-                }
-            } else {
-                codePoints.push(value);
-            }
-        }
-        return codePoints;
-    };
-
-    var fromCodePoint = exports.fromCodePoint = function fromCodePoint() {
-        if (String.fromCodePoint) {
-            return String.fromCodePoint.apply(String, arguments);
-        }
-
-        var length = arguments.length;
-        if (!length) {
-            return '';
-        }
-
-        var codeUnits = [];
-
-        var index = -1;
-        var result = '';
-        while (++index < length) {
-            var codePoint = arguments.length <= index ? undefined : arguments[index];
-            if (codePoint <= 0xffff) {
-                codeUnits.push(codePoint);
-            } else {
-                codePoint -= 0x10000;
-                codeUnits.push((codePoint >> 10) + 0xd800, codePoint % 0x400 + 0xdc00);
-            }
-            if (index + 1 === length || codeUnits.length > 0x4000) {
-                result += String.fromCharCode.apply(String, codeUnits);
-                codeUnits.length = 0;
-            }
-        }
-        return result;
-    };
-
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-    // Use a lookup table to find the index.
-    var lookup = typeof Uint8Array === 'undefined' ? [] : new Uint8Array(256);
-    for (var i = 0; i < chars.length; i++) {
-        lookup[chars.charCodeAt(i)] = i;
+    Object.assign( Quaternion, {
+
+    	slerp: function ( qa, qb, qm, t ) {
+
+    		return qm.copy( qa ).slerp( qb, t );
+
+    	},
+
+    	slerpFlat: function ( dst, dstOffset, src0, srcOffset0, src1, srcOffset1, t ) {
+
+    		// fuzz-free, array-based Quaternion SLERP operation
+
+    		var x0 = src0[ srcOffset0 + 0 ],
+    			y0 = src0[ srcOffset0 + 1 ],
+    			z0 = src0[ srcOffset0 + 2 ],
+    			w0 = src0[ srcOffset0 + 3 ],
+
+    			x1 = src1[ srcOffset1 + 0 ],
+    			y1 = src1[ srcOffset1 + 1 ],
+    			z1 = src1[ srcOffset1 + 2 ],
+    			w1 = src1[ srcOffset1 + 3 ];
+
+    		if ( w0 !== w1 || x0 !== x1 || y0 !== y1 || z0 !== z1 ) {
+
+    			var s = 1 - t,
+
+    				cos = x0 * x1 + y0 * y1 + z0 * z1 + w0 * w1,
+
+    				dir = ( cos >= 0 ? 1 : - 1 ),
+    				sqrSin = 1 - cos * cos;
+
+    			// Skip the Slerp for tiny steps to avoid numeric problems:
+    			if ( sqrSin > Number.EPSILON ) {
+
+    				var sin = Math.sqrt( sqrSin ),
+    					len = Math.atan2( sin, cos * dir );
+
+    				s = Math.sin( s * len ) / sin;
+    				t = Math.sin( t * len ) / sin;
+
+    			}
+
+    			var tDir = t * dir;
+
+    			x0 = x0 * s + x1 * tDir;
+    			y0 = y0 * s + y1 * tDir;
+    			z0 = z0 * s + z1 * tDir;
+    			w0 = w0 * s + w1 * tDir;
+
+    			// Normalize in case we just did a lerp:
+    			if ( s === 1 - t ) {
+
+    				var f = 1 / Math.sqrt( x0 * x0 + y0 * y0 + z0 * z0 + w0 * w0 );
+
+    				x0 *= f;
+    				y0 *= f;
+    				z0 *= f;
+    				w0 *= f;
+
+    			}
+
+    		}
+
+    		dst[ dstOffset ] = x0;
+    		dst[ dstOffset + 1 ] = y0;
+    		dst[ dstOffset + 2 ] = z0;
+    		dst[ dstOffset + 3 ] = w0;
+
+    	}
+
+    } );
+
+    Object.defineProperties( Quaternion.prototype, {
+
+    	x: {
+
+    		get: function () {
+
+    			return this._x;
+
+    		},
+
+    		set: function ( value ) {
+
+    			this._x = value;
+    			this._onChangeCallback();
+
+    		}
+
+    	},
+
+    	y: {
+
+    		get: function () {
+
+    			return this._y;
+
+    		},
+
+    		set: function ( value ) {
+
+    			this._y = value;
+    			this._onChangeCallback();
+
+    		}
+
+    	},
+
+    	z: {
+
+    		get: function () {
+
+    			return this._z;
+
+    		},
+
+    		set: function ( value ) {
+
+    			this._z = value;
+    			this._onChangeCallback();
+
+    		}
+
+    	},
+
+    	w: {
+
+    		get: function () {
+
+    			return this._w;
+
+    		},
+
+    		set: function ( value ) {
+
+    			this._w = value;
+    			this._onChangeCallback();
+
+    		}
+
+    	}
+
+    } );
+
+    Object.assign( Quaternion.prototype, {
+
+    	isQuaternion: true,
+
+    	set: function ( x, y, z, w ) {
+
+    		this._x = x;
+    		this._y = y;
+    		this._z = z;
+    		this._w = w;
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	clone: function () {
+
+    		return new this.constructor( this._x, this._y, this._z, this._w );
+
+    	},
+
+    	copy: function ( quaternion ) {
+
+    		this._x = quaternion.x;
+    		this._y = quaternion.y;
+    		this._z = quaternion.z;
+    		this._w = quaternion.w;
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	setFromEuler: function ( euler, update ) {
+
+    		if ( ! ( euler && euler.isEuler ) ) {
+
+    			throw new Error( 'THREE.Quaternion: .setFromEuler() now expects an Euler rotation rather than a Vector3 and order.' );
+
+    		}
+
+    		var x = euler._x, y = euler._y, z = euler._z, order = euler.order;
+
+    		// http://www.mathworks.com/matlabcentral/fileexchange/
+    		// 	20696-function-to-convert-between-dcm-euler-angles-quaternions-and-euler-vectors/
+    		//	content/SpinCalc.m
+
+    		var cos = Math.cos;
+    		var sin = Math.sin;
+
+    		var c1 = cos( x / 2 );
+    		var c2 = cos( y / 2 );
+    		var c3 = cos( z / 2 );
+
+    		var s1 = sin( x / 2 );
+    		var s2 = sin( y / 2 );
+    		var s3 = sin( z / 2 );
+
+    		if ( order === 'XYZ' ) {
+
+    			this._x = s1 * c2 * c3 + c1 * s2 * s3;
+    			this._y = c1 * s2 * c3 - s1 * c2 * s3;
+    			this._z = c1 * c2 * s3 + s1 * s2 * c3;
+    			this._w = c1 * c2 * c3 - s1 * s2 * s3;
+
+    		} else if ( order === 'YXZ' ) {
+
+    			this._x = s1 * c2 * c3 + c1 * s2 * s3;
+    			this._y = c1 * s2 * c3 - s1 * c2 * s3;
+    			this._z = c1 * c2 * s3 - s1 * s2 * c3;
+    			this._w = c1 * c2 * c3 + s1 * s2 * s3;
+
+    		} else if ( order === 'ZXY' ) {
+
+    			this._x = s1 * c2 * c3 - c1 * s2 * s3;
+    			this._y = c1 * s2 * c3 + s1 * c2 * s3;
+    			this._z = c1 * c2 * s3 + s1 * s2 * c3;
+    			this._w = c1 * c2 * c3 - s1 * s2 * s3;
+
+    		} else if ( order === 'ZYX' ) {
+
+    			this._x = s1 * c2 * c3 - c1 * s2 * s3;
+    			this._y = c1 * s2 * c3 + s1 * c2 * s3;
+    			this._z = c1 * c2 * s3 - s1 * s2 * c3;
+    			this._w = c1 * c2 * c3 + s1 * s2 * s3;
+
+    		} else if ( order === 'YZX' ) {
+
+    			this._x = s1 * c2 * c3 + c1 * s2 * s3;
+    			this._y = c1 * s2 * c3 + s1 * c2 * s3;
+    			this._z = c1 * c2 * s3 - s1 * s2 * c3;
+    			this._w = c1 * c2 * c3 - s1 * s2 * s3;
+
+    		} else if ( order === 'XZY' ) {
+
+    			this._x = s1 * c2 * c3 - c1 * s2 * s3;
+    			this._y = c1 * s2 * c3 - s1 * c2 * s3;
+    			this._z = c1 * c2 * s3 + s1 * s2 * c3;
+    			this._w = c1 * c2 * c3 + s1 * s2 * s3;
+
+    		}
+
+    		if ( update !== false ) this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	setFromAxisAngle: function ( axis, angle ) {
+
+    		// http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
+
+    		// assumes axis is normalized
+
+    		var halfAngle = angle / 2, s = Math.sin( halfAngle );
+
+    		this._x = axis.x * s;
+    		this._y = axis.y * s;
+    		this._z = axis.z * s;
+    		this._w = Math.cos( halfAngle );
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	setFromRotationMatrix: function ( m ) {
+
+    		// http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
+
+    		// assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
+
+    		var te = m.elements,
+
+    			m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ],
+    			m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ],
+    			m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ],
+
+    			trace = m11 + m22 + m33,
+    			s;
+
+    		if ( trace > 0 ) {
+
+    			s = 0.5 / Math.sqrt( trace + 1.0 );
+
+    			this._w = 0.25 / s;
+    			this._x = ( m32 - m23 ) * s;
+    			this._y = ( m13 - m31 ) * s;
+    			this._z = ( m21 - m12 ) * s;
+
+    		} else if ( m11 > m22 && m11 > m33 ) {
+
+    			s = 2.0 * Math.sqrt( 1.0 + m11 - m22 - m33 );
+
+    			this._w = ( m32 - m23 ) / s;
+    			this._x = 0.25 * s;
+    			this._y = ( m12 + m21 ) / s;
+    			this._z = ( m13 + m31 ) / s;
+
+    		} else if ( m22 > m33 ) {
+
+    			s = 2.0 * Math.sqrt( 1.0 + m22 - m11 - m33 );
+
+    			this._w = ( m13 - m31 ) / s;
+    			this._x = ( m12 + m21 ) / s;
+    			this._y = 0.25 * s;
+    			this._z = ( m23 + m32 ) / s;
+
+    		} else {
+
+    			s = 2.0 * Math.sqrt( 1.0 + m33 - m11 - m22 );
+
+    			this._w = ( m21 - m12 ) / s;
+    			this._x = ( m13 + m31 ) / s;
+    			this._y = ( m23 + m32 ) / s;
+    			this._z = 0.25 * s;
+
+    		}
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	setFromUnitVectors: function ( vFrom, vTo ) {
+
+    		// assumes direction vectors vFrom and vTo are normalized
+
+    		var EPS = 0.000001;
+
+    		var r = vFrom.dot( vTo ) + 1;
+
+    		if ( r < EPS ) {
+
+    			r = 0;
+
+    			if ( Math.abs( vFrom.x ) > Math.abs( vFrom.z ) ) {
+
+    				this._x = - vFrom.y;
+    				this._y = vFrom.x;
+    				this._z = 0;
+    				this._w = r;
+
+    			} else {
+
+    				this._x = 0;
+    				this._y = - vFrom.z;
+    				this._z = vFrom.y;
+    				this._w = r;
+
+    			}
+
+    		} else {
+
+    			// crossVectors( vFrom, vTo ); // inlined to avoid cyclic dependency on Vector3
+
+    			this._x = vFrom.y * vTo.z - vFrom.z * vTo.y;
+    			this._y = vFrom.z * vTo.x - vFrom.x * vTo.z;
+    			this._z = vFrom.x * vTo.y - vFrom.y * vTo.x;
+    			this._w = r;
+
+    		}
+
+    		return this.normalize();
+
+    	},
+
+    	angleTo: function ( q ) {
+
+    		return 2 * Math.acos( Math.abs( _Math.clamp( this.dot( q ), - 1, 1 ) ) );
+
+    	},
+
+    	rotateTowards: function ( q, step ) {
+
+    		var angle = this.angleTo( q );
+
+    		if ( angle === 0 ) return this;
+
+    		var t = Math.min( 1, step / angle );
+
+    		this.slerp( q, t );
+
+    		return this;
+
+    	},
+
+    	inverse: function () {
+
+    		// quaternion is assumed to have unit length
+
+    		return this.conjugate();
+
+    	},
+
+    	conjugate: function () {
+
+    		this._x *= - 1;
+    		this._y *= - 1;
+    		this._z *= - 1;
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	dot: function ( v ) {
+
+    		return this._x * v._x + this._y * v._y + this._z * v._z + this._w * v._w;
+
+    	},
+
+    	lengthSq: function () {
+
+    		return this._x * this._x + this._y * this._y + this._z * this._z + this._w * this._w;
+
+    	},
+
+    	length: function () {
+
+    		return Math.sqrt( this._x * this._x + this._y * this._y + this._z * this._z + this._w * this._w );
+
+    	},
+
+    	normalize: function () {
+
+    		var l = this.length();
+
+    		if ( l === 0 ) {
+
+    			this._x = 0;
+    			this._y = 0;
+    			this._z = 0;
+    			this._w = 1;
+
+    		} else {
+
+    			l = 1 / l;
+
+    			this._x = this._x * l;
+    			this._y = this._y * l;
+    			this._z = this._z * l;
+    			this._w = this._w * l;
+
+    		}
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	multiply: function ( q, p ) {
+
+    		if ( p !== undefined ) {
+
+    			console.warn( 'THREE.Quaternion: .multiply() now only accepts one argument. Use .multiplyQuaternions( a, b ) instead.' );
+    			return this.multiplyQuaternions( q, p );
+
+    		}
+
+    		return this.multiplyQuaternions( this, q );
+
+    	},
+
+    	premultiply: function ( q ) {
+
+    		return this.multiplyQuaternions( q, this );
+
+    	},
+
+    	multiplyQuaternions: function ( a, b ) {
+
+    		// from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
+
+    		var qax = a._x, qay = a._y, qaz = a._z, qaw = a._w;
+    		var qbx = b._x, qby = b._y, qbz = b._z, qbw = b._w;
+
+    		this._x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+    		this._y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+    		this._z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+    		this._w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	slerp: function ( qb, t ) {
+
+    		if ( t === 0 ) return this;
+    		if ( t === 1 ) return this.copy( qb );
+
+    		var x = this._x, y = this._y, z = this._z, w = this._w;
+
+    		// http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+
+    		var cosHalfTheta = w * qb._w + x * qb._x + y * qb._y + z * qb._z;
+
+    		if ( cosHalfTheta < 0 ) {
+
+    			this._w = - qb._w;
+    			this._x = - qb._x;
+    			this._y = - qb._y;
+    			this._z = - qb._z;
+
+    			cosHalfTheta = - cosHalfTheta;
+
+    		} else {
+
+    			this.copy( qb );
+
+    		}
+
+    		if ( cosHalfTheta >= 1.0 ) {
+
+    			this._w = w;
+    			this._x = x;
+    			this._y = y;
+    			this._z = z;
+
+    			return this;
+
+    		}
+
+    		var sqrSinHalfTheta = 1.0 - cosHalfTheta * cosHalfTheta;
+
+    		if ( sqrSinHalfTheta <= Number.EPSILON ) {
+
+    			var s = 1 - t;
+    			this._w = s * w + t * this._w;
+    			this._x = s * x + t * this._x;
+    			this._y = s * y + t * this._y;
+    			this._z = s * z + t * this._z;
+
+    			this.normalize();
+    			this._onChangeCallback();
+
+    			return this;
+
+    		}
+
+    		var sinHalfTheta = Math.sqrt( sqrSinHalfTheta );
+    		var halfTheta = Math.atan2( sinHalfTheta, cosHalfTheta );
+    		var ratioA = Math.sin( ( 1 - t ) * halfTheta ) / sinHalfTheta,
+    			ratioB = Math.sin( t * halfTheta ) / sinHalfTheta;
+
+    		this._w = ( w * ratioA + this._w * ratioB );
+    		this._x = ( x * ratioA + this._x * ratioB );
+    		this._y = ( y * ratioA + this._y * ratioB );
+    		this._z = ( z * ratioA + this._z * ratioB );
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	equals: function ( quaternion ) {
+
+    		return ( quaternion._x === this._x ) && ( quaternion._y === this._y ) && ( quaternion._z === this._z ) && ( quaternion._w === this._w );
+
+    	},
+
+    	fromArray: function ( array, offset ) {
+
+    		if ( offset === undefined ) offset = 0;
+
+    		this._x = array[ offset ];
+    		this._y = array[ offset + 1 ];
+    		this._z = array[ offset + 2 ];
+    		this._w = array[ offset + 3 ];
+
+    		this._onChangeCallback();
+
+    		return this;
+
+    	},
+
+    	toArray: function ( array, offset ) {
+
+    		if ( array === undefined ) array = [];
+    		if ( offset === undefined ) offset = 0;
+
+    		array[ offset ] = this._x;
+    		array[ offset + 1 ] = this._y;
+    		array[ offset + 2 ] = this._z;
+    		array[ offset + 3 ] = this._w;
+
+    		return array;
+
+    	},
+
+    	_onChange: function ( callback ) {
+
+    		this._onChangeCallback = callback;
+
+    		return this;
+
+    	},
+
+    	_onChangeCallback: function () {}
+
+    } );
+
+    /**
+     * @author mrdoob / http://mrdoob.com/
+     * @author kile / http://kile.stravaganza.org/
+     * @author philogb / http://blog.thejit.org/
+     * @author mikael emtinger / http://gomo.se/
+     * @author egraether / http://egraether.com/
+     * @author WestLangley / http://github.com/WestLangley
+     */
+
+    var _vector = new Vector3();
+    var _quaternion = new Quaternion();
+
+    function Vector3( x, y, z ) {
+
+    	this.x = x || 0;
+    	this.y = y || 0;
+    	this.z = z || 0;
+
     }
 
-    var decode = exports.decode = function decode(base64) {
-        var bufferLength = base64.length * 0.75,
-            len = base64.length,
-            i = void 0,
-            p = 0,
-            encoded1 = void 0,
-            encoded2 = void 0,
-            encoded3 = void 0,
-            encoded4 = void 0;
+    Object.assign( Vector3.prototype, {
 
-        if (base64[base64.length - 1] === '=') {
-            bufferLength--;
-            if (base64[base64.length - 2] === '=') {
-                bufferLength--;
-            }
-        }
+    	isVector3: true,
 
-        var buffer = typeof ArrayBuffer !== 'undefined' && typeof Uint8Array !== 'undefined' && typeof Uint8Array.prototype.slice !== 'undefined' ? new ArrayBuffer(bufferLength) : new Array(bufferLength);
-        var bytes = Array.isArray(buffer) ? buffer : new Uint8Array(buffer);
+    	set: function ( x, y, z ) {
 
-        for (i = 0; i < len; i += 4) {
-            encoded1 = lookup[base64.charCodeAt(i)];
-            encoded2 = lookup[base64.charCodeAt(i + 1)];
-            encoded3 = lookup[base64.charCodeAt(i + 2)];
-            encoded4 = lookup[base64.charCodeAt(i + 3)];
+    		this.x = x;
+    		this.y = y;
+    		this.z = z;
 
-            bytes[p++] = encoded1 << 2 | encoded2 >> 4;
-            bytes[p++] = (encoded2 & 15) << 4 | encoded3 >> 2;
-            bytes[p++] = (encoded3 & 3) << 6 | encoded4 & 63;
-        }
+    		return this;
 
-        return buffer;
-    };
+    	},
 
-    var polyUint16Array = exports.polyUint16Array = function polyUint16Array(buffer) {
-        var length = buffer.length;
-        var bytes = [];
-        for (var _i = 0; _i < length; _i += 2) {
-            bytes.push(buffer[_i + 1] << 8 | buffer[_i]);
-        }
-        return bytes;
-    };
+    	setScalar: function ( scalar ) {
 
-    var polyUint32Array = exports.polyUint32Array = function polyUint32Array(buffer) {
-        var length = buffer.length;
-        var bytes = [];
-        for (var _i2 = 0; _i2 < length; _i2 += 4) {
-            bytes.push(buffer[_i2 + 3] << 24 | buffer[_i2 + 2] << 16 | buffer[_i2 + 1] << 8 | buffer[_i2]);
-        }
-        return bytes;
-    };
-    });
+    		this.x = scalar;
+    		this.y = scalar;
+    		this.z = scalar;
 
-    unwrapExports(Util$2);
-    var Util_1$1 = Util$2.toCodePoints;
-    var Util_2$1 = Util$2.fromCodePoint;
-    var Util_3$1 = Util$2.decode;
-    var Util_4$1 = Util$2.polyUint16Array;
-    var Util_5 = Util$2.polyUint32Array;
+    		return this;
 
-    var Trie_1 = createCommonjsModule(function (module, exports) {
+    	},
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.Trie = exports.createTrieFromBase64 = exports.UTRIE2_INDEX_2_MASK = exports.UTRIE2_INDEX_2_BLOCK_LENGTH = exports.UTRIE2_OMITTED_BMP_INDEX_1_LENGTH = exports.UTRIE2_INDEX_1_OFFSET = exports.UTRIE2_UTF8_2B_INDEX_2_LENGTH = exports.UTRIE2_UTF8_2B_INDEX_2_OFFSET = exports.UTRIE2_INDEX_2_BMP_LENGTH = exports.UTRIE2_LSCP_INDEX_2_LENGTH = exports.UTRIE2_DATA_MASK = exports.UTRIE2_DATA_BLOCK_LENGTH = exports.UTRIE2_LSCP_INDEX_2_OFFSET = exports.UTRIE2_SHIFT_1_2 = exports.UTRIE2_INDEX_SHIFT = exports.UTRIE2_SHIFT_1 = exports.UTRIE2_SHIFT_2 = undefined;
+    	setX: function ( x ) {
 
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+    		this.x = x;
 
+    		return this;
 
+    	},
 
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+    	setY: function ( y ) {
 
-    /** Shift size for getting the index-2 table offset. */
-    var UTRIE2_SHIFT_2 = exports.UTRIE2_SHIFT_2 = 5;
+    		this.y = y;
 
-    /** Shift size for getting the index-1 table offset. */
-    var UTRIE2_SHIFT_1 = exports.UTRIE2_SHIFT_1 = 6 + 5;
+    		return this;
+
+    	},
+
+    	setZ: function ( z ) {
+
+    		this.z = z;
+
+    		return this;
+
+    	},
+
+    	setComponent: function ( index, value ) {
+
+    		switch ( index ) {
+
+    			case 0: this.x = value; break;
+    			case 1: this.y = value; break;
+    			case 2: this.z = value; break;
+    			default: throw new Error( 'index is out of range: ' + index );
+
+    		}
+
+    		return this;
+
+    	},
+
+    	getComponent: function ( index ) {
+
+    		switch ( index ) {
+
+    			case 0: return this.x;
+    			case 1: return this.y;
+    			case 2: return this.z;
+    			default: throw new Error( 'index is out of range: ' + index );
+
+    		}
+
+    	},
+
+    	clone: function () {
+
+    		return new this.constructor( this.x, this.y, this.z );
+
+    	},
+
+    	copy: function ( v ) {
+
+    		this.x = v.x;
+    		this.y = v.y;
+    		this.z = v.z;
+
+    		return this;
+
+    	},
+
+    	add: function ( v, w ) {
+
+    		if ( w !== undefined ) {
+
+    			console.warn( 'THREE.Vector3: .add() now only accepts one argument. Use .addVectors( a, b ) instead.' );
+    			return this.addVectors( v, w );
+
+    		}
+
+    		this.x += v.x;
+    		this.y += v.y;
+    		this.z += v.z;
+
+    		return this;
+
+    	},
+
+    	addScalar: function ( s ) {
+
+    		this.x += s;
+    		this.y += s;
+    		this.z += s;
+
+    		return this;
+
+    	},
+
+    	addVectors: function ( a, b ) {
+
+    		this.x = a.x + b.x;
+    		this.y = a.y + b.y;
+    		this.z = a.z + b.z;
+
+    		return this;
+
+    	},
+
+    	addScaledVector: function ( v, s ) {
+
+    		this.x += v.x * s;
+    		this.y += v.y * s;
+    		this.z += v.z * s;
+
+    		return this;
+
+    	},
+
+    	sub: function ( v, w ) {
+
+    		if ( w !== undefined ) {
+
+    			console.warn( 'THREE.Vector3: .sub() now only accepts one argument. Use .subVectors( a, b ) instead.' );
+    			return this.subVectors( v, w );
+
+    		}
+
+    		this.x -= v.x;
+    		this.y -= v.y;
+    		this.z -= v.z;
+
+    		return this;
+
+    	},
+
+    	subScalar: function ( s ) {
+
+    		this.x -= s;
+    		this.y -= s;
+    		this.z -= s;
+
+    		return this;
+
+    	},
+
+    	subVectors: function ( a, b ) {
+
+    		this.x = a.x - b.x;
+    		this.y = a.y - b.y;
+    		this.z = a.z - b.z;
+
+    		return this;
+
+    	},
+
+    	multiply: function ( v, w ) {
+
+    		if ( w !== undefined ) {
+
+    			console.warn( 'THREE.Vector3: .multiply() now only accepts one argument. Use .multiplyVectors( a, b ) instead.' );
+    			return this.multiplyVectors( v, w );
+
+    		}
+
+    		this.x *= v.x;
+    		this.y *= v.y;
+    		this.z *= v.z;
+
+    		return this;
+
+    	},
+
+    	multiplyScalar: function ( scalar ) {
+
+    		this.x *= scalar;
+    		this.y *= scalar;
+    		this.z *= scalar;
+
+    		return this;
+
+    	},
+
+    	multiplyVectors: function ( a, b ) {
+
+    		this.x = a.x * b.x;
+    		this.y = a.y * b.y;
+    		this.z = a.z * b.z;
+
+    		return this;
+
+    	},
+
+    	applyEuler: function ( euler ) {
+
+    		if ( ! ( euler && euler.isEuler ) ) {
+
+    			console.error( 'THREE.Vector3: .applyEuler() now expects an Euler rotation rather than a Vector3 and order.' );
+
+    		}
+
+    		return this.applyQuaternion( _quaternion.setFromEuler( euler ) );
+
+    	},
+
+    	applyAxisAngle: function ( axis, angle ) {
+
+    		return this.applyQuaternion( _quaternion.setFromAxisAngle( axis, angle ) );
+
+    	},
+
+    	applyMatrix3: function ( m ) {
+
+    		var x = this.x, y = this.y, z = this.z;
+    		var e = m.elements;
+
+    		this.x = e[ 0 ] * x + e[ 3 ] * y + e[ 6 ] * z;
+    		this.y = e[ 1 ] * x + e[ 4 ] * y + e[ 7 ] * z;
+    		this.z = e[ 2 ] * x + e[ 5 ] * y + e[ 8 ] * z;
+
+    		return this;
+
+    	},
+
+    	applyMatrix4: function ( m ) {
+
+    		var x = this.x, y = this.y, z = this.z;
+    		var e = m.elements;
+
+    		var w = 1 / ( e[ 3 ] * x + e[ 7 ] * y + e[ 11 ] * z + e[ 15 ] );
+
+    		this.x = ( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ] * z + e[ 12 ] ) * w;
+    		this.y = ( e[ 1 ] * x + e[ 5 ] * y + e[ 9 ] * z + e[ 13 ] ) * w;
+    		this.z = ( e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ] ) * w;
+
+    		return this;
+
+    	},
+
+    	applyQuaternion: function ( q ) {
+
+    		var x = this.x, y = this.y, z = this.z;
+    		var qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+
+    		// calculate quat * vector
+
+    		var ix = qw * x + qy * z - qz * y;
+    		var iy = qw * y + qz * x - qx * z;
+    		var iz = qw * z + qx * y - qy * x;
+    		var iw = - qx * x - qy * y - qz * z;
+
+    		// calculate result * inverse quat
+
+    		this.x = ix * qw + iw * - qx + iy * - qz - iz * - qy;
+    		this.y = iy * qw + iw * - qy + iz * - qx - ix * - qz;
+    		this.z = iz * qw + iw * - qz + ix * - qy - iy * - qx;
+
+    		return this;
+
+    	},
+
+    	project: function ( camera ) {
+
+    		return this.applyMatrix4( camera.matrixWorldInverse ).applyMatrix4( camera.projectionMatrix );
+
+    	},
+
+    	unproject: function ( camera ) {
+
+    		return this.applyMatrix4( camera.projectionMatrixInverse ).applyMatrix4( camera.matrixWorld );
+
+    	},
+
+    	transformDirection: function ( m ) {
+
+    		// input: THREE.Matrix4 affine matrix
+    		// vector interpreted as a direction
+
+    		var x = this.x, y = this.y, z = this.z;
+    		var e = m.elements;
+
+    		this.x = e[ 0 ] * x + e[ 4 ] * y + e[ 8 ] * z;
+    		this.y = e[ 1 ] * x + e[ 5 ] * y + e[ 9 ] * z;
+    		this.z = e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z;
+
+    		return this.normalize();
+
+    	},
+
+    	divide: function ( v ) {
+
+    		this.x /= v.x;
+    		this.y /= v.y;
+    		this.z /= v.z;
+
+    		return this;
+
+    	},
+
+    	divideScalar: function ( scalar ) {
+
+    		return this.multiplyScalar( 1 / scalar );
+
+    	},
+
+    	min: function ( v ) {
+
+    		this.x = Math.min( this.x, v.x );
+    		this.y = Math.min( this.y, v.y );
+    		this.z = Math.min( this.z, v.z );
+
+    		return this;
+
+    	},
+
+    	max: function ( v ) {
+
+    		this.x = Math.max( this.x, v.x );
+    		this.y = Math.max( this.y, v.y );
+    		this.z = Math.max( this.z, v.z );
+
+    		return this;
+
+    	},
+
+    	clamp: function ( min, max ) {
+
+    		// assumes min < max, componentwise
+
+    		this.x = Math.max( min.x, Math.min( max.x, this.x ) );
+    		this.y = Math.max( min.y, Math.min( max.y, this.y ) );
+    		this.z = Math.max( min.z, Math.min( max.z, this.z ) );
+
+    		return this;
+
+    	},
+
+    	clampScalar: function ( minVal, maxVal ) {
+
+    		this.x = Math.max( minVal, Math.min( maxVal, this.x ) );
+    		this.y = Math.max( minVal, Math.min( maxVal, this.y ) );
+    		this.z = Math.max( minVal, Math.min( maxVal, this.z ) );
+
+    		return this;
+
+    	},
+
+    	clampLength: function ( min, max ) {
+
+    		var length = this.length();
+
+    		return this.divideScalar( length || 1 ).multiplyScalar( Math.max( min, Math.min( max, length ) ) );
+
+    	},
+
+    	floor: function () {
+
+    		this.x = Math.floor( this.x );
+    		this.y = Math.floor( this.y );
+    		this.z = Math.floor( this.z );
+
+    		return this;
+
+    	},
+
+    	ceil: function () {
+
+    		this.x = Math.ceil( this.x );
+    		this.y = Math.ceil( this.y );
+    		this.z = Math.ceil( this.z );
+
+    		return this;
+
+    	},
+
+    	round: function () {
+
+    		this.x = Math.round( this.x );
+    		this.y = Math.round( this.y );
+    		this.z = Math.round( this.z );
+
+    		return this;
+
+    	},
+
+    	roundToZero: function () {
+
+    		this.x = ( this.x < 0 ) ? Math.ceil( this.x ) : Math.floor( this.x );
+    		this.y = ( this.y < 0 ) ? Math.ceil( this.y ) : Math.floor( this.y );
+    		this.z = ( this.z < 0 ) ? Math.ceil( this.z ) : Math.floor( this.z );
+
+    		return this;
+
+    	},
+
+    	negate: function () {
+
+    		this.x = - this.x;
+    		this.y = - this.y;
+    		this.z = - this.z;
+
+    		return this;
+
+    	},
+
+    	dot: function ( v ) {
+
+    		return this.x * v.x + this.y * v.y + this.z * v.z;
+
+    	},
+
+    	// TODO lengthSquared?
+
+    	lengthSq: function () {
+
+    		return this.x * this.x + this.y * this.y + this.z * this.z;
+
+    	},
+
+    	length: function () {
+
+    		return Math.sqrt( this.x * this.x + this.y * this.y + this.z * this.z );
+
+    	},
+
+    	manhattanLength: function () {
+
+    		return Math.abs( this.x ) + Math.abs( this.y ) + Math.abs( this.z );
+
+    	},
+
+    	normalize: function () {
+
+    		return this.divideScalar( this.length() || 1 );
+
+    	},
+
+    	setLength: function ( length ) {
+
+    		return this.normalize().multiplyScalar( length );
+
+    	},
+
+    	lerp: function ( v, alpha ) {
+
+    		this.x += ( v.x - this.x ) * alpha;
+    		this.y += ( v.y - this.y ) * alpha;
+    		this.z += ( v.z - this.z ) * alpha;
+
+    		return this;
+
+    	},
+
+    	lerpVectors: function ( v1, v2, alpha ) {
+
+    		return this.subVectors( v2, v1 ).multiplyScalar( alpha ).add( v1 );
+
+    	},
+
+    	cross: function ( v, w ) {
+
+    		if ( w !== undefined ) {
+
+    			console.warn( 'THREE.Vector3: .cross() now only accepts one argument. Use .crossVectors( a, b ) instead.' );
+    			return this.crossVectors( v, w );
+
+    		}
+
+    		return this.crossVectors( this, v );
+
+    	},
+
+    	crossVectors: function ( a, b ) {
+
+    		var ax = a.x, ay = a.y, az = a.z;
+    		var bx = b.x, by = b.y, bz = b.z;
+
+    		this.x = ay * bz - az * by;
+    		this.y = az * bx - ax * bz;
+    		this.z = ax * by - ay * bx;
+
+    		return this;
+
+    	},
+
+    	projectOnVector: function ( v ) {
+
+    		// v cannot be the zero v
+
+    		var scalar = v.dot( this ) / v.lengthSq();
+
+    		return this.copy( v ).multiplyScalar( scalar );
+
+    	},
+
+    	projectOnPlane: function ( planeNormal ) {
+
+    		_vector.copy( this ).projectOnVector( planeNormal );
+
+    		return this.sub( _vector );
+
+    	},
+
+    	reflect: function ( normal ) {
+
+    		// reflect incident vector off plane orthogonal to normal
+    		// normal is assumed to have unit length
+
+    		return this.sub( _vector.copy( normal ).multiplyScalar( 2 * this.dot( normal ) ) );
+
+    	},
+
+    	angleTo: function ( v ) {
+
+    		var denominator = Math.sqrt( this.lengthSq() * v.lengthSq() );
+
+    		if ( denominator === 0 ) console.error( 'THREE.Vector3: angleTo() can\'t handle zero length vectors.' );
+
+    		var theta = this.dot( v ) / denominator;
+
+    		// clamp, to handle numerical problems
+
+    		return Math.acos( _Math.clamp( theta, - 1, 1 ) );
+
+    	},
+
+    	distanceTo: function ( v ) {
+
+    		return Math.sqrt( this.distanceToSquared( v ) );
+
+    	},
+
+    	distanceToSquared: function ( v ) {
+
+    		var dx = this.x - v.x, dy = this.y - v.y, dz = this.z - v.z;
+
+    		return dx * dx + dy * dy + dz * dz;
+
+    	},
+
+    	manhattanDistanceTo: function ( v ) {
+
+    		return Math.abs( this.x - v.x ) + Math.abs( this.y - v.y ) + Math.abs( this.z - v.z );
+
+    	},
+
+    	setFromSpherical: function ( s ) {
+
+    		return this.setFromSphericalCoords( s.radius, s.phi, s.theta );
+
+    	},
+
+    	setFromSphericalCoords: function ( radius, phi, theta ) {
+
+    		var sinPhiRadius = Math.sin( phi ) * radius;
+
+    		this.x = sinPhiRadius * Math.sin( theta );
+    		this.y = Math.cos( phi ) * radius;
+    		this.z = sinPhiRadius * Math.cos( theta );
+
+    		return this;
+
+    	},
+
+    	setFromCylindrical: function ( c ) {
+
+    		return this.setFromCylindricalCoords( c.radius, c.theta, c.y );
+
+    	},
+
+    	setFromCylindricalCoords: function ( radius, theta, y ) {
+
+    		this.x = radius * Math.sin( theta );
+    		this.y = y;
+    		this.z = radius * Math.cos( theta );
+
+    		return this;
+
+    	},
+
+    	setFromMatrixPosition: function ( m ) {
+
+    		var e = m.elements;
+
+    		this.x = e[ 12 ];
+    		this.y = e[ 13 ];
+    		this.z = e[ 14 ];
+
+    		return this;
+
+    	},
+
+    	setFromMatrixScale: function ( m ) {
+
+    		var sx = this.setFromMatrixColumn( m, 0 ).length();
+    		var sy = this.setFromMatrixColumn( m, 1 ).length();
+    		var sz = this.setFromMatrixColumn( m, 2 ).length();
+
+    		this.x = sx;
+    		this.y = sy;
+    		this.z = sz;
+
+    		return this;
+
+    	},
+
+    	setFromMatrixColumn: function ( m, index ) {
+
+    		return this.fromArray( m.elements, index * 4 );
+
+    	},
+
+    	equals: function ( v ) {
+
+    		return ( ( v.x === this.x ) && ( v.y === this.y ) && ( v.z === this.z ) );
+
+    	},
+
+    	fromArray: function ( array, offset ) {
+
+    		if ( offset === undefined ) offset = 0;
+
+    		this.x = array[ offset ];
+    		this.y = array[ offset + 1 ];
+    		this.z = array[ offset + 2 ];
+
+    		return this;
+
+    	},
+
+    	toArray: function ( array, offset ) {
+
+    		if ( array === undefined ) array = [];
+    		if ( offset === undefined ) offset = 0;
+
+    		array[ offset ] = this.x;
+    		array[ offset + 1 ] = this.y;
+    		array[ offset + 2 ] = this.z;
+
+    		return array;
+
+    	},
+
+    	fromBufferAttribute: function ( attribute, index, offset ) {
+
+    		if ( offset !== undefined ) {
+
+    			console.warn( 'THREE.Vector3: offset has been removed from .fromBufferAttribute().' );
+
+    		}
+
+    		this.x = attribute.getX( index );
+    		this.y = attribute.getY( index );
+    		this.z = attribute.getZ( index );
+
+    		return this;
+
+    	}
+
+    } );
+
+    var _v1 = new Vector3();
+    var _m1 = new Matrix4();
+    var _zero = new Vector3( 0, 0, 0 );
+    var _one = new Vector3( 1, 1, 1 );
+    var _x = new Vector3();
+    var _y = new Vector3();
+    var _z = new Vector3();
 
     /**
-     * Shift size for shifting left the index array values.
-     * Increases possible data size with 16-bit index values at the cost
-     * of compactability.
-     * This requires data blocks to be aligned by UTRIE2_DATA_GRANULARITY.
+     * @author mrdoob / http://mrdoob.com/
+     * @author supereggbert / http://www.paulbrunt.co.uk/
+     * @author philogb / http://blog.thejit.org/
+     * @author jordi_ros / http://plattsoft.com
+     * @author D1plo1d / http://github.com/D1plo1d
+     * @author alteredq / http://alteredqualia.com/
+     * @author mikael emtinger / http://gomo.se/
+     * @author timknip / http://www.floorplanner.com/
+     * @author bhouston / http://clara.io
+     * @author WestLangley / http://github.com/WestLangley
      */
-    var UTRIE2_INDEX_SHIFT = exports.UTRIE2_INDEX_SHIFT = 2;
 
-    /**
-     * Difference between the two shift sizes,
-     * for getting an index-1 offset from an index-2 offset. 6=11-5
-     */
-    var UTRIE2_SHIFT_1_2 = exports.UTRIE2_SHIFT_1_2 = UTRIE2_SHIFT_1 - UTRIE2_SHIFT_2;
+    function Matrix4() {
 
-    /**
-     * The part of the index-2 table for U+D800..U+DBFF stores values for
-     * lead surrogate code _units_ not code _points_.
-     * Values for lead surrogate code _points_ are indexed with this portion of the table.
-     * Length=32=0x20=0x400>>UTRIE2_SHIFT_2. (There are 1024=0x400 lead surrogates.)
-     */
-    var UTRIE2_LSCP_INDEX_2_OFFSET = exports.UTRIE2_LSCP_INDEX_2_OFFSET = 0x10000 >> UTRIE2_SHIFT_2;
+    	this.elements = [
 
-    /** Number of entries in a data block. 32=0x20 */
-    var UTRIE2_DATA_BLOCK_LENGTH = exports.UTRIE2_DATA_BLOCK_LENGTH = 1 << UTRIE2_SHIFT_2;
-    /** Mask for getting the lower bits for the in-data-block offset. */
-    var UTRIE2_DATA_MASK = exports.UTRIE2_DATA_MASK = UTRIE2_DATA_BLOCK_LENGTH - 1;
+    		1, 0, 0, 0,
+    		0, 1, 0, 0,
+    		0, 0, 1, 0,
+    		0, 0, 0, 1
 
-    var UTRIE2_LSCP_INDEX_2_LENGTH = exports.UTRIE2_LSCP_INDEX_2_LENGTH = 0x400 >> UTRIE2_SHIFT_2;
-    /** Count the lengths of both BMP pieces. 2080=0x820 */
-    var UTRIE2_INDEX_2_BMP_LENGTH = exports.UTRIE2_INDEX_2_BMP_LENGTH = UTRIE2_LSCP_INDEX_2_OFFSET + UTRIE2_LSCP_INDEX_2_LENGTH;
-    /**
-     * The 2-byte UTF-8 version of the index-2 table follows at offset 2080=0x820.
-     * Length 32=0x20 for lead bytes C0..DF, regardless of UTRIE2_SHIFT_2.
-     */
-    var UTRIE2_UTF8_2B_INDEX_2_OFFSET = exports.UTRIE2_UTF8_2B_INDEX_2_OFFSET = UTRIE2_INDEX_2_BMP_LENGTH;
-    var UTRIE2_UTF8_2B_INDEX_2_LENGTH = exports.UTRIE2_UTF8_2B_INDEX_2_LENGTH = 0x800 >> 6; /* U+0800 is the first code point after 2-byte UTF-8 */
-    /**
-     * The index-1 table, only used for supplementary code points, at offset 2112=0x840.
-     * Variable length, for code points up to highStart, where the last single-value range starts.
-     * Maximum length 512=0x200=0x100000>>UTRIE2_SHIFT_1.
-     * (For 0x100000 supplementary code points U+10000..U+10ffff.)
-     *
-     * The part of the index-2 table for supplementary code points starts
-     * after this index-1 table.
-     *
-     * Both the index-1 table and the following part of the index-2 table
-     * are omitted completely if there is only BMP data.
-     */
-    var UTRIE2_INDEX_1_OFFSET = exports.UTRIE2_INDEX_1_OFFSET = UTRIE2_UTF8_2B_INDEX_2_OFFSET + UTRIE2_UTF8_2B_INDEX_2_LENGTH;
+    	];
 
-    /**
-     * Number of index-1 entries for the BMP. 32=0x20
-     * This part of the index-1 table is omitted from the serialized form.
-     */
-    var UTRIE2_OMITTED_BMP_INDEX_1_LENGTH = exports.UTRIE2_OMITTED_BMP_INDEX_1_LENGTH = 0x10000 >> UTRIE2_SHIFT_1;
+    	if ( arguments.length > 0 ) {
 
-    /** Number of entries in an index-2 block. 64=0x40 */
-    var UTRIE2_INDEX_2_BLOCK_LENGTH = exports.UTRIE2_INDEX_2_BLOCK_LENGTH = 1 << UTRIE2_SHIFT_1_2;
-    /** Mask for getting the lower bits for the in-index-2-block offset. */
-    var UTRIE2_INDEX_2_MASK = exports.UTRIE2_INDEX_2_MASK = UTRIE2_INDEX_2_BLOCK_LENGTH - 1;
+    		console.error( 'THREE.Matrix4: the constructor no longer reads arguments. use .set() instead.' );
 
-    var createTrieFromBase64 = exports.createTrieFromBase64 = function createTrieFromBase64(base64) {
-        var buffer = (0, Util$2.decode)(base64);
-        var view32 = Array.isArray(buffer) ? (0, Util$2.polyUint32Array)(buffer) : new Uint32Array(buffer);
-        var view16 = Array.isArray(buffer) ? (0, Util$2.polyUint16Array)(buffer) : new Uint16Array(buffer);
-        var headerLength = 24;
+    	}
 
-        var index = view16.slice(headerLength / 2, view32[4] / 2);
-        var data = view32[5] === 2 ? view16.slice((headerLength + view32[4]) / 2) : view32.slice(Math.ceil((headerLength + view32[4]) / 4));
-
-        return new Trie(view32[0], view32[1], view32[2], view32[3], index, data);
-    };
-
-    var Trie = exports.Trie = function () {
-        function Trie(initialValue, errorValue, highStart, highValueIndex, index, data) {
-            _classCallCheck(this, Trie);
-
-            this.initialValue = initialValue;
-            this.errorValue = errorValue;
-            this.highStart = highStart;
-            this.highValueIndex = highValueIndex;
-            this.index = index;
-            this.data = data;
-        }
-
-        /**
-         * Get the value for a code point as stored in the Trie.
-         *
-         * @param codePoint the code point
-         * @return the value
-         */
-
-
-        _createClass(Trie, [{
-            key: 'get',
-            value: function get(codePoint) {
-                var ix = void 0;
-                if (codePoint >= 0) {
-                    if (codePoint < 0x0d800 || codePoint > 0x0dbff && codePoint <= 0x0ffff) {
-                        // Ordinary BMP code point, excluding leading surrogates.
-                        // BMP uses a single level lookup.  BMP index starts at offset 0 in the Trie2 index.
-                        // 16 bit data is stored in the index array itself.
-                        ix = this.index[codePoint >> UTRIE2_SHIFT_2];
-                        ix = (ix << UTRIE2_INDEX_SHIFT) + (codePoint & UTRIE2_DATA_MASK);
-                        return this.data[ix];
-                    }
-
-                    if (codePoint <= 0xffff) {
-                        // Lead Surrogate Code Point.  A Separate index section is stored for
-                        // lead surrogate code units and code points.
-                        //   The main index has the code unit data.
-                        //   For this function, we need the code point data.
-                        // Note: this expression could be refactored for slightly improved efficiency, but
-                        //       surrogate code points will be so rare in practice that it's not worth it.
-                        ix = this.index[UTRIE2_LSCP_INDEX_2_OFFSET + (codePoint - 0xd800 >> UTRIE2_SHIFT_2)];
-                        ix = (ix << UTRIE2_INDEX_SHIFT) + (codePoint & UTRIE2_DATA_MASK);
-                        return this.data[ix];
-                    }
-
-                    if (codePoint < this.highStart) {
-                        // Supplemental code point, use two-level lookup.
-                        ix = UTRIE2_INDEX_1_OFFSET - UTRIE2_OMITTED_BMP_INDEX_1_LENGTH + (codePoint >> UTRIE2_SHIFT_1);
-                        ix = this.index[ix];
-                        ix += codePoint >> UTRIE2_SHIFT_2 & UTRIE2_INDEX_2_MASK;
-                        ix = this.index[ix];
-                        ix = (ix << UTRIE2_INDEX_SHIFT) + (codePoint & UTRIE2_DATA_MASK);
-                        return this.data[ix];
-                    }
-                    if (codePoint <= 0x10ffff) {
-                        return this.data[this.highValueIndex];
-                    }
-                }
-
-                // Fall through.  The code point is outside of the legal range of 0..0x10ffff.
-                return this.errorValue;
-            }
-        }]);
-
-        return Trie;
-    }();
-    });
-
-    unwrapExports(Trie_1);
-    var Trie_2 = Trie_1.Trie;
-    var Trie_3 = Trie_1.createTrieFromBase64;
-    var Trie_4 = Trie_1.UTRIE2_INDEX_2_MASK;
-    var Trie_5 = Trie_1.UTRIE2_INDEX_2_BLOCK_LENGTH;
-    var Trie_6 = Trie_1.UTRIE2_OMITTED_BMP_INDEX_1_LENGTH;
-    var Trie_7 = Trie_1.UTRIE2_INDEX_1_OFFSET;
-    var Trie_8 = Trie_1.UTRIE2_UTF8_2B_INDEX_2_LENGTH;
-    var Trie_9 = Trie_1.UTRIE2_UTF8_2B_INDEX_2_OFFSET;
-    var Trie_10 = Trie_1.UTRIE2_INDEX_2_BMP_LENGTH;
-    var Trie_11 = Trie_1.UTRIE2_LSCP_INDEX_2_LENGTH;
-    var Trie_12 = Trie_1.UTRIE2_DATA_MASK;
-    var Trie_13 = Trie_1.UTRIE2_DATA_BLOCK_LENGTH;
-    var Trie_14 = Trie_1.UTRIE2_LSCP_INDEX_2_OFFSET;
-    var Trie_15 = Trie_1.UTRIE2_SHIFT_1_2;
-    var Trie_16 = Trie_1.UTRIE2_INDEX_SHIFT;
-    var Trie_17 = Trie_1.UTRIE2_SHIFT_1;
-    var Trie_18 = Trie_1.UTRIE2_SHIFT_2;
-
-    var linebreakTrie = 'KwAAAAAAAAAACA4AIDoAAPAfAAACAAAAAAAIABAAGABAAEgAUABYAF4AZgBeAGYAYABoAHAAeABeAGYAfACEAIAAiACQAJgAoACoAK0AtQC9AMUAXgBmAF4AZgBeAGYAzQDVAF4AZgDRANkA3gDmAOwA9AD8AAQBDAEUARoBIgGAAIgAJwEvATcBPwFFAU0BTAFUAVwBZAFsAXMBewGDATAAiwGTAZsBogGkAawBtAG8AcIBygHSAdoB4AHoAfAB+AH+AQYCDgIWAv4BHgImAi4CNgI+AkUCTQJTAlsCYwJrAnECeQKBAk0CiQKRApkCoQKoArACuALAAsQCzAIwANQC3ALkAjAA7AL0AvwCAQMJAxADGAMwACADJgMuAzYDPgOAAEYDSgNSA1IDUgNaA1oDYANiA2IDgACAAGoDgAByA3YDfgOAAIQDgACKA5IDmgOAAIAAogOqA4AAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAK8DtwOAAIAAvwPHA88D1wPfAyAD5wPsA/QD/AOAAIAABAQMBBIEgAAWBB4EJgQuBDMEIAM7BEEEXgBJBCADUQRZBGEEaQQwADAAcQQ+AXkEgQSJBJEEgACYBIAAoASoBK8EtwQwAL8ExQSAAIAAgACAAIAAgACgAM0EXgBeAF4AXgBeAF4AXgBeANUEXgDZBOEEXgDpBPEE+QQBBQkFEQUZBSEFKQUxBTUFPQVFBUwFVAVcBV4AYwVeAGsFcwV7BYMFiwWSBV4AmgWgBacFXgBeAF4AXgBeAKsFXgCyBbEFugW7BcIFwgXIBcIFwgXQBdQF3AXkBesF8wX7BQMGCwYTBhsGIwYrBjMGOwZeAD8GRwZNBl4AVAZbBl4AXgBeAF4AXgBeAF4AXgBeAF4AXgBeAGMGXgBqBnEGXgBeAF4AXgBeAF4AXgBeAF4AXgB5BoAG4wSGBo4GkwaAAIADHgR5AF4AXgBeAJsGgABGA4AAowarBrMGswagALsGwwbLBjAA0wbaBtoG3QbaBtoG2gbaBtoG2gblBusG8wb7BgMHCwcTBxsHCwcjBysHMAc1BzUHOgdCB9oGSgdSB1oHYAfaBloHaAfaBlIH2gbaBtoG2gbaBtoG2gbaBjUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHbQdeAF4ANQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQd1B30HNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1B4MH2gaKB68EgACAAIAAgACAAIAAgACAAI8HlwdeAJ8HpweAAIAArwe3B14AXgC/B8UHygcwANAH2AfgB4AA6AfwBz4B+AcACFwBCAgPCBcIogEYAR8IJwiAAC8INwg/CCADRwhPCFcIXwhnCEoDGgSAAIAAgABvCHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIfQh3CHgIeQh6CHsIfAh9CHcIeAh5CHoIewh8CH0Idwh4CHkIegh7CHwIhAiLCI4IMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwAJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlggwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAANQc1BzUHNQc1BzUHNQc1BzUHNQc1B54INQc1B6II2gaqCLIIugiAAIAAvgjGCIAAgACAAIAAgACAAIAAgACAAIAAywiHAYAA0wiAANkI3QjlCO0I9Aj8CIAAgACAAAIJCgkSCRoJIgknCTYHLwk3CZYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiWCJYIlgiAAIAAAAFAAXgBeAGAAcABeAHwAQACQAKAArQC9AJ4AXgBeAE0A3gBRAN4A7AD8AMwBGgEAAKcBNwEFAUwBXAF4QkhCmEKnArcCgAHHAsABz4LAAcABwAHAAd+C6ABoAG+C/4LAAcABwAHAAc+DF4MAAcAB54M3gweDV4Nng3eDaABoAGgAaABoAGgAaABoAGgAaABoAGgAaABoAGgAaABoAGgAaABoAEeDqABVg6WDqABoQ6gAaABoAHXDvcONw/3DvcO9w73DvcO9w73DvcO9w73DvcO9w73DvcO9w73DvcO9w73DvcO9w73DvcO9w73DvcO9w73DvcO9w73DncPAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcABwAHAAcAB7cPPwlGCU4JMACAAIAAgABWCV4JYQmAAGkJcAl4CXwJgAkwADAAMAAwAIgJgACLCZMJgACZCZ8JowmrCYAAswkwAF4AXgB8AIAAuwkABMMJyQmAAM4JgADVCTAAMAAwADAAgACAAIAAgACAAIAAgACAAIAAqwYWBNkIMAAwADAAMADdCeAJ6AnuCR4E9gkwAP4JBQoNCjAAMACAABUK0wiAAB0KJAosCjQKgAAwADwKQwqAAEsKvQmdCVMKWwowADAAgACAALcEMACAAGMKgABrCjAAMAAwADAAMAAwADAAMAAwADAAMAAeBDAAMAAwADAAMAAwADAAMAAwADAAMAAwAIkEPQFzCnoKiQSCCooKkAqJBJgKoAqkCokEGAGsCrQKvArBCjAAMADJCtEKFQHZCuEK/gHpCvEKMAAwADAAMACAAIwE+QowAIAAPwEBCzAAMAAwADAAMACAAAkLEQswAIAAPwEZCyELgAAOCCkLMAAxCzkLMAAwADAAMAAwADAAXgBeAEELMAAwADAAMAAwADAAMAAwAEkLTQtVC4AAXAtkC4AAiQkwADAAMAAwADAAMAAwADAAbAtxC3kLgAuFC4sLMAAwAJMLlwufCzAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAApwswADAAMACAAIAAgACvC4AAgACAAIAAgACAALcLMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAvwuAAMcLgACAAIAAgACAAIAAyguAAIAAgACAAIAA0QswADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAANkLgACAAIAA4AswADAAMAAwADAAMAAwADAAMAAwADAAMAAwAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACJCR4E6AswADAAhwHwC4AA+AsADAgMEAwwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMACAAIAAGAwdDCUMMAAwAC0MNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQw1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHPQwwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADUHNQc1BzUHNQc1BzUHNQc2BzAAMAA5DDUHNQc1BzUHNQc1BzUHNQc1BzUHNQdFDDAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAgACAAIAATQxSDFoMMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwAF4AXgBeAF4AXgBeAF4AYgxeAGoMXgBxDHkMfwxeAIUMXgBeAI0MMAAwADAAMAAwAF4AXgCVDJ0MMAAwADAAMABeAF4ApQxeAKsMswy7DF4Awgy9DMoMXgBeAF4AXgBeAF4AXgBeAF4AXgDRDNkMeQBqCeAM3Ax8AOYM7Az0DPgMXgBeAF4AXgBeAF4AXgBeAF4AXgBeAF4AXgBeAF4AXgCgAAANoAAHDQ4NFg0wADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAeDSYNMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwAIAAgACAAIAAgACAAC4NMABeAF4ANg0wADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwAD4NRg1ODVYNXg1mDTAAbQ0wADAAMAAwADAAMAAwADAA2gbaBtoG2gbaBtoG2gbaBnUNeg3CBYANwgWFDdoGjA3aBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gaUDZwNpA2oDdoG2gawDbcNvw3HDdoG2gbPDdYN3A3fDeYN2gbsDfMN2gbaBvoN/g3aBgYODg7aBl4AXgBeABYOXgBeACUG2gYeDl4AJA5eACwO2w3aBtoGMQ45DtoG2gbaBtoGQQ7aBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gZJDjUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1B1EO2gY1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQdZDjUHNQc1BzUHNQc1B2EONQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHaA41BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1B3AO2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gY1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1BzUHNQc1B2EO2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gZJDtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBtoG2gbaBkkOeA6gAKAAoAAwADAAMAAwAKAAoACgAKAAoACgAKAAgA4wADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAD//wQABAAEAAQABAAEAAQABAAEAA0AAwABAAEAAgAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAKABMAFwAeABsAGgAeABcAFgASAB4AGwAYAA8AGAAcAEsASwBLAEsASwBLAEsASwBLAEsAGAAYAB4AHgAeABMAHgBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAFgAbABIAHgAeAB4AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQABYADQARAB4ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsABAAEAAQABAAEAAUABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAkAFgAaABsAGwAbAB4AHQAdAB4ATwAXAB4ADQAeAB4AGgAbAE8ATwAOAFAAHQAdAB0ATwBPABcATwBPAE8AFgBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB0AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgBQAB4AHgAeAB4AUABQAFAAUAAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAeAB4AHgAeAFAATwBAAE8ATwBPAEAATwBQAFAATwBQAB4AHgAeAB4AHgAeAB0AHQAdAB0AHgAdAB4ADgBQAFAAUABQAFAAHgAeAB4AHgAeAB4AHgBQAB4AUAAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4ABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAJAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAkACQAJAAkACQAJAAkABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAeAB4AHgAeAFAAHgAeAB4AKwArAFAAUABQAFAAGABQACsAKwArACsAHgAeAFAAHgBQAFAAUAArAFAAKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4ABAAEAAQABAAEAAQABAAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAUAAeAB4AHgAeAB4AHgArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwAYAA0AKwArAB4AHgAbACsABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQADQAEAB4ABAAEAB4ABAAEABMABAArACsAKwArACsAKwArACsAVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAKwArACsAKwArAFYAVgBWAB4AHgArACsAKwArACsAKwArACsAKwArACsAHgAeAB4AHgAeAB4AHgAeAB4AGgAaABoAGAAYAB4AHgAEAAQABAAEAAQABAAEAAQABAAEAAQAEwAEACsAEwATAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABABLAEsASwBLAEsASwBLAEsASwBLABoAGQAZAB4AUABQAAQAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQABMAUAAEAAQABAAEAAQABAAEAB4AHgAEAAQABAAEAAQABABQAFAABAAEAB4ABAAEAAQABABQAFAASwBLAEsASwBLAEsASwBLAEsASwBQAFAAUAAeAB4AUAAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwAeAFAABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEAAQABAAEAFAAKwArACsAKwArACsAKwArACsAKwArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEAAQAUABQAB4AHgAYABMAUAArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAFAABAAEAAQABAAEAFAABAAEAAQAUAAEAAQABAAEAAQAKwArAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAArACsAHgArAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAeAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABABQAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAFAABAAEAAQABAAEAAQABABQAFAAUABQAFAAUABQAFAAUABQAAQABAANAA0ASwBLAEsASwBLAEsASwBLAEsASwAeAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAAQAKwBQAFAAUABQAFAAUABQAFAAKwArAFAAUAArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUAArAFAAKwArACsAUABQAFAAUAArACsABABQAAQABAAEAAQABAAEAAQAKwArAAQABAArACsABAAEAAQAUAArACsAKwArACsAKwArACsABAArACsAKwArAFAAUAArAFAAUABQAAQABAArACsASwBLAEsASwBLAEsASwBLAEsASwBQAFAAGgAaAFAAUABQAFAAUABMAB4AGwBQAB4AKwArACsABAAEAAQAKwBQAFAAUABQAFAAUAArACsAKwArAFAAUAArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUAArAFAAUAArAFAAUAArAFAAUAArACsABAArAAQABAAEAAQABAArACsAKwArAAQABAArACsABAAEAAQAKwArACsABAArACsAKwArACsAKwArAFAAUABQAFAAKwBQACsAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwAEAAQAUABQAFAABAArACsAKwArACsAKwArACsAKwArACsABAAEAAQAKwBQAFAAUABQAFAAUABQAFAAUAArAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUAArAFAAUAArAFAAUABQAFAAUAArACsABABQAAQABAAEAAQABAAEAAQABAArAAQABAAEACsABAAEAAQAKwArAFAAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAUABQAAQABAArACsASwBLAEsASwBLAEsASwBLAEsASwAeABsAKwArACsAKwArACsAKwBQAAQABAAEAAQABAAEACsABAAEAAQAKwBQAFAAUABQAFAAUABQAFAAKwArAFAAUAArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQAKwArAAQABAArACsABAAEAAQAKwArACsAKwArACsAKwArAAQABAArACsAKwArAFAAUAArAFAAUABQAAQABAArACsASwBLAEsASwBLAEsASwBLAEsASwAeAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwAEAFAAKwBQAFAAUABQAFAAUAArACsAKwBQAFAAUAArAFAAUABQAFAAKwArACsAUABQACsAUAArAFAAUAArACsAKwBQAFAAKwArACsAUABQAFAAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwAEAAQABAAEAAQAKwArACsABAAEAAQAKwAEAAQABAAEACsAKwBQACsAKwArACsAKwArAAQAKwArACsAKwArACsAKwArACsAKwBLAEsASwBLAEsASwBLAEsASwBLAFAAUABQAB4AHgAeAB4AHgAeABsAHgArACsAKwArACsABAAEAAQABAArAFAAUABQAFAAUABQAFAAUAArAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArAFAABAAEAAQABAAEAAQABAArAAQABAAEACsABAAEAAQABAArACsAKwArACsAKwArAAQABAArAFAAUABQACsAKwArACsAKwBQAFAABAAEACsAKwBLAEsASwBLAEsASwBLAEsASwBLACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAB4AUAAEAAQABAArAFAAUABQAFAAUABQAFAAUAArAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQACsAKwAEAFAABAAEAAQABAAEAAQABAArAAQABAAEACsABAAEAAQABAArACsAKwArACsAKwArAAQABAArACsAKwArACsAKwArAFAAKwBQAFAABAAEACsAKwBLAEsASwBLAEsASwBLAEsASwBLACsAUABQACsAKwArACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAFAABAAEAAQABAAEAAQABAArAAQABAAEACsABAAEAAQABABQAB4AKwArACsAKwBQAFAAUAAEAFAAUABQAFAAUABQAFAAUABQAFAABAAEACsAKwBLAEsASwBLAEsASwBLAEsASwBLAFAAUABQAFAAUABQAFAAUABQABoAUABQAFAAUABQAFAAKwArAAQABAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUABQACsAUAArACsAUABQAFAAUABQAFAAUAArACsAKwAEACsAKwArACsABAAEAAQABAAEAAQAKwAEACsABAAEAAQABAAEAAQABAAEACsAKwArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArAAQABAAeACsAKwArACsAKwArACsAKwArACsAKwArAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXAAqAFwAXAAqACoAKgAqACoAKgAqACsAKwArACsAGwBcAFwAXABcAFwAXABcACoAKgAqACoAKgAqACoAKgAeAEsASwBLAEsASwBLAEsASwBLAEsADQANACsAKwArACsAKwBcAFwAKwBcACsAKwBcAFwAKwBcACsAKwBcACsAKwArACsAKwArAFwAXABcAFwAKwBcAFwAXABcAFwAXABcACsAXABcAFwAKwBcACsAXAArACsAXABcACsAXABcAFwAXAAqAFwAXAAqACoAKgAqACoAKgArACoAKgBcACsAKwBcAFwAXABcAFwAKwBcACsAKgAqACoAKgAqACoAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArAFwAXABcAFwAUAAOAA4ADgAOAB4ADgAOAAkADgAOAA0ACQATABMAEwATABMACQAeABMAHgAeAB4ABAAEAB4AHgAeAB4AHgAeAEsASwBLAEsASwBLAEsASwBLAEsAUABQAFAAUABQAFAAUABQAFAAUAANAAQAHgAEAB4ABAAWABEAFgARAAQABABQAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAANAAQABAAEAAQABAANAAQABABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEAAQABAAEACsABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsADQANAB4AHgAeAB4AHgAeAAQAHgAeAB4AHgAeAB4AKwAeAB4ADgAOAA0ADgAeAB4AHgAeAB4ACQAJACsAKwArACsAKwBcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqAFwASwBLAEsASwBLAEsASwBLAEsASwANAA0AHgAeAB4AHgBcAFwAXABcAFwAXAAqACoAKgAqAFwAXABcAFwAKgAqACoAXAAqACoAKgBcAFwAKgAqACoAKgAqACoAKgBcAFwAXAAqACoAKgAqAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAKgAqACoAKgAqACoAKgAqACoAKgAqACoAXAAqAEsASwBLAEsASwBLAEsASwBLAEsAKgAqACoAKgAqACoAUABQAFAAUABQAFAAKwBQACsAKwArACsAKwBQACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAeAFAAUABQAFAAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAUABQAFAAUABQAFAAUABQAFAAKwBQAFAAUABQACsAKwBQAFAAUABQAFAAUABQACsAUAArAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUAArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUAArACsAUABQAFAAUABQAFAAUAArAFAAKwBQAFAAUABQACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwAEAAQABAAeAA0AHgAeAB4AHgAeAB4AHgBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAeAB4AHgAeAB4AHgAeAB4AHgAeACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArAFAAUABQAFAAUABQACsAKwANAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAeAB4AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAA0AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQABYAEQArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAADQANAA0AUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAABAAEAAQAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAA0ADQArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQAKwArACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQACsABAAEACsAKwArACsAKwArACsAKwArACsAKwArAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXAAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoADQANABUAXAANAB4ADQAbAFwAKgArACsASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwArAB4AHgATABMADQANAA4AHgATABMAHgAEAAQABAAJACsASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAUABQAFAAUABQAAQABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABABQACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsAKwArACsABAAEAAQABAAEAAQABAAEAAQABAAEAAQAKwArACsAKwAeACsAKwArABMAEwBLAEsASwBLAEsASwBLAEsASwBLAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcACsAKwBcAFwAXABcAFwAKwArACsAKwArACsAKwArACsAKwArAFwAXABcAFwAXABcAFwAXABcAFwAXABcACsAKwArACsAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwBcACsAKwArACoAKgBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAAQABAAEACsAKwAeAB4AXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAKgAqACoAKgAqACoAKgAqACoAKgArACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgArACsABABLAEsASwBLAEsASwBLAEsASwBLACsAKwArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArACsAKwArACsAKgAqACoAKgAqACoAKgBcACoAKgAqACoAKgAqACsAKwAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArAAQABAAEAAQABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQAUABQAFAAUABQAFAAUAArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsADQANAB4ADQANAA0ADQAeAB4AHgAeAB4AHgAeAB4AHgAeAAQABAAEAAQABAAEAAQABAAEAB4AHgAeAB4AHgAeAB4AHgAeACsAKwArAAQABAAEAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAUABQAEsASwBLAEsASwBLAEsASwBLAEsAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArACsAKwArACsAKwArACsAHgAeAB4AHgBQAFAAUABQAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArACsAKwANAA0ADQANAA0ASwBLAEsASwBLAEsASwBLAEsASwArACsAKwBQAFAAUABLAEsASwBLAEsASwBLAEsASwBLAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAANAA0AUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAB4AHgAeAB4AHgAeAB4AHgArACsAKwArACsAKwArACsABAAEAAQAHgAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAFAAUABQAFAABABQAFAAUABQAAQABAAEAFAAUAAEAAQABAArACsAKwArACsAKwAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAKwAEAAQABAAEAAQAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArACsAUABQAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUAArAFAAKwBQACsAUAArAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACsAHgAeAB4AHgAeAB4AHgAeAFAAHgAeAB4AUABQAFAAKwAeAB4AHgAeAB4AHgAeAB4AHgAeAFAAUABQAFAAKwArAB4AHgAeAB4AHgAeACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArACsAUABQAFAAKwAeAB4AHgAeAB4AHgAeAA4AHgArAA0ADQANAA0ADQANAA0ACQANAA0ADQAIAAQACwAEAAQADQAJAA0ADQAMAB0AHQAeABcAFwAWABcAFwAXABYAFwAdAB0AHgAeABQAFAAUAA0AAQABAAQABAAEAAQABAAJABoAGgAaABoAGgAaABoAGgAeABcAFwAdABUAFQAeAB4AHgAeAB4AHgAYABYAEQAVABUAFQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgANAB4ADQANAA0ADQAeAA0ADQANAAcAHgAeAB4AHgArAAQABAAEAAQABAAEAAQABAAEAAQAUABQACsAKwBPAFAAUABQAFAAUAAeAB4AHgAWABEATwBQAE8ATwBPAE8AUABQAFAAUABQAB4AHgAeABYAEQArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAGwAbABsAGwAbABsAGwAaABsAGwAbABsAGwAbABsAGwAbABsAGwAbABsAGwAaABsAGwAbABsAGgAbABsAGgAbABsAGwAbABsAGwAbABsAGwAbABsAGwAbABsAGwAbABsABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAB4AHgBQABoAHgAdAB4AUAAeABoAHgAeAB4AHgAeAB4AHgAeAB4ATwAeAFAAGwAeAB4AUABQAFAAUABQAB4AHgAeAB0AHQAeAFAAHgBQAB4AUAAeAFAATwBQAFAAHgAeAB4AHgAeAB4AHgBQAFAAUABQAFAAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgBQAB4AUABQAFAAUABPAE8AUABQAFAAUABQAE8AUABQAE8AUABPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBQAFAAUABQAE8ATwBPAE8ATwBPAE8ATwBPAE8AUABQAFAAUABQAFAAUABQAFAAHgAeAFAAUABQAFAATwAeAB4AKwArACsAKwAdAB0AHQAdAB0AHQAdAB0AHQAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAdAB4AHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHQAeAB0AHQAeAB4AHgAdAB0AHgAeAB0AHgAeAB4AHQAeAB0AGwAbAB4AHQAeAB4AHgAeAB0AHgAeAB0AHQAdAB0AHgAeAB0AHgAdAB4AHQAdAB0AHQAdAB0AHgAdAB4AHgAeAB4AHgAdAB0AHQAdAB4AHgAeAB4AHQAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHQAeAB4AHgAdAB4AHgAeAB4AHgAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHQAdAB4AHgAdAB0AHQAdAB4AHgAdAB0AHgAeAB0AHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAdAB0AHgAeAB0AHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB0AHgAeAB4AHQAeAB4AHgAeAB4AHgAeAB0AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeABQAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAWABEAFgARAB4AHgAeAB4AHgAeAB0AHgAeAB4AHgAeAB4AHgAlACUAHgAeAB4AHgAeAB4AHgAeAB4AFgARAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACUAJQAlACUAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBQAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB4AHgAeAB4AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHgAeAB0AHQAdAB0AHgAeAB4AHgAeAB4AHgAeAB4AHgAdAB0AHgAdAB0AHQAdAB0AHQAdAB4AHgAeAB4AHgAeAB4AHgAdAB0AHgAeAB0AHQAeAB4AHgAeAB0AHQAeAB4AHgAeAB0AHQAdAB4AHgAdAB4AHgAdAB0AHQAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHQAdAB0AHQAeAB4AHgAeAB4AHgAeAB4AHgAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AJQAlACUAJQAeAB0AHQAeAB4AHQAeAB4AHgAeAB0AHQAeAB4AHgAeACUAJQAdAB0AJQAeACUAJQAlACAAJQAlAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AJQAlACUAHgAeAB4AHgAdAB4AHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHQAdAB4AHQAdAB0AHgAdACUAHQAdAB4AHQAdAB4AHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAlAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB0AHQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AJQAlACUAJQAlACUAJQAlACUAJQAlACUAHQAdAB0AHQAlAB4AJQAlACUAHQAlACUAHQAdAB0AJQAlAB0AHQAlAB0AHQAlACUAJQAeAB0AHgAeAB4AHgAdAB0AJQAdAB0AHQAdAB0AHQAlACUAJQAlACUAHQAlACUAIAAlAB0AHQAlACUAJQAlACUAJQAlACUAHgAeAB4AJQAlACAAIAAgACAAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAdAB4AHgAeABcAFwAXABcAFwAXAB4AEwATACUAHgAeAB4AFgARABYAEQAWABEAFgARABYAEQAWABEAFgARAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAWABEAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AFgARABYAEQAWABEAFgARABYAEQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeABYAEQAWABEAFgARABYAEQAWABEAFgARABYAEQAWABEAFgARABYAEQAWABEAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AFgARABYAEQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeABYAEQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHQAdAB0AHQAdAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwAeAB4AHgAeAB4AHgAeAB4AHgArACsAKwArACsAKwArACsAKwArACsAKwArAB4AHgAeAB4AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAEAAQABAAeAB4AKwArACsAKwArABMADQANAA0AUAATAA0AUABQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAUAANACsAKwArACsAKwArACsAKwArACsAKwArACsAKwAEAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQACsAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXAA0ADQANAA0ADQANAA0ADQAeAA0AFgANAB4AHgAXABcAHgAeABcAFwAWABEAFgARABYAEQAWABEADQANAA0ADQATAFAADQANAB4ADQANAB4AHgAeAB4AHgAMAAwADQANAA0AHgANAA0AFgANAA0ADQANAA0ADQANACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACsAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAKwArACsAKwArACsAKwArACsAKwArACsAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwAlACUAJQAlACUAJQAlACUAJQAlACUAJQArACsAKwArAA0AEQARACUAJQBHAFcAVwAWABEAFgARABYAEQAWABEAFgARACUAJQAWABEAFgARABYAEQAWABEAFQAWABEAEQAlAFcAVwBXAFcAVwBXAFcAVwBXAAQABAAEAAQABAAEACUAVwBXAFcAVwA2ACUAJQBXAFcAVwBHAEcAJQAlACUAKwBRAFcAUQBXAFEAVwBRAFcAUQBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFEAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBRAFcAUQBXAFEAVwBXAFcAVwBXAFcAUQBXAFcAVwBXAFcAVwBRAFEAKwArAAQABAAVABUARwBHAFcAFQBRAFcAUQBXAFEAVwBRAFcAUQBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFEAVwBRAFcAUQBXAFcAVwBXAFcAVwBRAFcAVwBXAFcAVwBXAFEAUQBXAFcAVwBXABUAUQBHAEcAVwArACsAKwArACsAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAKwArAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwArACUAJQBXAFcAVwBXACUAJQAlACUAJQAlACUAJQAlACUAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAKwArACsAKwArACUAJQAlACUAKwArACsAKwArACsAKwArACsAKwArACsAUQBRAFEAUQBRAFEAUQBRAFEAUQBRAFEAUQBRAFEAUQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACsAVwBXAFcAVwBXAFcAVwBXAFcAVwAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlAE8ATwBPAE8ATwBPAE8ATwAlAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXACUAJQAlACUAJQAlACUAJQAlACUAVwBXAFcAVwBXAFcAVwBXAFcAVwBXACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAEcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAKwArACsAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAADQATAA0AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABLAEsASwBLAEsASwBLAEsASwBLAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAFAABAAEAAQABAAeAAQABAAEAAQABAAEAAQABAAEAAQAHgBQAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AUABQAAQABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAeAA0ADQANAA0ADQArACsAKwArACsAKwArACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAFAAUABQAFAAUABQAFAAUABQAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AUAAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgBQAB4AHgAeAB4AHgAeAFAAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArAB4AHgAeAB4AHgAeAB4AHgArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAAQAUABQAFAABABQAFAAUABQAAQAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAeAB4AHgAeACsAKwArACsAUABQAFAAUABQAFAAHgAeABoAHgArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAADgAOABMAEwArACsAKwArACsAKwArACsABAAEAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAEACsAKwArACsAKwArACsAKwANAA0ASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArACsAKwAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABABQAFAAUABQAFAAUAAeAB4AHgBQAA4AUAArACsAUABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEAA0ADQBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAKwArACsAKwArACsAKwArACsAKwArAB4AWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYAFgAWABYACsAKwArAAQAHgAeAB4AHgAeAB4ADQANAA0AHgAeAB4AHgArAFAASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArAB4AHgBcAFwAXABcAFwAKgBcAFwAXABcAFwAXABcAFwAXABcAEsASwBLAEsASwBLAEsASwBLAEsAXABcAFwAXABcACsAUABQAFAAUABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsAKwArACsAKwArACsAKwArAFAAUABQAAQAUABQAFAAUABQAFAAUABQAAQABAArACsASwBLAEsASwBLAEsASwBLAEsASwArACsAHgANAA0ADQBcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAKgAqACoAXAAqACoAKgBcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXAAqAFwAKgAqACoAXABcACoAKgBcAFwAXABcAFwAKgAqAFwAKgBcACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAFwAXABcACoAKgBQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAAQABAAEAA0ADQBQAFAAUAAEAAQAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUAArACsAUABQAFAAUABQAFAAKwArAFAAUABQAFAAUABQACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAAQADQAEAAQAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArACsAKwArACsAVABVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBUAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVAFUAVQBVACsAKwArACsAKwArACsAKwArACsAKwArAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAWQBZAFkAKwArACsAKwBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAWgBaAFoAKwArACsAKwAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXACUAJQBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAJQAlACUAJQAlACUAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAKwArACsAKwArAFYABABWAFYAVgBWAFYAVgBWAFYAVgBWAB4AVgBWAFYAVgBWAFYAVgBWAFYAVgBWAFYAVgArAFYAVgBWAFYAVgArAFYAKwBWAFYAKwBWAFYAKwBWAFYAVgBWAFYAVgBWAFYAVgBWAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAEQAWAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUAAaAB4AKwArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAGAARABEAGAAYABMAEwAWABEAFAArACsAKwArACsAKwAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACUAJQAlACUAJQAWABEAFgARABYAEQAWABEAFgARABYAEQAlACUAFgARACUAJQAlACUAJQAlACUAEQAlABEAKwAVABUAEwATACUAFgARABYAEQAWABEAJQAlACUAJQAlACUAJQAlACsAJQAbABoAJQArACsAKwArAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArAAcAKwATACUAJQAbABoAJQAlABYAEQAlACUAEQAlABEAJQBXAFcAVwBXAFcAVwBXAFcAVwBXABUAFQAlACUAJQATACUAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXABYAJQARACUAJQAlAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwAWACUAEQAlABYAEQARABYAEQARABUAVwBRAFEAUQBRAFEAUQBRAFEAUQBRAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAEcARwArACsAVwBXAFcAVwBXAFcAKwArAFcAVwBXAFcAVwBXACsAKwBXAFcAVwBXAFcAVwArACsAVwBXAFcAKwArACsAGgAbACUAJQAlABsAGwArAB4AHgAeAB4AHgAeAB4AKwArACsAKwArACsAKwArACsAKwAEAAQABAAQAB0AKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwBQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsADQANAA0AKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArAB4AHgAeAB4AHgAeAB4AHgAeAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgBQAFAAHgAeAB4AKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArACsAKwArAB4AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4ABAArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAAQAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsADQBQAFAAUABQACsAKwArACsAUABQAFAAUABQAFAAUABQAA0AUABQAFAAUABQACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwArAB4AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUAArACsAUAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQACsAKwArAFAAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAA0AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAB4AHgBQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsADQBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArAB4AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwBQAFAAUABQAFAABAAEAAQAKwAEAAQAKwArACsAKwArAAQABAAEAAQAUABQAFAAUAArAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsABAAEAAQAKwArACsAKwAEAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsADQANAA0ADQANAA0ADQANAB4AKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAB4AUABQAFAAUABQAFAAUABQAB4AUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEACsAKwArACsAUABQAFAAUABQAA0ADQANAA0ADQANABQAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwANAA0ADQANAA0ADQANAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAHgAeAB4AHgArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwBQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAA0ADQAeAB4AHgAeAB4AKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAEsASwBLAEsASwBLAEsASwBLAEsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAEAAQABAAEAAQABAAeAB4AHgANAA0ADQANACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwBLAEsASwBLAEsASwBLAEsASwBLACsAKwArACsAKwArAFAAUABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsASwBLAEsASwBLAEsASwBLAEsASwANAA0ADQANACsAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAeAA4AUAArACsAKwArACsAKwArACsAKwAEAFAAUABQAFAADQANAB4ADQAeAAQABAAEAB4AKwArAEsASwBLAEsASwBLAEsASwBLAEsAUAAOAFAADQANAA0AKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAAQABAAEAAQABAANAA0AHgANAA0AHgAEACsAUABQAFAAUABQAFAAUAArAFAAKwBQAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQAA0AKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAAQABAAEAAQAKwArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArACsAKwArACsABAAEAAQABAArAFAAUABQAFAAUABQAFAAUAArACsAUABQACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAArACsABAAEACsAKwAEAAQABAArACsAUAArACsAKwArACsAKwAEACsAKwArACsAKwBQAFAAUABQAFAABAAEACsAKwAEAAQABAAEAAQABAAEACsAKwArAAQABAAEAAQABAArACsAKwArACsAKwArACsAKwArACsABAAEAAQABAAEAAQABABQAFAAUABQAA0ADQANAA0AHgBLAEsASwBLAEsASwBLAEsASwBLACsADQArAB4AKwArAAQABAAEAAQAUABQAB4AUAArACsAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEACsAKwAEAAQABAAEAAQABAAEAAQABAAOAA0ADQATABMAHgAeAB4ADQANAA0ADQANAA0ADQANAA0ADQANAA0ADQANAA0AUABQAFAAUAAEAAQAKwArAAQADQANAB4AUAArACsAKwArACsAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArACsAKwAOAA4ADgAOAA4ADgAOAA4ADgAOAA4ADgAOACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXABcAFwAXAArACsAKwAqACoAKgAqACoAKgAqACoAKgAqACoAKgAqACoAKgArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAXABcAA0ADQANACoASwBLAEsASwBLAEsASwBLAEsASwBQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwBQAFAABAAEAAQABAAEAAQABAAEAAQABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAFAABAAEAAQABAAOAB4ADQANAA0ADQAOAB4ABAArACsAKwArACsAKwArACsAUAAEAAQABAAEAAQABAAEAAQABAAEAAQAUABQAFAAUAArACsAUABQAFAAUAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAA0ADQANACsADgAOAA4ADQANACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAABAAEAAQABAAEAAQABAAEACsABAAEAAQABAAEAAQABAAEAFAADQANAA0ADQANACsAKwArACsAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwAOABMAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQACsAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAArACsAKwAEACsABAAEACsABAAEAAQABAAEAAQABABQAAQAKwArACsAKwArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsADQANAA0ADQANACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAASABIAEgAQwBDAEMAUABQAFAAUABDAFAAUABQAEgAQwBIAEMAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAASABDAEMAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABIAEMAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAEsASwBLAEsASwBLAEsASwBLAEsAKwArACsAKwANAA0AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArAAQABAAEAAQABAANACsAKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAEAAQABAAEAAQABAAEAA0ADQANAB4AHgAeAB4AHgAeAFAAUABQAFAADQAeACsAKwArACsAKwArACsAKwArACsASwBLAEsASwBLAEsASwBLAEsASwArAFAAUABQAFAAUABQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAUAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsABAAEAAQABABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAEcARwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwArACsAKwArACsAKwArACsAKwArACsAKwArAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwBQAFAAUABQAFAAUABQAFAAUABQACsAKwAeAAQABAANAAQABAAEAAQAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACsAKwArACsAKwArACsAKwArACsAHgAeAB4AHgAeAB4AHgArACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4ABAAEAAQABAAEAB4AHgAeAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAHgAeAAQABAAEAAQABAAEAAQAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAEAAQABAAEAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAB4AHgAEAAQABAAeACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwArACsAKwArACsAKwArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAKwArACsAKwArACsAKwArACsAKwArACsAKwArAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArAFAAUAArACsAUAArACsAUABQACsAKwBQAFAAUABQACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AKwBQACsAUABQAFAAUABQAFAAUAArAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAKwAeAB4AUABQAFAAUABQACsAUAArACsAKwBQAFAAUABQAFAAUABQACsAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgArACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAAeAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAFAAUABQAFAAUABQAFAAUABQAFAAUAAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAHgAeAB4AHgAeAB4AHgAeAB4AKwArAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsASwBLAEsABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAB4AHgAeAB4ABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAB4AHgAeAB4AHgAeAB4AHgAEAB4AHgAeAB4AHgAeAB4AHgAeAB4ABAAeAB4ADQANAA0ADQAeACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAAQABAAEAAQABAArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsABAAEAAQABAAEAAQABAArAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArACsABAAEAAQABAAEAAQABAArAAQABAArAAQABAAEAAQABAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwBQAFAAUABQAFAAKwArAFAAUABQAFAAUABQAFAAUABQAAQABAAEAAQABAAEAAQAKwArACsAKwArACsAKwArACsAHgAeAB4AHgAEAAQABAAEAAQABAAEACsAKwArACsAKwBLAEsASwBLAEsASwBLAEsASwBLACsAKwArACsAFgAWAFAAUABQAFAAKwBQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArAFAAUAArAFAAKwArAFAAKwBQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUAArAFAAKwBQACsAKwArACsAKwArAFAAKwArACsAKwBQACsAUAArAFAAKwBQAFAAUAArAFAAUAArAFAAKwArAFAAKwBQACsAUAArAFAAKwBQACsAUABQACsAUAArACsAUABQAFAAUAArAFAAUABQAFAAUABQAFAAKwBQAFAAUABQACsAUABQAFAAUAArAFAAKwBQAFAAUABQAFAAUABQAFAAUABQACsAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQACsAKwArACsAKwBQAFAAUAArAFAAUABQAFAAUAArAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUABQAFAAUAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArAB4AHgArACsAKwArACsAKwArACsAKwArACsAKwArACsATwBPAE8ATwBPAE8ATwBPAE8ATwBPAE8ATwAlACUAJQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAeACUAHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHgAeACUAJQAlACUAHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdAB0AHQAdACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACkAKQApACkAKQApACkAKQApACkAKQApACkAKQApACkAKQApACkAKQApACkAKQApACkAKQAlACUAJQAlACUAIAAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlAB4AHgAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAHgAeACUAJQAlACUAJQAeACUAJQAlACUAJQAgACAAIAAlACUAIAAlACUAIAAgACAAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAIQAhACEAIQAhACUAJQAgACAAJQAlACAAIAAgACAAIAAgACAAIAAgACAAIAAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAIAAgACAAIAAlACUAJQAlACAAJQAgACAAIAAgACAAIAAgACAAIAAlACUAJQAgACUAJQAlACUAIAAgACAAJQAgACAAIAAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAeACUAHgAlAB4AJQAlACUAJQAlACAAJQAlACUAJQAeACUAHgAeACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAHgAeAB4AHgAeAB4AHgAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlAB4AHgAeAB4AHgAeAB4AHgAeAB4AJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAIAAgACUAJQAlACUAIAAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAIAAlACUAJQAlACAAIAAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAeAB4AHgAeAB4AHgAeAB4AJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlAB4AHgAeAB4AHgAeACUAJQAlACUAJQAlACUAIAAgACAAJQAlACUAIAAgACAAIAAgAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AFwAXABcAFQAVABUAHgAeAB4AHgAlACUAJQAgACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAIAAgACAAJQAlACUAJQAlACUAJQAlACUAIAAlACUAJQAlACUAJQAlACUAJQAlACUAIAAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAlACUAJQAlACUAJQAlACUAJQAlACUAJQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAlACUAJQAlAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AJQAlACUAJQAlACUAJQAlAB4AHgAeAB4AHgAeAB4AHgAeAB4AJQAlACUAJQAlACUAHgAeAB4AHgAeAB4AHgAeACUAJQAlACUAJQAlACUAJQAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeAB4AHgAeACUAJQAlACUAJQAlACUAJQAlACUAJQAlACAAIAAgACAAIAAlACAAIAAlACUAJQAlACUAJQAgACUAJQAlACUAJQAlACUAJQAlACAAIAAgACAAIAAgACAAIAAgACAAJQAlACUAIAAgACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACsAKwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAJQAlACUAJQAlACUAJQAlACUAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAJQAlACUAJQAlACUAJQAlACUAJQAlAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAVwBXAFcAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQAlACUAJQArAAQAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsAKwArACsA';
-
-    var LineBreak = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.LineBreaker = exports.inlineBreakOpportunities = exports.lineBreakAtIndex = exports.codePointsToCharacterClasses = exports.UnicodeTrie = exports.BREAK_ALLOWED = exports.BREAK_NOT_ALLOWED = exports.BREAK_MANDATORY = exports.classes = exports.LETTER_NUMBER_MODIFIER = undefined;
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-    var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-
-
-
-
-    var _linebreakTrie2 = _interopRequireDefault(linebreakTrie);
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var LETTER_NUMBER_MODIFIER = exports.LETTER_NUMBER_MODIFIER = 50;
-
-    // Non-tailorable Line Breaking Classes
-    var BK = 1; //  Cause a line break (after)
-    var CR = 2; //  Cause a line break (after), except between CR and LF
-    var LF = 3; //  Cause a line break (after)
-    var CM = 4; //  Prohibit a line break between the character and the preceding character
-    var NL = 5; //  Cause a line break (after)
-    var SG = 6; //  Do not occur in well-formed text
-    var WJ = 7; //  Prohibit line breaks before and after
-    var ZW = 8; //  Provide a break opportunity
-    var GL = 9; //  Prohibit line breaks before and after
-    var SP = 10; // Enable indirect line breaks
-    var ZWJ = 11; // Prohibit line breaks within joiner sequences
-    // Break Opportunities
-    var B2 = 12; //  Provide a line break opportunity before and after the character
-    var BA = 13; //  Generally provide a line break opportunity after the character
-    var BB = 14; //  Generally provide a line break opportunity before the character
-    var HY = 15; //  Provide a line break opportunity after the character, except in numeric context
-    var CB = 16; //   Provide a line break opportunity contingent on additional information
-    // Characters Prohibiting Certain Breaks
-    var CL = 17; //  Prohibit line breaks before
-    var CP = 18; //  Prohibit line breaks before
-    var EX = 19; //  Prohibit line breaks before
-    var IN = 20; //  Allow only indirect line breaks between pairs
-    var NS = 21; //  Allow only indirect line breaks before
-    var OP = 22; //  Prohibit line breaks after
-    var QU = 23; //  Act like they are both opening and closing
-    // Numeric Context
-    var IS = 24; //  Prevent breaks after any and before numeric
-    var NU = 25; //  Form numeric expressions for line breaking purposes
-    var PO = 26; //  Do not break following a numeric expression
-    var PR = 27; //  Do not break in front of a numeric expression
-    var SY = 28; //  Prevent a break before; and allow a break after
-    // Other Characters
-    var AI = 29; //  Act like AL when the resolvedEAW is N; otherwise; act as ID
-    var AL = 30; //  Are alphabetic characters or symbols that are used with alphabetic characters
-    var CJ = 31; //  Treat as NS or ID for strict or normal breaking.
-    var EB = 32; //  Do not break from following Emoji Modifier
-    var EM = 33; //  Do not break from preceding Emoji Base
-    var H2 = 34; //  Form Korean syllable blocks
-    var H3 = 35; //  Form Korean syllable blocks
-    var HL = 36; //  Do not break around a following hyphen; otherwise act as Alphabetic
-    var ID = 37; //  Break before or after; except in some numeric context
-    var JL = 38; //  Form Korean syllable blocks
-    var JV = 39; //  Form Korean syllable blocks
-    var JT = 40; //  Form Korean syllable blocks
-    var RI = 41; //  Keep pairs together. For pairs; break before and after other classes
-    var SA = 42; //  Provide a line break opportunity contingent on additional, language-specific context analysis
-    var XX = 43; //  Have as yet unknown line breaking behavior or unassigned code positions
-
-    var classes = exports.classes = {
-        BK: BK,
-        CR: CR,
-        LF: LF,
-        CM: CM,
-        NL: NL,
-        SG: SG,
-        WJ: WJ,
-        ZW: ZW,
-        GL: GL,
-        SP: SP,
-        ZWJ: ZWJ,
-        B2: B2,
-        BA: BA,
-        BB: BB,
-        HY: HY,
-        CB: CB,
-        CL: CL,
-        CP: CP,
-        EX: EX,
-        IN: IN,
-        NS: NS,
-        OP: OP,
-        QU: QU,
-        IS: IS,
-        NU: NU,
-        PO: PO,
-        PR: PR,
-        SY: SY,
-        AI: AI,
-        AL: AL,
-        CJ: CJ,
-        EB: EB,
-        EM: EM,
-        H2: H2,
-        H3: H3,
-        HL: HL,
-        ID: ID,
-        JL: JL,
-        JV: JV,
-        JT: JT,
-        RI: RI,
-        SA: SA,
-        XX: XX
-    };
-
-    var BREAK_MANDATORY = exports.BREAK_MANDATORY = '!';
-    var BREAK_NOT_ALLOWED = exports.BREAK_NOT_ALLOWED = '×';
-    var BREAK_ALLOWED = exports.BREAK_ALLOWED = '÷';
-    var UnicodeTrie = exports.UnicodeTrie = (0, Trie_1.createTrieFromBase64)(_linebreakTrie2.default);
-
-    var ALPHABETICS = [AL, HL];
-    var HARD_LINE_BREAKS = [BK, CR, LF, NL];
-    var SPACE = [SP, ZW];
-    var PREFIX_POSTFIX = [PR, PO];
-    var LINE_BREAKS = HARD_LINE_BREAKS.concat(SPACE);
-    var KOREAN_SYLLABLE_BLOCK = [JL, JV, JT, H2, H3];
-    var HYPHEN = [HY, BA];
-
-    var codePointsToCharacterClasses = exports.codePointsToCharacterClasses = function codePointsToCharacterClasses(codePoints) {
-        var lineBreak = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'strict';
-
-        var types = [];
-        var indicies = [];
-        var categories = [];
-        codePoints.forEach(function (codePoint, index) {
-            var classType = UnicodeTrie.get(codePoint);
-            if (classType > LETTER_NUMBER_MODIFIER) {
-                categories.push(true);
-                classType -= LETTER_NUMBER_MODIFIER;
-            } else {
-                categories.push(false);
-            }
-
-            if (['normal', 'auto', 'loose'].indexOf(lineBreak) !== -1) {
-                // U+2010, – U+2013, 〜 U+301C, ゠ U+30A0
-                if ([0x2010, 0x2013, 0x301c, 0x30a0].indexOf(codePoint) !== -1) {
-                    indicies.push(index);
-                    return types.push(CB);
-                }
-            }
-
-            if (classType === CM || classType === ZWJ) {
-                // LB10 Treat any remaining combining mark or ZWJ as AL.
-                if (index === 0) {
-                    indicies.push(index);
-                    return types.push(AL);
-                }
-
-                // LB9 Do not break a combining character sequence; treat it as if it has the line breaking class of
-                // the base character in all of the following rules. Treat ZWJ as if it were CM.
-                var prev = types[index - 1];
-                if (LINE_BREAKS.indexOf(prev) === -1) {
-                    indicies.push(indicies[index - 1]);
-                    return types.push(prev);
-                }
-                indicies.push(index);
-                return types.push(AL);
-            }
-
-            indicies.push(index);
-
-            if (classType === CJ) {
-                return types.push(lineBreak === 'strict' ? NS : ID);
-            }
-
-            if (classType === SA) {
-                return types.push(AL);
-            }
-
-            if (classType === AI) {
-                return types.push(AL);
-            }
-
-            // For supplementary characters, a useful default is to treat characters in the range 10000..1FFFD as AL
-            // and characters in the ranges 20000..2FFFD and 30000..3FFFD as ID, until the implementation can be revised
-            // to take into account the actual line breaking properties for these characters.
-            if (classType === XX) {
-                if (codePoint >= 0x20000 && codePoint <= 0x2fffd || codePoint >= 0x30000 && codePoint <= 0x3fffd) {
-                    return types.push(ID);
-                } else {
-                    return types.push(AL);
-                }
-            }
-
-            types.push(classType);
-        });
-
-        return [indicies, types, categories];
-    };
-
-    var isAdjacentWithSpaceIgnored = function isAdjacentWithSpaceIgnored(a, b, currentIndex, classTypes) {
-        var current = classTypes[currentIndex];
-        if (Array.isArray(a) ? a.indexOf(current) !== -1 : a === current) {
-            var i = currentIndex;
-            while (i <= classTypes.length) {
-                i++;
-                var next = classTypes[i];
-
-                if (next === b) {
-                    return true;
-                }
-
-                if (next !== SP) {
-                    break;
-                }
-            }
-        }
-
-        if (current === SP) {
-            var _i = currentIndex;
-
-            while (_i > 0) {
-                _i--;
-                var prev = classTypes[_i];
-
-                if (Array.isArray(a) ? a.indexOf(prev) !== -1 : a === prev) {
-                    var n = currentIndex;
-                    while (n <= classTypes.length) {
-                        n++;
-                        var _next = classTypes[n];
-
-                        if (_next === b) {
-                            return true;
-                        }
-
-                        if (_next !== SP) {
-                            break;
-                        }
-                    }
-                }
-
-                if (prev !== SP) {
-                    break;
-                }
-            }
-        }
-        return false;
-    };
-
-    var previousNonSpaceClassType = function previousNonSpaceClassType(currentIndex, classTypes) {
-        var i = currentIndex;
-        while (i >= 0) {
-            var type = classTypes[i];
-            if (type === SP) {
-                i--;
-            } else {
-                return type;
-            }
-        }
-        return 0;
-    };
-
-    var _lineBreakAtIndex = function _lineBreakAtIndex(codePoints, classTypes, indicies, index, forbiddenBreaks) {
-        if (indicies[index] === 0) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        var currentIndex = index - 1;
-        if (Array.isArray(forbiddenBreaks) && forbiddenBreaks[currentIndex] === true) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        var beforeIndex = currentIndex - 1;
-        var afterIndex = currentIndex + 1;
-        var current = classTypes[currentIndex];
-
-        // LB4 Always break after hard line breaks.
-        // LB5 Treat CR followed by LF, as well as CR, LF, and NL as hard line breaks.
-        var before = beforeIndex >= 0 ? classTypes[beforeIndex] : 0;
-        var next = classTypes[afterIndex];
-
-        if (current === CR && next === LF) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        if (HARD_LINE_BREAKS.indexOf(current) !== -1) {
-            return BREAK_MANDATORY;
-        }
-
-        // LB6 Do not break before hard line breaks.
-        if (HARD_LINE_BREAKS.indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB7 Do not break before spaces or zero width space.
-        if (SPACE.indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB8 Break before any character following a zero-width space, even if one or more spaces intervene.
-        if (previousNonSpaceClassType(currentIndex, classTypes) === ZW) {
-            return BREAK_ALLOWED;
-        }
-
-        // LB8a Do not break between a zero width joiner and an ideograph, emoji base or emoji modifier.
-        if (UnicodeTrie.get(codePoints[currentIndex]) === ZWJ && (next === ID || next === EB || next === EM)) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB11 Do not break before or after Word joiner and related characters.
-        if (current === WJ || next === WJ) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB12 Do not break after NBSP and related characters.
-        if (current === GL) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB12a Do not break before NBSP and related characters, except after spaces and hyphens.
-        if ([SP, BA, HY].indexOf(current) === -1 && next === GL) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB13 Do not break before ‘]’ or ‘!’ or ‘;’ or ‘/’, even after spaces.
-        if ([CL, CP, EX, IS, SY].indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB14 Do not break after ‘[’, even after spaces.
-        if (previousNonSpaceClassType(currentIndex, classTypes) === OP) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB15 Do not break within ‘”[’, even with intervening spaces.
-        if (isAdjacentWithSpaceIgnored(QU, OP, currentIndex, classTypes)) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB16 Do not break between closing punctuation and a nonstarter (lb=NS), even with intervening spaces.
-        if (isAdjacentWithSpaceIgnored([CL, CP], NS, currentIndex, classTypes)) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB17 Do not break within ‘——’, even with intervening spaces.
-        if (isAdjacentWithSpaceIgnored(B2, B2, currentIndex, classTypes)) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB18 Break after spaces.
-        if (current === SP) {
-            return BREAK_ALLOWED;
-        }
-
-        // LB19 Do not break before or after quotation marks, such as ‘ ” ’.
-        if (current === QU || next === QU) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB20 Break before and after unresolved CB.
-        if (next === CB || current === CB) {
-            return BREAK_ALLOWED;
-        }
-
-        // LB21 Do not break before hyphen-minus, other hyphens, fixed-width spaces, small kana, and other non-starters, or after acute accents.
-        if ([BA, HY, NS].indexOf(next) !== -1 || current === BB) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB21a Don't break after Hebrew + Hyphen.
-        if (before === HL && HYPHEN.indexOf(current) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB21b Don’t break between Solidus and Hebrew letters.
-        if (current === SY && next === HL) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB22 Do not break between two ellipses, or between letters, numbers or exclamations and ellipsis.
-        if (next === IN && ALPHABETICS.concat(IN, EX, NU, ID, EB, EM).indexOf(current) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB23 Do not break between digits and letters.
-        if (ALPHABETICS.indexOf(next) !== -1 && current === NU || ALPHABETICS.indexOf(current) !== -1 && next === NU) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB23a Do not break between numeric prefixes and ideographs, or between ideographs and numeric postfixes.
-        if (current === PR && [ID, EB, EM].indexOf(next) !== -1 || [ID, EB, EM].indexOf(current) !== -1 && next === PO) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB24 Do not break between numeric prefix/postfix and letters, or between letters and prefix/postfix.
-        if (ALPHABETICS.indexOf(current) !== -1 && PREFIX_POSTFIX.indexOf(next) !== -1 || PREFIX_POSTFIX.indexOf(current) !== -1 && ALPHABETICS.indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB25 Do not break between the following pairs of classes relevant to numbers:
-        if (
-        // (PR | PO) × ( OP | HY )? NU
-        [PR, PO].indexOf(current) !== -1 && (next === NU || [OP, HY].indexOf(next) !== -1 && classTypes[afterIndex + 1] === NU) ||
-        // ( OP | HY ) × NU
-        [OP, HY].indexOf(current) !== -1 && next === NU ||
-        // NU ×	(NU | SY | IS)
-        current === NU && [NU, SY, IS].indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // NU (NU | SY | IS)* × (NU | SY | IS | CL | CP)
-        if ([NU, SY, IS, CL, CP].indexOf(next) !== -1) {
-            var prevIndex = currentIndex;
-            while (prevIndex >= 0) {
-                var type = classTypes[prevIndex];
-                if (type === NU) {
-                    return BREAK_NOT_ALLOWED;
-                } else if ([SY, IS].indexOf(type) !== -1) {
-                    prevIndex--;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        // NU (NU | SY | IS)* (CL | CP)? × (PO | PR))
-        if ([PR, PO].indexOf(next) !== -1) {
-            var _prevIndex = [CL, CP].indexOf(current) !== -1 ? beforeIndex : currentIndex;
-            while (_prevIndex >= 0) {
-                var _type = classTypes[_prevIndex];
-                if (_type === NU) {
-                    return BREAK_NOT_ALLOWED;
-                } else if ([SY, IS].indexOf(_type) !== -1) {
-                    _prevIndex--;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        // LB26 Do not break a Korean syllable.
-        if (JL === current && [JL, JV, H2, H3].indexOf(next) !== -1 || [JV, H2].indexOf(current) !== -1 && [JV, JT].indexOf(next) !== -1 || [JT, H3].indexOf(current) !== -1 && next === JT) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB27 Treat a Korean Syllable Block the same as ID.
-        if (KOREAN_SYLLABLE_BLOCK.indexOf(current) !== -1 && [IN, PO].indexOf(next) !== -1 || KOREAN_SYLLABLE_BLOCK.indexOf(next) !== -1 && current === PR) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB28 Do not break between alphabetics (“at”).
-        if (ALPHABETICS.indexOf(current) !== -1 && ALPHABETICS.indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB29 Do not break between numeric punctuation and alphabetics (“e.g.”).
-        if (current === IS && ALPHABETICS.indexOf(next) !== -1) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB30 Do not break between letters, numbers, or ordinary symbols and opening or closing parentheses.
-        if (ALPHABETICS.concat(NU).indexOf(current) !== -1 && next === OP || ALPHABETICS.concat(NU).indexOf(next) !== -1 && current === CP) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB30a Break between two regional indicator symbols if and only if there are an even number of regional
-        // indicators preceding the position of the break.
-        if (current === RI && next === RI) {
-            var i = indicies[currentIndex];
-            var count = 1;
-            while (i > 0) {
-                i--;
-                if (classTypes[i] === RI) {
-                    count++;
-                } else {
-                    break;
-                }
-            }
-            if (count % 2 !== 0) {
-                return BREAK_NOT_ALLOWED;
-            }
-        }
-
-        // LB30b Do not break between an emoji base and an emoji modifier.
-        if (current === EB && next === EM) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        return BREAK_ALLOWED;
-    };
-
-    var lineBreakAtIndex = exports.lineBreakAtIndex = function lineBreakAtIndex(codePoints, index) {
-        // LB2 Never break at the start of text.
-        if (index === 0) {
-            return BREAK_NOT_ALLOWED;
-        }
-
-        // LB3 Always break at the end of text.
-        if (index >= codePoints.length) {
-            return BREAK_MANDATORY;
-        }
-
-        var _codePointsToCharacte = codePointsToCharacterClasses(codePoints),
-            _codePointsToCharacte2 = _slicedToArray(_codePointsToCharacte, 2),
-            indicies = _codePointsToCharacte2[0],
-            classTypes = _codePointsToCharacte2[1];
-
-        return _lineBreakAtIndex(codePoints, classTypes, indicies, index);
-    };
-
-    var cssFormattedClasses = function cssFormattedClasses(codePoints, options) {
-        if (!options) {
-            options = { lineBreak: 'normal', wordBreak: 'normal' };
-        }
-
-        var _codePointsToCharacte3 = codePointsToCharacterClasses(codePoints, options.lineBreak),
-            _codePointsToCharacte4 = _slicedToArray(_codePointsToCharacte3, 3),
-            indicies = _codePointsToCharacte4[0],
-            classTypes = _codePointsToCharacte4[1],
-            isLetterNumber = _codePointsToCharacte4[2];
-
-        if (options.wordBreak === 'break-all' || options.wordBreak === 'break-word') {
-            classTypes = classTypes.map(function (type) {
-                return [NU, AL, SA].indexOf(type) !== -1 ? ID : type;
-            });
-        }
-
-        var forbiddenBreakpoints = options.wordBreak === 'keep-all' ? isLetterNumber.map(function (isLetterNumber, i) {
-            return isLetterNumber && codePoints[i] >= 0x4e00 && codePoints[i] <= 0x9fff;
-        }) : null;
-
-        return [indicies, classTypes, forbiddenBreakpoints];
-    };
-
-    var inlineBreakOpportunities = exports.inlineBreakOpportunities = function inlineBreakOpportunities(str, options) {
-        var codePoints = (0, Util$2.toCodePoints)(str);
-        var output = BREAK_NOT_ALLOWED;
-
-        var _cssFormattedClasses = cssFormattedClasses(codePoints, options),
-            _cssFormattedClasses2 = _slicedToArray(_cssFormattedClasses, 3),
-            indicies = _cssFormattedClasses2[0],
-            classTypes = _cssFormattedClasses2[1],
-            forbiddenBreakpoints = _cssFormattedClasses2[2];
-
-        codePoints.forEach(function (codePoint, i) {
-            output += (0, Util$2.fromCodePoint)(codePoint) + (i >= codePoints.length - 1 ? BREAK_MANDATORY : _lineBreakAtIndex(codePoints, classTypes, indicies, i + 1, forbiddenBreakpoints));
-        });
-
-        return output;
-    };
-
-    var Break = function () {
-        function Break(codePoints, lineBreak, start, end) {
-            _classCallCheck(this, Break);
-
-            this._codePoints = codePoints;
-            this.required = lineBreak === BREAK_MANDATORY;
-            this.start = start;
-            this.end = end;
-        }
-
-        _createClass(Break, [{
-            key: 'slice',
-            value: function slice() {
-                return Util$2.fromCodePoint.apply(undefined, _toConsumableArray(this._codePoints.slice(this.start, this.end)));
-            }
-        }]);
-
-        return Break;
-    }();
-
-    var LineBreaker = exports.LineBreaker = function LineBreaker(str, options) {
-        var codePoints = (0, Util$2.toCodePoints)(str);
-
-        var _cssFormattedClasses3 = cssFormattedClasses(codePoints, options),
-            _cssFormattedClasses4 = _slicedToArray(_cssFormattedClasses3, 3),
-            indicies = _cssFormattedClasses4[0],
-            classTypes = _cssFormattedClasses4[1],
-            forbiddenBreakpoints = _cssFormattedClasses4[2];
-
-        var length = codePoints.length;
-        var lastEnd = 0;
-        var nextIndex = 0;
-
-        return {
-            next: function next() {
-                if (nextIndex >= length) {
-                    return { done: true };
-                }
-                var lineBreak = BREAK_NOT_ALLOWED;
-                while (nextIndex < length && (lineBreak = _lineBreakAtIndex(codePoints, classTypes, indicies, ++nextIndex, forbiddenBreakpoints)) === BREAK_NOT_ALLOWED) {}
-
-                if (lineBreak !== BREAK_NOT_ALLOWED || nextIndex === length) {
-                    var value = new Break(codePoints, lineBreak, lastEnd, nextIndex);
-                    lastEnd = nextIndex;
-                    return { value: value, done: false };
-                }
-
-                return { done: true };
-            }
-        };
-    };
-    });
-
-    unwrapExports(LineBreak);
-    var LineBreak_1 = LineBreak.LineBreaker;
-    var LineBreak_2 = LineBreak.inlineBreakOpportunities;
-    var LineBreak_3 = LineBreak.lineBreakAtIndex;
-    var LineBreak_4 = LineBreak.codePointsToCharacterClasses;
-    var LineBreak_5 = LineBreak.UnicodeTrie;
-    var LineBreak_6 = LineBreak.BREAK_ALLOWED;
-    var LineBreak_7 = LineBreak.BREAK_NOT_ALLOWED;
-    var LineBreak_8 = LineBreak.BREAK_MANDATORY;
-    var LineBreak_9 = LineBreak.classes;
-    var LineBreak_10 = LineBreak.LETTER_NUMBER_MODIFIER;
-
-    var dist = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-      value: true
-    });
-
-
-
-    Object.defineProperty(exports, 'toCodePoints', {
-      enumerable: true,
-      get: function get() {
-        return Util$2.toCodePoints;
-      }
-    });
-    Object.defineProperty(exports, 'fromCodePoint', {
-      enumerable: true,
-      get: function get() {
-        return Util$2.fromCodePoint;
-      }
-    });
-
-
-
-    Object.defineProperty(exports, 'LineBreaker', {
-      enumerable: true,
-      get: function get() {
-        return LineBreak.LineBreaker;
-      }
-    });
-    });
-
-    unwrapExports(dist);
-
-    var Unicode = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.breakWords = exports.fromCodePoint = exports.toCodePoints = undefined;
-
-
-
-    Object.defineProperty(exports, 'toCodePoints', {
-        enumerable: true,
-        get: function get() {
-            return dist.toCodePoints;
-        }
-    });
-    Object.defineProperty(exports, 'fromCodePoint', {
-        enumerable: true,
-        get: function get() {
-            return dist.fromCodePoint;
-        }
-    });
-
-
-
-    var breakWords = exports.breakWords = function breakWords(str, parent) {
-        var breaker = (0, dist.LineBreaker)(str, {
-            lineBreak: parent.style.lineBreak,
-            wordBreak: parent.style.overflowWrap === overflowWrap.OVERFLOW_WRAP.BREAK_WORD ? 'break-word' : parent.style.wordBreak
-        });
-
-        var words = [];
-        var bk = void 0;
-
-        while (!(bk = breaker.next()).done) {
-            words.push(bk.value.slice());
-        }
-
-        return words;
-    };
-    });
-
-    unwrapExports(Unicode);
-    var Unicode_1 = Unicode.breakWords;
-    var Unicode_2 = Unicode.fromCodePoint;
-    var Unicode_3 = Unicode.toCodePoints;
-
-    var TextBounds_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.parseTextBounds = exports.TextBounds = undefined;
-
-
-
-
-
-
-
-    var _Feature2 = _interopRequireDefault(Feature);
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var TextBounds = exports.TextBounds = function TextBounds(text, bounds) {
-        _classCallCheck(this, TextBounds);
-
-        this.text = text;
-        this.bounds = bounds;
-    };
-
-    var parseTextBounds = exports.parseTextBounds = function parseTextBounds(value, parent, node) {
-        var letterRendering = parent.style.letterSpacing !== 0;
-        var textList = letterRendering ? (0, Unicode.toCodePoints)(value).map(function (i) {
-            return (0, Unicode.fromCodePoint)(i);
-        }) : (0, Unicode.breakWords)(value, parent);
-        var length = textList.length;
-        var defaultView = node.parentNode ? node.parentNode.ownerDocument.defaultView : null;
-        var scrollX = defaultView ? defaultView.pageXOffset : 0;
-        var scrollY = defaultView ? defaultView.pageYOffset : 0;
-        var textBounds = [];
-        var offset = 0;
-        for (var i = 0; i < length; i++) {
-            var text = textList[i];
-            if (parent.style.textDecoration !== textDecoration.TEXT_DECORATION.NONE || text.trim().length > 0) {
-                if (_Feature2.default.SUPPORT_RANGE_BOUNDS) {
-                    textBounds.push(new TextBounds(text, getRangeBounds(node, offset, text.length, scrollX, scrollY)));
-                } else {
-                    var replacementNode = node.splitText(text.length);
-                    textBounds.push(new TextBounds(text, getWrapperBounds(node, scrollX, scrollY)));
-                    node = replacementNode;
-                }
-            } else if (!_Feature2.default.SUPPORT_RANGE_BOUNDS) {
-                node = node.splitText(text.length);
-            }
-            offset += text.length;
-        }
-        return textBounds;
-    };
-
-    var getWrapperBounds = function getWrapperBounds(node, scrollX, scrollY) {
-        var wrapper = node.ownerDocument.createElement('html2canvaswrapper');
-        wrapper.appendChild(node.cloneNode(true));
-        var parentNode = node.parentNode;
-        if (parentNode) {
-            parentNode.replaceChild(wrapper, node);
-            var bounds = (0, Bounds_1.parseBounds)(wrapper, scrollX, scrollY);
-            if (wrapper.firstChild) {
-                parentNode.replaceChild(wrapper.firstChild, wrapper);
-            }
-            return bounds;
-        }
-        return new Bounds_1.Bounds(0, 0, 0, 0);
-    };
-
-    var getRangeBounds = function getRangeBounds(node, offset, length, scrollX, scrollY) {
-        var range = node.ownerDocument.createRange();
-        range.setStart(node, offset);
-        range.setEnd(node, offset + length);
-        return Bounds_1.Bounds.fromClientRect(range.getBoundingClientRect(), scrollX, scrollY);
-    };
-    });
-
-    unwrapExports(TextBounds_1);
-    var TextBounds_2 = TextBounds_1.parseTextBounds;
-    var TextBounds_3 = TextBounds_1.TextBounds;
-
-    var TextContainer_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var TextContainer = function () {
-        function TextContainer(text, parent, bounds) {
-            _classCallCheck(this, TextContainer);
-
-            this.text = text;
-            this.parent = parent;
-            this.bounds = bounds;
-        }
-
-        _createClass(TextContainer, null, [{
-            key: 'fromTextNode',
-            value: function fromTextNode(node, parent) {
-                var text = transform(node.data, parent.style.textTransform);
-                return new TextContainer(text, parent, (0, TextBounds_1.parseTextBounds)(text, parent, node));
-            }
-        }]);
-
-        return TextContainer;
-    }();
-
-    exports.default = TextContainer;
-
-
-    var CAPITALIZE = /(^|\s|:|-|\(|\))([a-z])/g;
-
-    var transform = function transform(text, _transform) {
-        switch (_transform) {
-            case textTransform.TEXT_TRANSFORM.LOWERCASE:
-                return text.toLowerCase();
-            case textTransform.TEXT_TRANSFORM.CAPITALIZE:
-                return text.replace(CAPITALIZE, capitalize);
-            case textTransform.TEXT_TRANSFORM.UPPERCASE:
-                return text.toUpperCase();
-            default:
-                return text;
-        }
-    };
-
-    function capitalize(m, p1, p2) {
-        if (m.length > 0) {
-            return p1 + p2.toUpperCase();
-        }
-
-        return m;
     }
-    });
 
-    unwrapExports(TextContainer_1);
+    Object.assign( Matrix4.prototype, {
 
-    var Circle_1 = createCommonjsModule(function (module, exports) {
+    	isMatrix4: true,
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
+    	set: function ( n11, n12, n13, n14, n21, n22, n23, n24, n31, n32, n33, n34, n41, n42, n43, n44 ) {
 
+    		var te = this.elements;
 
+    		te[ 0 ] = n11; te[ 4 ] = n12; te[ 8 ] = n13; te[ 12 ] = n14;
+    		te[ 1 ] = n21; te[ 5 ] = n22; te[ 9 ] = n23; te[ 13 ] = n24;
+    		te[ 2 ] = n31; te[ 6 ] = n32; te[ 10 ] = n33; te[ 14 ] = n34;
+    		te[ 3 ] = n41; te[ 7 ] = n42; te[ 11 ] = n43; te[ 15 ] = n44;
 
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+    		return this;
 
-    var Circle = function Circle(x, y, radius) {
-        _classCallCheck(this, Circle);
+    	},
 
-        this.type = Path.PATH.CIRCLE;
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-    };
+    	identity: function () {
 
-    exports.default = Circle;
-    });
+    		this.set(
 
-    unwrapExports(Circle_1);
+    			1, 0, 0, 0,
+    			0, 1, 0, 0,
+    			0, 0, 1, 0,
+    			0, 0, 0, 1
 
-    var Input = createCommonjsModule(function (module, exports) {
+    		);
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.reformatInputBounds = exports.inlineSelectElement = exports.inlineTextAreaElement = exports.inlineInputElement = exports.getInputBorderRadius = exports.INPUT_BACKGROUND = exports.INPUT_BORDERS = exports.INPUT_COLOR = undefined;
+    		return this;
 
+    	},
 
+    	clone: function () {
 
-    var _TextContainer2 = _interopRequireDefault(TextContainer_1);
+    		return new Matrix4().fromArray( this.elements );
 
+    	},
 
+    	copy: function ( m ) {
 
+    		var te = this.elements;
+    		var me = m.elements;
 
+    		te[ 0 ] = me[ 0 ]; te[ 1 ] = me[ 1 ]; te[ 2 ] = me[ 2 ]; te[ 3 ] = me[ 3 ];
+    		te[ 4 ] = me[ 4 ]; te[ 5 ] = me[ 5 ]; te[ 6 ] = me[ 6 ]; te[ 7 ] = me[ 7 ];
+    		te[ 8 ] = me[ 8 ]; te[ 9 ] = me[ 9 ]; te[ 10 ] = me[ 10 ]; te[ 11 ] = me[ 11 ];
+    		te[ 12 ] = me[ 12 ]; te[ 13 ] = me[ 13 ]; te[ 14 ] = me[ 14 ]; te[ 15 ] = me[ 15 ];
 
+    		return this;
 
+    	},
 
-    var _Circle2 = _interopRequireDefault(Circle_1);
+    	copyPosition: function ( m ) {
 
+    		var te = this.elements, me = m.elements;
 
+    		te[ 12 ] = me[ 12 ];
+    		te[ 13 ] = me[ 13 ];
+    		te[ 14 ] = me[ 14 ];
 
-    var _Vector2 = _interopRequireDefault(Vector_1);
+    		return this;
 
+    	},
 
+    	extractBasis: function ( xAxis, yAxis, zAxis ) {
 
-    var _Color2 = _interopRequireDefault(Color_1);
+    		xAxis.setFromMatrixColumn( this, 0 );
+    		yAxis.setFromMatrixColumn( this, 1 );
+    		zAxis.setFromMatrixColumn( this, 2 );
 
+    		return this;
 
+    	},
 
-    var _Length2 = _interopRequireDefault(Length_1);
+    	makeBasis: function ( xAxis, yAxis, zAxis ) {
 
+    		this.set(
+    			xAxis.x, yAxis.x, zAxis.x, 0,
+    			xAxis.y, yAxis.y, zAxis.y, 0,
+    			xAxis.z, yAxis.z, zAxis.z, 0,
+    			0, 0, 0, 1
+    		);
 
+    		return this;
 
+    	},
 
+    	extractRotation: function ( m ) {
 
+    		// this method does not support reflection matrices
 
+    		var te = this.elements;
+    		var me = m.elements;
 
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+    		var scaleX = 1 / _v1.setFromMatrixColumn( m, 0 ).length();
+    		var scaleY = 1 / _v1.setFromMatrixColumn( m, 1 ).length();
+    		var scaleZ = 1 / _v1.setFromMatrixColumn( m, 2 ).length();
 
-    var INPUT_COLOR = exports.INPUT_COLOR = new _Color2.default([42, 42, 42]);
-    var INPUT_BORDER_COLOR = new _Color2.default([165, 165, 165]);
-    var INPUT_BACKGROUND_COLOR = new _Color2.default([222, 222, 222]);
-    var INPUT_BORDER = {
-        borderWidth: 1,
-        borderColor: INPUT_BORDER_COLOR,
-        borderStyle: border.BORDER_STYLE.SOLID
-    };
-    var INPUT_BORDERS = exports.INPUT_BORDERS = [INPUT_BORDER, INPUT_BORDER, INPUT_BORDER, INPUT_BORDER];
-    var INPUT_BACKGROUND = exports.INPUT_BACKGROUND = {
-        backgroundColor: INPUT_BACKGROUND_COLOR,
-        backgroundImage: [],
-        backgroundClip: background.BACKGROUND_CLIP.PADDING_BOX,
-        backgroundOrigin: background.BACKGROUND_ORIGIN.PADDING_BOX
-    };
+    		te[ 0 ] = me[ 0 ] * scaleX;
+    		te[ 1 ] = me[ 1 ] * scaleX;
+    		te[ 2 ] = me[ 2 ] * scaleX;
+    		te[ 3 ] = 0;
 
-    var RADIO_BORDER_RADIUS = new _Length2.default('50%');
-    var RADIO_BORDER_RADIUS_TUPLE = [RADIO_BORDER_RADIUS, RADIO_BORDER_RADIUS];
-    var INPUT_RADIO_BORDER_RADIUS = [RADIO_BORDER_RADIUS_TUPLE, RADIO_BORDER_RADIUS_TUPLE, RADIO_BORDER_RADIUS_TUPLE, RADIO_BORDER_RADIUS_TUPLE];
+    		te[ 4 ] = me[ 4 ] * scaleY;
+    		te[ 5 ] = me[ 5 ] * scaleY;
+    		te[ 6 ] = me[ 6 ] * scaleY;
+    		te[ 7 ] = 0;
 
-    var CHECKBOX_BORDER_RADIUS = new _Length2.default('3px');
-    var CHECKBOX_BORDER_RADIUS_TUPLE = [CHECKBOX_BORDER_RADIUS, CHECKBOX_BORDER_RADIUS];
-    var INPUT_CHECKBOX_BORDER_RADIUS = [CHECKBOX_BORDER_RADIUS_TUPLE, CHECKBOX_BORDER_RADIUS_TUPLE, CHECKBOX_BORDER_RADIUS_TUPLE, CHECKBOX_BORDER_RADIUS_TUPLE];
+    		te[ 8 ] = me[ 8 ] * scaleZ;
+    		te[ 9 ] = me[ 9 ] * scaleZ;
+    		te[ 10 ] = me[ 10 ] * scaleZ;
+    		te[ 11 ] = 0;
 
-    var getInputBorderRadius = exports.getInputBorderRadius = function getInputBorderRadius(node) {
-        return node.type === 'radio' ? INPUT_RADIO_BORDER_RADIUS : INPUT_CHECKBOX_BORDER_RADIUS;
-    };
+    		te[ 12 ] = 0;
+    		te[ 13 ] = 0;
+    		te[ 14 ] = 0;
+    		te[ 15 ] = 1;
 
-    var inlineInputElement = exports.inlineInputElement = function inlineInputElement(node, container) {
-        if (node.type === 'radio' || node.type === 'checkbox') {
-            if (node.checked) {
-                var size = Math.min(container.bounds.width, container.bounds.height);
-                container.childNodes.push(node.type === 'checkbox' ? [new _Vector2.default(container.bounds.left + size * 0.39363, container.bounds.top + size * 0.79), new _Vector2.default(container.bounds.left + size * 0.16, container.bounds.top + size * 0.5549), new _Vector2.default(container.bounds.left + size * 0.27347, container.bounds.top + size * 0.44071), new _Vector2.default(container.bounds.left + size * 0.39694, container.bounds.top + size * 0.5649), new _Vector2.default(container.bounds.left + size * 0.72983, container.bounds.top + size * 0.23), new _Vector2.default(container.bounds.left + size * 0.84, container.bounds.top + size * 0.34085), new _Vector2.default(container.bounds.left + size * 0.39363, container.bounds.top + size * 0.79)] : new _Circle2.default(container.bounds.left + size / 4, container.bounds.top + size / 4, size / 4));
-            }
-        } else {
-            inlineFormElement(getInputValue(node), node, container, false);
-        }
-    };
+    		return this;
 
-    var inlineTextAreaElement = exports.inlineTextAreaElement = function inlineTextAreaElement(node, container) {
-        inlineFormElement(node.value, node, container, true);
-    };
+    	},
 
-    var inlineSelectElement = exports.inlineSelectElement = function inlineSelectElement(node, container) {
-        var option = node.options[node.selectedIndex || 0];
-        inlineFormElement(option ? option.text || '' : '', node, container, false);
-    };
+    	makeRotationFromEuler: function ( euler ) {
 
-    var reformatInputBounds = exports.reformatInputBounds = function reformatInputBounds(bounds) {
-        if (bounds.width > bounds.height) {
-            bounds.left += (bounds.width - bounds.height) / 2;
-            bounds.width = bounds.height;
-        } else if (bounds.width < bounds.height) {
-            bounds.top += (bounds.height - bounds.width) / 2;
-            bounds.height = bounds.width;
-        }
-        return bounds;
-    };
+    		if ( ! ( euler && euler.isEuler ) ) {
 
-    var inlineFormElement = function inlineFormElement(value, node, container, allowLinebreak) {
-        var body = node.ownerDocument.body;
-        if (value.length > 0 && body) {
-            var wrapper = node.ownerDocument.createElement('html2canvaswrapper');
-            (0, Util.copyCSSStyles)(node.ownerDocument.defaultView.getComputedStyle(node, null), wrapper);
-            wrapper.style.position = 'absolute';
-            wrapper.style.left = container.bounds.left + 'px';
-            wrapper.style.top = container.bounds.top + 'px';
-            if (!allowLinebreak) {
-                wrapper.style.whiteSpace = 'nowrap';
-            }
-            var text = node.ownerDocument.createTextNode(value);
-            wrapper.appendChild(text);
-            body.appendChild(wrapper);
-            container.childNodes.push(_TextContainer2.default.fromTextNode(text, container));
-            body.removeChild(wrapper);
-        }
-    };
-
-    var getInputValue = function getInputValue(node) {
-        var value = node.type === 'password' ? new Array(node.value.length + 1).join('\u2022') : node.value;
-
-        return value.length === 0 ? node.placeholder || '' : value;
-    };
-    });
-
-    unwrapExports(Input);
-    var Input_1 = Input.reformatInputBounds;
-    var Input_2 = Input.inlineSelectElement;
-    var Input_3 = Input.inlineTextAreaElement;
-    var Input_4 = Input.inlineInputElement;
-    var Input_5 = Input.getInputBorderRadius;
-    var Input_6 = Input.INPUT_BACKGROUND;
-    var Input_7 = Input.INPUT_BORDERS;
-    var Input_8 = Input.INPUT_COLOR;
-
-    var ListItem = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.createCounterText = exports.inlineListItemElement = exports.getListOwner = undefined;
-
-
-
-
-
-    var _NodeContainer2 = _interopRequireDefault(NodeContainer_1);
-
-
-
-    var _TextContainer2 = _interopRequireDefault(TextContainer_1);
-
-
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    // Margin between the enumeration and the list item content
-    var MARGIN_RIGHT = 7;
-
-    var ancestorTypes = ['OL', 'UL', 'MENU'];
-
-    var getListOwner = exports.getListOwner = function getListOwner(container) {
-        var parent = container.parent;
-        if (!parent) {
-            return null;
-        }
-
-        do {
-            var isAncestor = ancestorTypes.indexOf(parent.tagName) !== -1;
-            if (isAncestor) {
-                return parent;
-            }
-            parent = parent.parent;
-        } while (parent);
-
-        return container.parent;
-    };
-
-    var inlineListItemElement = exports.inlineListItemElement = function inlineListItemElement(node, container, resourceLoader) {
-        var listStyle$$1 = container.style.listStyle;
-
-        if (!listStyle$$1) {
-            return;
-        }
-
-        var style = node.ownerDocument.defaultView.getComputedStyle(node, null);
-        var wrapper = node.ownerDocument.createElement('html2canvaswrapper');
-        (0, Util.copyCSSStyles)(style, wrapper);
-
-        wrapper.style.position = 'absolute';
-        wrapper.style.bottom = 'auto';
-        wrapper.style.display = 'block';
-        wrapper.style.letterSpacing = 'normal';
-
-        switch (listStyle$$1.listStylePosition) {
-            case listStyle.LIST_STYLE_POSITION.OUTSIDE:
-                wrapper.style.left = 'auto';
-                wrapper.style.right = node.ownerDocument.defaultView.innerWidth - container.bounds.left - container.style.margin[1].getAbsoluteValue(container.bounds.width) + MARGIN_RIGHT + 'px';
-                wrapper.style.textAlign = 'right';
-                break;
-            case listStyle.LIST_STYLE_POSITION.INSIDE:
-                wrapper.style.left = container.bounds.left - container.style.margin[3].getAbsoluteValue(container.bounds.width) + 'px';
-                wrapper.style.right = 'auto';
-                wrapper.style.textAlign = 'left';
-                break;
-        }
-
-        var text = void 0;
-        var MARGIN_TOP = container.style.margin[0].getAbsoluteValue(container.bounds.width);
-        var styleImage = listStyle$$1.listStyleImage;
-        if (styleImage) {
-            if (styleImage.method === 'url') {
-                var image = node.ownerDocument.createElement('img');
-                image.src = styleImage.args[0];
-                wrapper.style.top = container.bounds.top - MARGIN_TOP + 'px';
-                wrapper.style.width = 'auto';
-                wrapper.style.height = 'auto';
-                wrapper.appendChild(image);
-            } else {
-                var size = parseFloat(container.style.font.fontSize) * 0.5;
-                wrapper.style.top = container.bounds.top - MARGIN_TOP + container.bounds.height - 1.5 * size + 'px';
-                wrapper.style.width = size + 'px';
-                wrapper.style.height = size + 'px';
-                wrapper.style.backgroundImage = style.listStyleImage;
-            }
-        } else if (typeof container.listIndex === 'number') {
-            text = node.ownerDocument.createTextNode(createCounterText(container.listIndex, listStyle$$1.listStyleType, true));
-            wrapper.appendChild(text);
-            wrapper.style.top = container.bounds.top - MARGIN_TOP + 'px';
-        }
-
-        // $FlowFixMe
-        var body = node.ownerDocument.body;
-        body.appendChild(wrapper);
-
-        if (text) {
-            container.childNodes.push(_TextContainer2.default.fromTextNode(text, container));
-            body.removeChild(wrapper);
-        } else {
-            // $FlowFixMe
-            container.childNodes.push(new _NodeContainer2.default(wrapper, container, resourceLoader, 0));
-        }
-    };
-
-    var ROMAN_UPPER = {
-        integers: [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1],
-        values: ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I']
-    };
-
-    var ARMENIAN = {
-        integers: [9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000, 1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-        values: ['Ք', 'Փ', 'Ւ', 'Ց', 'Ր', 'Տ', 'Վ', 'Ս', 'Ռ', 'Ջ', 'Պ', 'Չ', 'Ո', 'Շ', 'Ն', 'Յ', 'Մ', 'Ճ', 'Ղ', 'Ձ', 'Հ', 'Կ', 'Ծ', 'Խ', 'Լ', 'Ի', 'Ժ', 'Թ', 'Ը', 'Է', 'Զ', 'Ե', 'Դ', 'Գ', 'Բ', 'Ա']
-    };
-
-    var HEBREW = {
-        integers: [10000, 9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000, 1000, 400, 300, 200, 100, 90, 80, 70, 60, 50, 40, 30, 20, 19, 18, 17, 16, 15, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-        values: ['י׳', 'ט׳', 'ח׳', 'ז׳', 'ו׳', 'ה׳', 'ד׳', 'ג׳', 'ב׳', 'א׳', 'ת', 'ש', 'ר', 'ק', 'צ', 'פ', 'ע', 'ס', 'נ', 'מ', 'ל', 'כ', 'יט', 'יח', 'יז', 'טז', 'טו', 'י', 'ט', 'ח', 'ז', 'ו', 'ה', 'ד', 'ג', 'ב', 'א']
-    };
-
-    var GEORGIAN = {
-        integers: [10000, 9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000, 1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-        values: ['ჵ', 'ჰ', 'ჯ', 'ჴ', 'ხ', 'ჭ', 'წ', 'ძ', 'ც', 'ჩ', 'შ', 'ყ', 'ღ', 'ქ', 'ფ', 'ჳ', 'ტ', 'ს', 'რ', 'ჟ', 'პ', 'ო', 'ჲ', 'ნ', 'მ', 'ლ', 'კ', 'ი', 'თ', 'ჱ', 'ზ', 'ვ', 'ე', 'დ', 'გ', 'ბ', 'ა']
-    };
-
-    var createAdditiveCounter = function createAdditiveCounter(value, min, max, symbols, fallback, suffix) {
-        if (value < min || value > max) {
-            return createCounterText(value, fallback, suffix.length > 0);
-        }
-
-        return symbols.integers.reduce(function (string, integer, index) {
-            while (value >= integer) {
-                value -= integer;
-                string += symbols.values[index];
-            }
-            return string;
-        }, '') + suffix;
-    };
-
-    var createCounterStyleWithSymbolResolver = function createCounterStyleWithSymbolResolver(value, codePointRangeLength, isNumeric, resolver) {
-        var string = '';
-
-        do {
-            if (!isNumeric) {
-                value--;
-            }
-            string = resolver(value) + string;
-            value /= codePointRangeLength;
-        } while (value * codePointRangeLength >= codePointRangeLength);
-
-        return string;
-    };
-
-    var createCounterStyleFromRange = function createCounterStyleFromRange(value, codePointRangeStart, codePointRangeEnd, isNumeric, suffix) {
-        var codePointRangeLength = codePointRangeEnd - codePointRangeStart + 1;
-
-        return (value < 0 ? '-' : '') + (createCounterStyleWithSymbolResolver(Math.abs(value), codePointRangeLength, isNumeric, function (codePoint) {
-            return (0, Unicode.fromCodePoint)(Math.floor(codePoint % codePointRangeLength) + codePointRangeStart);
-        }) + suffix);
-    };
-
-    var createCounterStyleFromSymbols = function createCounterStyleFromSymbols(value, symbols) {
-        var suffix = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '. ';
-
-        var codePointRangeLength = symbols.length;
-        return createCounterStyleWithSymbolResolver(Math.abs(value), codePointRangeLength, false, function (codePoint) {
-            return symbols[Math.floor(codePoint % codePointRangeLength)];
-        }) + suffix;
-    };
-
-    var CJK_ZEROS = 1 << 0;
-    var CJK_TEN_COEFFICIENTS = 1 << 1;
-    var CJK_TEN_HIGH_COEFFICIENTS = 1 << 2;
-    var CJK_HUNDRED_COEFFICIENTS = 1 << 3;
-
-    var createCJKCounter = function createCJKCounter(value, numbers, multipliers, negativeSign, suffix, flags) {
-        if (value < -9999 || value > 9999) {
-            return createCounterText(value, listStyle.LIST_STYLE_TYPE.CJK_DECIMAL, suffix.length > 0);
-        }
-        var tmp = Math.abs(value);
-        var string = suffix;
-
-        if (tmp === 0) {
-            return numbers[0] + string;
-        }
-
-        for (var digit = 0; tmp > 0 && digit <= 4; digit++) {
-            var coefficient = tmp % 10;
-
-            if (coefficient === 0 && (0, Util.contains)(flags, CJK_ZEROS) && string !== '') {
-                string = numbers[coefficient] + string;
-            } else if (coefficient > 1 || coefficient === 1 && digit === 0 || coefficient === 1 && digit === 1 && (0, Util.contains)(flags, CJK_TEN_COEFFICIENTS) || coefficient === 1 && digit === 1 && (0, Util.contains)(flags, CJK_TEN_HIGH_COEFFICIENTS) && value > 100 || coefficient === 1 && digit > 1 && (0, Util.contains)(flags, CJK_HUNDRED_COEFFICIENTS)) {
-                string = numbers[coefficient] + (digit > 0 ? multipliers[digit - 1] : '') + string;
-            } else if (coefficient === 1 && digit > 0) {
-                string = multipliers[digit - 1] + string;
-            }
-            tmp = Math.floor(tmp / 10);
-        }
-
-        return (value < 0 ? negativeSign : '') + string;
-    };
-
-    var CHINESE_INFORMAL_MULTIPLIERS = '十百千萬';
-    var CHINESE_FORMAL_MULTIPLIERS = '拾佰仟萬';
-    var JAPANESE_NEGATIVE = 'マイナス';
-    var KOREAN_NEGATIVE = '마이너스';
-
-    var createCounterText = exports.createCounterText = function createCounterText(value, type, appendSuffix) {
-        var defaultSuffix = appendSuffix ? '. ' : '';
-        var cjkSuffix = appendSuffix ? '、' : '';
-        var koreanSuffix = appendSuffix ? ', ' : '';
-        switch (type) {
-            case listStyle.LIST_STYLE_TYPE.DISC:
-                return '•';
-            case listStyle.LIST_STYLE_TYPE.CIRCLE:
-                return '◦';
-            case listStyle.LIST_STYLE_TYPE.SQUARE:
-                return '◾';
-            case listStyle.LIST_STYLE_TYPE.DECIMAL_LEADING_ZERO:
-                var string = createCounterStyleFromRange(value, 48, 57, true, defaultSuffix);
-                return string.length < 4 ? '0' + string : string;
-            case listStyle.LIST_STYLE_TYPE.CJK_DECIMAL:
-                return createCounterStyleFromSymbols(value, '〇一二三四五六七八九', cjkSuffix);
-            case listStyle.LIST_STYLE_TYPE.LOWER_ROMAN:
-                return createAdditiveCounter(value, 1, 3999, ROMAN_UPPER, listStyle.LIST_STYLE_TYPE.DECIMAL, defaultSuffix).toLowerCase();
-            case listStyle.LIST_STYLE_TYPE.UPPER_ROMAN:
-                return createAdditiveCounter(value, 1, 3999, ROMAN_UPPER, listStyle.LIST_STYLE_TYPE.DECIMAL, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.LOWER_GREEK:
-                return createCounterStyleFromRange(value, 945, 969, false, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.LOWER_ALPHA:
-                return createCounterStyleFromRange(value, 97, 122, false, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.UPPER_ALPHA:
-                return createCounterStyleFromRange(value, 65, 90, false, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.ARABIC_INDIC:
-                return createCounterStyleFromRange(value, 1632, 1641, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.ARMENIAN:
-            case listStyle.LIST_STYLE_TYPE.UPPER_ARMENIAN:
-                return createAdditiveCounter(value, 1, 9999, ARMENIAN, listStyle.LIST_STYLE_TYPE.DECIMAL, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.LOWER_ARMENIAN:
-                return createAdditiveCounter(value, 1, 9999, ARMENIAN, listStyle.LIST_STYLE_TYPE.DECIMAL, defaultSuffix).toLowerCase();
-            case listStyle.LIST_STYLE_TYPE.BENGALI:
-                return createCounterStyleFromRange(value, 2534, 2543, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.CAMBODIAN:
-            case listStyle.LIST_STYLE_TYPE.KHMER:
-                return createCounterStyleFromRange(value, 6112, 6121, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.CJK_EARTHLY_BRANCH:
-                return createCounterStyleFromSymbols(value, '子丑寅卯辰巳午未申酉戌亥', cjkSuffix);
-            case listStyle.LIST_STYLE_TYPE.CJK_HEAVENLY_STEM:
-                return createCounterStyleFromSymbols(value, '甲乙丙丁戊己庚辛壬癸', cjkSuffix);
-            case listStyle.LIST_STYLE_TYPE.CJK_IDEOGRAPHIC:
-            case listStyle.LIST_STYLE_TYPE.TRAD_CHINESE_INFORMAL:
-                return createCJKCounter(value, '零一二三四五六七八九', CHINESE_INFORMAL_MULTIPLIERS, '負', cjkSuffix, CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS | CJK_HUNDRED_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.TRAD_CHINESE_FORMAL:
-                return createCJKCounter(value, '零壹貳參肆伍陸柒捌玖', CHINESE_FORMAL_MULTIPLIERS, '負', cjkSuffix, CJK_ZEROS | CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS | CJK_HUNDRED_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.SIMP_CHINESE_INFORMAL:
-                return createCJKCounter(value, '零一二三四五六七八九', CHINESE_INFORMAL_MULTIPLIERS, '负', cjkSuffix, CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS | CJK_HUNDRED_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.SIMP_CHINESE_FORMAL:
-                return createCJKCounter(value, '零壹贰叁肆伍陆柒捌玖', CHINESE_FORMAL_MULTIPLIERS, '负', cjkSuffix, CJK_ZEROS | CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS | CJK_HUNDRED_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.JAPANESE_INFORMAL:
-                return createCJKCounter(value, '〇一二三四五六七八九', '十百千万', JAPANESE_NEGATIVE, cjkSuffix, 0);
-            case listStyle.LIST_STYLE_TYPE.JAPANESE_FORMAL:
-                return createCJKCounter(value, '零壱弐参四伍六七八九', '拾百千万', JAPANESE_NEGATIVE, cjkSuffix, CJK_ZEROS | CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.KOREAN_HANGUL_FORMAL:
-                return createCJKCounter(value, '영일이삼사오육칠팔구', '십백천만', KOREAN_NEGATIVE, koreanSuffix, CJK_ZEROS | CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.KOREAN_HANJA_INFORMAL:
-                return createCJKCounter(value, '零一二三四五六七八九', '十百千萬', KOREAN_NEGATIVE, koreanSuffix, 0);
-            case listStyle.LIST_STYLE_TYPE.KOREAN_HANJA_FORMAL:
-                return createCJKCounter(value, '零壹貳參四五六七八九', '拾百千', KOREAN_NEGATIVE, koreanSuffix, CJK_ZEROS | CJK_TEN_COEFFICIENTS | CJK_TEN_HIGH_COEFFICIENTS);
-            case listStyle.LIST_STYLE_TYPE.DEVANAGARI:
-                return createCounterStyleFromRange(value, 0x966, 0x96f, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.GEORGIAN:
-                return createAdditiveCounter(value, 1, 19999, GEORGIAN, listStyle.LIST_STYLE_TYPE.DECIMAL, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.GUJARATI:
-                return createCounterStyleFromRange(value, 0xae6, 0xaef, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.GURMUKHI:
-                return createCounterStyleFromRange(value, 0xa66, 0xa6f, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.HEBREW:
-                return createAdditiveCounter(value, 1, 10999, HEBREW, listStyle.LIST_STYLE_TYPE.DECIMAL, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.HIRAGANA:
-                return createCounterStyleFromSymbols(value, 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわゐゑをん');
-            case listStyle.LIST_STYLE_TYPE.HIRAGANA_IROHA:
-                return createCounterStyleFromSymbols(value, 'いろはにほへとちりぬるをわかよたれそつねならむうゐのおくやまけふこえてあさきゆめみしゑひもせす');
-            case listStyle.LIST_STYLE_TYPE.KANNADA:
-                return createCounterStyleFromRange(value, 0xce6, 0xcef, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.KATAKANA:
-                return createCounterStyleFromSymbols(value, 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヰヱヲン', cjkSuffix);
-            case listStyle.LIST_STYLE_TYPE.KATAKANA_IROHA:
-                return createCounterStyleFromSymbols(value, 'イロハニホヘトチリヌルヲワカヨタレソツネナラムウヰノオクヤマケフコエテアサキユメミシヱヒモセス', cjkSuffix);
-            case listStyle.LIST_STYLE_TYPE.LAO:
-                return createCounterStyleFromRange(value, 0xed0, 0xed9, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.MONGOLIAN:
-                return createCounterStyleFromRange(value, 0x1810, 0x1819, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.MYANMAR:
-                return createCounterStyleFromRange(value, 0x1040, 0x1049, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.ORIYA:
-                return createCounterStyleFromRange(value, 0xb66, 0xb6f, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.PERSIAN:
-                return createCounterStyleFromRange(value, 0x6f0, 0x6f9, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.TAMIL:
-                return createCounterStyleFromRange(value, 0xbe6, 0xbef, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.TELUGU:
-                return createCounterStyleFromRange(value, 0xc66, 0xc6f, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.THAI:
-                return createCounterStyleFromRange(value, 0xe50, 0xe59, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.TIBETAN:
-                return createCounterStyleFromRange(value, 0xf20, 0xf29, true, defaultSuffix);
-            case listStyle.LIST_STYLE_TYPE.DECIMAL:
-            default:
-                return createCounterStyleFromRange(value, 48, 57, true, defaultSuffix);
-        }
-    };
-    });
+    			console.error( 'THREE.Matrix4: .makeRotationFromEuler() now expects a Euler rotation rather than a Vector3 and order.' );
 
-    unwrapExports(ListItem);
-    var ListItem_1 = ListItem.createCounterText;
-    var ListItem_2 = ListItem.inlineListItemElement;
-    var ListItem_3 = ListItem.getListOwner;
+    		}
 
-    var NodeContainer_1 = createCommonjsModule(function (module, exports) {
+    		var te = this.elements;
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-    var _Color2 = _interopRequireDefault(Color_1);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var INPUT_TAGS = ['INPUT', 'TEXTAREA', 'SELECT'];
-
-    var NodeContainer = function () {
-        function NodeContainer(node, parent, resourceLoader, index) {
-            var _this = this;
-
-            _classCallCheck(this, NodeContainer);
-
-            this.parent = parent;
-            this.tagName = node.tagName;
-            this.index = index;
-            this.childNodes = [];
-            this.listItems = [];
-            if (typeof node.start === 'number') {
-                this.listStart = node.start;
-            }
-            var defaultView = node.ownerDocument.defaultView;
-            var scrollX = defaultView.pageXOffset;
-            var scrollY = defaultView.pageYOffset;
-            var style = defaultView.getComputedStyle(node, null);
-            var display$$1 = (0, display.parseDisplay)(style.display);
-
-            var IS_INPUT = node.type === 'radio' || node.type === 'checkbox';
-
-            var position$$1 = (0, position.parsePosition)(style.position);
-
-            this.style = {
-                background: IS_INPUT ? Input.INPUT_BACKGROUND : (0, background.parseBackground)(style, resourceLoader),
-                border: IS_INPUT ? Input.INPUT_BORDERS : (0, border.parseBorder)(style),
-                borderRadius: (node instanceof defaultView.HTMLInputElement || node instanceof HTMLInputElement) && IS_INPUT ? (0, Input.getInputBorderRadius)(node) : (0, borderRadius.parseBorderRadius)(style),
-                color: IS_INPUT ? Input.INPUT_COLOR : new _Color2.default(style.color),
-                display: display$$1,
-                float: (0, float_1.parseCSSFloat)(style.float),
-                font: (0, font.parseFont)(style),
-                letterSpacing: (0, letterSpacing.parseLetterSpacing)(style.letterSpacing),
-                listStyle: display$$1 === display.DISPLAY.LIST_ITEM ? (0, listStyle.parseListStyle)(style) : null,
-                lineBreak: (0, lineBreak.parseLineBreak)(style.lineBreak),
-                margin: (0, margin.parseMargin)(style),
-                opacity: parseFloat(style.opacity),
-                overflow: INPUT_TAGS.indexOf(node.tagName) === -1 ? (0, overflow.parseOverflow)(style.overflow) : overflow.OVERFLOW.HIDDEN,
-                overflowWrap: (0, overflowWrap.parseOverflowWrap)(style.overflowWrap ? style.overflowWrap : style.wordWrap),
-                padding: (0, padding.parsePadding)(style),
-                position: position$$1,
-                textDecoration: (0, textDecoration.parseTextDecoration)(style),
-                textShadow: (0, textShadow.parseTextShadow)(style.textShadow),
-                textTransform: (0, textTransform.parseTextTransform)(style.textTransform),
-                transform: (0, transform.parseTransform)(style),
-                visibility: (0, visibility.parseVisibility)(style.visibility),
-                wordBreak: (0, wordBreak.parseWordBreak)(style.wordBreak),
-                zIndex: (0, zIndex.parseZIndex)(position$$1 !== position.POSITION.STATIC ? style.zIndex : 'auto')
-            };
-
-            if (this.isTransformed()) {
-                // getBoundingClientRect provides values post-transform, we want them without the transformation
-                node.style.transform = 'matrix(1,0,0,1,0,0)';
-            }
-
-            if (display$$1 === display.DISPLAY.LIST_ITEM) {
-                var listOwner = (0, ListItem.getListOwner)(this);
-                if (listOwner) {
-                    var listIndex = listOwner.listItems.length;
-                    listOwner.listItems.push(this);
-                    this.listIndex = node.hasAttribute('value') && typeof node.value === 'number' ? node.value : listIndex === 0 ? typeof listOwner.listStart === 'number' ? listOwner.listStart : 1 : listOwner.listItems[listIndex - 1].listIndex + 1;
-                }
-            }
-
-            // TODO move bound retrieval for all nodes to a later stage?
-            if (node.tagName === 'IMG') {
-                node.addEventListener('load', function () {
-                    _this.bounds = (0, Bounds_1.parseBounds)(node, scrollX, scrollY);
-                    _this.curvedBounds = (0, Bounds_1.parseBoundCurves)(_this.bounds, _this.style.border, _this.style.borderRadius);
-                });
-            }
-            this.image = getImage(node, resourceLoader);
-            this.bounds = IS_INPUT ? (0, Input.reformatInputBounds)((0, Bounds_1.parseBounds)(node, scrollX, scrollY)) : (0, Bounds_1.parseBounds)(node, scrollX, scrollY);
-            this.curvedBounds = (0, Bounds_1.parseBoundCurves)(this.bounds, this.style.border, this.style.borderRadius);
-        }
-
-        _createClass(NodeContainer, [{
-            key: 'getClipPaths',
-            value: function getClipPaths() {
-                var parentClips = this.parent ? this.parent.getClipPaths() : [];
-                var isClipped = this.style.overflow !== overflow.OVERFLOW.VISIBLE;
-
-                return isClipped ? parentClips.concat([(0, Bounds_1.calculatePaddingBoxPath)(this.curvedBounds)]) : parentClips;
-            }
-        }, {
-            key: 'isInFlow',
-            value: function isInFlow() {
-                return this.isRootElement() && !this.isFloating() && !this.isAbsolutelyPositioned();
-            }
-        }, {
-            key: 'isVisible',
-            value: function isVisible() {
-                return !(0, Util.contains)(this.style.display, display.DISPLAY.NONE) && this.style.opacity > 0 && this.style.visibility === visibility.VISIBILITY.VISIBLE;
-            }
-        }, {
-            key: 'isAbsolutelyPositioned',
-            value: function isAbsolutelyPositioned() {
-                return this.style.position !== position.POSITION.STATIC && this.style.position !== position.POSITION.RELATIVE;
-            }
-        }, {
-            key: 'isPositioned',
-            value: function isPositioned() {
-                return this.style.position !== position.POSITION.STATIC;
-            }
-        }, {
-            key: 'isFloating',
-            value: function isFloating() {
-                return this.style.float !== float_1.FLOAT.NONE;
-            }
-        }, {
-            key: 'isRootElement',
-            value: function isRootElement() {
-                return this.parent === null;
-            }
-        }, {
-            key: 'isTransformed',
-            value: function isTransformed() {
-                return this.style.transform !== null;
-            }
-        }, {
-            key: 'isPositionedWithZIndex',
-            value: function isPositionedWithZIndex() {
-                return this.isPositioned() && !this.style.zIndex.auto;
-            }
-        }, {
-            key: 'isInlineLevel',
-            value: function isInlineLevel() {
-                return (0, Util.contains)(this.style.display, display.DISPLAY.INLINE) || (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_BLOCK) || (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_FLEX) || (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_GRID) || (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_LIST_ITEM) || (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_TABLE);
-            }
-        }, {
-            key: 'isInlineBlockOrInlineTable',
-            value: function isInlineBlockOrInlineTable() {
-                return (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_BLOCK) || (0, Util.contains)(this.style.display, display.DISPLAY.INLINE_TABLE);
-            }
-        }]);
-
-        return NodeContainer;
-    }();
-
-    exports.default = NodeContainer;
-
-
-    var getImage = function getImage(node, resourceLoader) {
-        if (node instanceof node.ownerDocument.defaultView.SVGSVGElement || node instanceof SVGSVGElement) {
-            var s = new XMLSerializer();
-            return resourceLoader.loadImage('data:image/svg+xml,' + encodeURIComponent(s.serializeToString(node)));
-        }
-        switch (node.tagName) {
-            case 'IMG':
-                // $FlowFixMe
-                var img = node;
-                return resourceLoader.loadImage(img.currentSrc || img.src);
-            case 'CANVAS':
-                // $FlowFixMe
-                var canvas = node;
-                return resourceLoader.loadCanvas(canvas);
-            case 'IFRAME':
-                var iframeKey = node.getAttribute('data-html2canvas-internal-iframe-key');
-                if (iframeKey) {
-                    return iframeKey;
-                }
-                break;
-        }
-
-        return null;
-    };
-    });
-
-    unwrapExports(NodeContainer_1);
-
-    var StackingContext_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-    var _NodeContainer2 = _interopRequireDefault(NodeContainer_1);
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var StackingContext = function () {
-        function StackingContext(container, parent, treatAsRealStackingContext) {
-            _classCallCheck(this, StackingContext);
-
-            this.container = container;
-            this.parent = parent;
-            this.contexts = [];
-            this.children = [];
-            this.treatAsRealStackingContext = treatAsRealStackingContext;
-        }
-
-        _createClass(StackingContext, [{
-            key: 'getOpacity',
-            value: function getOpacity() {
-                return this.parent ? this.container.style.opacity * this.parent.getOpacity() : this.container.style.opacity;
-            }
-        }, {
-            key: 'getRealParentStackingContext',
-            value: function getRealParentStackingContext() {
-                return !this.parent || this.treatAsRealStackingContext ? this : this.parent.getRealParentStackingContext();
-            }
-        }]);
-
-        return StackingContext;
-    }();
-
-    exports.default = StackingContext;
-    });
-
-    unwrapExports(StackingContext_1);
-
-    var NodeParser_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.NodeParser = undefined;
-
-
-
-    var _StackingContext2 = _interopRequireDefault(StackingContext_1);
-
-
-
-    var _NodeContainer2 = _interopRequireDefault(NodeContainer_1);
-
-
-
-    var _TextContainer2 = _interopRequireDefault(TextContainer_1);
-
-
-
-
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var NodeParser = exports.NodeParser = function NodeParser(node, resourceLoader, logger) {
-
-        var index = 0;
-
-        var container = new _NodeContainer2.default(node, null, resourceLoader, index++);
-        var stack = new _StackingContext2.default(container, null, true);
-
-        parseNodeTree(node, container, stack, resourceLoader, index);
-
-        return stack;
-    };
-
-    var IGNORED_NODE_NAMES = ['SCRIPT', 'HEAD', 'TITLE', 'OBJECT', 'BR', 'OPTION'];
-
-    var parseNodeTree = function parseNodeTree(node, parent, stack, resourceLoader, index) {
-
-        for (var childNode = node.firstChild, nextNode; childNode; childNode = nextNode) {
-            nextNode = childNode.nextSibling;
-            var defaultView = childNode.ownerDocument.defaultView;
-            if (childNode instanceof defaultView.Text || childNode instanceof Text || defaultView.parent && childNode instanceof defaultView.parent.Text) {
-                if (childNode.data.trim().length > 0) {
-                    parent.childNodes.push(_TextContainer2.default.fromTextNode(childNode, parent));
-                }
-            } else if (childNode instanceof defaultView.HTMLElement || childNode instanceof HTMLElement || defaultView.parent && childNode instanceof defaultView.parent.HTMLElement) {
-                if (IGNORED_NODE_NAMES.indexOf(childNode.nodeName) === -1) {
-                    var container = new _NodeContainer2.default(childNode, parent, resourceLoader, index++);
-                    if (container.isVisible()) {
-                        if (childNode.tagName === 'INPUT') {
-                            // $FlowFixMe
-                            (0, Input.inlineInputElement)(childNode, container);
-                        } else if (childNode.tagName === 'TEXTAREA') {
-                            // $FlowFixMe
-                            (0, Input.inlineTextAreaElement)(childNode, container);
-                        } else if (childNode.tagName === 'SELECT') {
-                            // $FlowFixMe
-                            (0, Input.inlineSelectElement)(childNode, container);
-                        } else if (container.style.listStyle && container.style.listStyle.listStyleType !== listStyle.LIST_STYLE_TYPE.NONE) {
-                            (0, ListItem.inlineListItemElement)(childNode, container, resourceLoader);
-                        }
-
-                        var SHOULD_TRAVERSE_CHILDREN = childNode.tagName !== 'TEXTAREA';
-                        var treatAsRealStackingContext = createsRealStackingContext(container, childNode);
-                        if (treatAsRealStackingContext || createsStackingContext(container)) {
-                            // for treatAsRealStackingContext:false, any positioned descendants and descendants
-                            // which actually create a new stacking context should be considered part of the parent stacking context
-                            var parentStack = treatAsRealStackingContext || container.isPositioned() ? stack.getRealParentStackingContext() : stack;
-                            var childStack = new _StackingContext2.default(container, parentStack, treatAsRealStackingContext);
-                            parentStack.contexts.push(childStack);
-                            if (SHOULD_TRAVERSE_CHILDREN) {
-                                parseNodeTree(childNode, container, childStack, resourceLoader, index);
-                            }
-                        } else {
-                            stack.children.push(container);
-                            if (SHOULD_TRAVERSE_CHILDREN) {
-                                parseNodeTree(childNode, container, stack, resourceLoader, index);
-                            }
-                        }
-                    }
-                }
-            } else if (childNode instanceof defaultView.SVGSVGElement || childNode instanceof SVGSVGElement || defaultView.parent && childNode instanceof defaultView.parent.SVGSVGElement) {
-                var _container = new _NodeContainer2.default(childNode, parent, resourceLoader, index++);
-                var _treatAsRealStackingContext = createsRealStackingContext(_container, childNode);
-                if (_treatAsRealStackingContext || createsStackingContext(_container)) {
-                    // for treatAsRealStackingContext:false, any positioned descendants and descendants
-                    // which actually create a new stacking context should be considered part of the parent stacking context
-                    var _parentStack = _treatAsRealStackingContext || _container.isPositioned() ? stack.getRealParentStackingContext() : stack;
-                    var _childStack = new _StackingContext2.default(_container, _parentStack, _treatAsRealStackingContext);
-                    _parentStack.contexts.push(_childStack);
-                } else {
-                    stack.children.push(_container);
-                }
-            }
-        }
-    };
-
-    var createsRealStackingContext = function createsRealStackingContext(container, node) {
-        return container.isRootElement() || container.isPositionedWithZIndex() || container.style.opacity < 1 || container.isTransformed() || isBodyWithTransparentRoot(container, node);
-    };
-
-    var createsStackingContext = function createsStackingContext(container) {
-        return container.isPositioned() || container.isFloating();
-    };
-
-    var isBodyWithTransparentRoot = function isBodyWithTransparentRoot(container, node) {
-        return node.nodeName === 'BODY' && container.parent instanceof _NodeContainer2.default && container.parent.style.background.backgroundColor.isTransparent();
-    };
-    });
-
-    unwrapExports(NodeParser_1);
-    var NodeParser_2 = NodeParser_1.NodeParser;
-
-    var Logger_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var Logger = function () {
-        function Logger(enabled, id, start) {
-            _classCallCheck(this, Logger);
-
-            this.enabled = typeof window !== 'undefined' && enabled;
-            this.start = start ? start : Date.now();
-            this.id = id;
-        }
-
-        _createClass(Logger, [{
-            key: 'child',
-            value: function child(id) {
-                return new Logger(this.enabled, id, this.start);
-            }
-
-            // eslint-disable-next-line flowtype/no-weak-types
-
-        }, {
-            key: 'log',
-            value: function log() {
-                if (this.enabled && window.console && window.console.log) {
-                    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-                        args[_key] = arguments[_key];
-                    }
-
-                    Function.prototype.bind.call(window.console.log, window.console).apply(window.console, [Date.now() - this.start + 'ms', this.id ? 'html2canvas (' + this.id + '):' : 'html2canvas:'].concat([].slice.call(args, 0)));
-                }
-            }
-
-            // eslint-disable-next-line flowtype/no-weak-types
-
-        }, {
-            key: 'error',
-            value: function error() {
-                if (this.enabled && window.console && window.console.error) {
-                    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-                        args[_key2] = arguments[_key2];
-                    }
-
-                    Function.prototype.bind.call(window.console.error, window.console).apply(window.console, [Date.now() - this.start + 'ms', this.id ? 'html2canvas (' + this.id + '):' : 'html2canvas:'].concat([].slice.call(args, 0)));
-                }
-            }
-        }]);
-
-        return Logger;
-    }();
-
-    exports.default = Logger;
-    });
-
-    var Logger = unwrapExports(Logger_1);
-
-    var CanvasRenderer_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var addColorStops = function addColorStops(gradient, canvasGradient) {
-        var maxStop = Math.max.apply(null, gradient.colorStops.map(function (colorStop) {
-            return colorStop.stop;
-        }));
-        var f = 1 / Math.max(1, maxStop);
-        gradient.colorStops.forEach(function (colorStop) {
-            canvasGradient.addColorStop(f * colorStop.stop, colorStop.color.toString());
-        });
-    };
-
-    var CanvasRenderer = function () {
-        function CanvasRenderer(canvas) {
-            _classCallCheck(this, CanvasRenderer);
-
-            this.canvas = canvas ? canvas : document.createElement('canvas');
-        }
-
-        _createClass(CanvasRenderer, [{
-            key: 'render',
-            value: function render(options) {
-                this.ctx = this.canvas.getContext('2d');
-                this.options = options;
-                this.canvas.width = Math.floor(options.width * options.scale);
-                this.canvas.height = Math.floor(options.height * options.scale);
-                this.canvas.style.width = options.width + 'px';
-                this.canvas.style.height = options.height + 'px';
-
-                this.ctx.scale(this.options.scale, this.options.scale);
-                this.ctx.translate(-options.x, -options.y);
-                this.ctx.textBaseline = 'bottom';
-                options.logger.log('Canvas renderer initialized (' + options.width + 'x' + options.height + ' at ' + options.x + ',' + options.y + ') with scale ' + this.options.scale);
-            }
-        }, {
-            key: 'clip',
-            value: function clip(clipPaths, callback) {
-                var _this = this;
-
-                if (clipPaths.length) {
-                    this.ctx.save();
-                    clipPaths.forEach(function (path) {
-                        _this.path(path);
-                        _this.ctx.clip();
-                    });
-                }
-
-                callback();
-
-                if (clipPaths.length) {
-                    this.ctx.restore();
-                }
-            }
-        }, {
-            key: 'drawImage',
-            value: function drawImage(image, source, destination) {
-                this.ctx.drawImage(image, source.left, source.top, source.width, source.height, destination.left, destination.top, destination.width, destination.height);
-            }
-        }, {
-            key: 'drawShape',
-            value: function drawShape(path, color) {
-                this.path(path);
-                this.ctx.fillStyle = color.toString();
-                this.ctx.fill();
-            }
-        }, {
-            key: 'fill',
-            value: function fill(color) {
-                this.ctx.fillStyle = color.toString();
-                this.ctx.fill();
-            }
-        }, {
-            key: 'getTarget',
-            value: function getTarget() {
-                this.canvas.getContext('2d').setTransform(1, 0, 0, 1, 0, 0);
-                return Promise.resolve(this.canvas);
-            }
-        }, {
-            key: 'path',
-            value: function path(_path) {
-                var _this2 = this;
-
-                this.ctx.beginPath();
-                if (Array.isArray(_path)) {
-                    _path.forEach(function (point, index) {
-                        var start = point.type === Path.PATH.VECTOR ? point : point.start;
-                        if (index === 0) {
-                            _this2.ctx.moveTo(start.x, start.y);
-                        } else {
-                            _this2.ctx.lineTo(start.x, start.y);
-                        }
-
-                        if (point.type === Path.PATH.BEZIER_CURVE) {
-                            _this2.ctx.bezierCurveTo(point.startControl.x, point.startControl.y, point.endControl.x, point.endControl.y, point.end.x, point.end.y);
-                        }
-                    });
-                } else {
-                    this.ctx.arc(_path.x + _path.radius, _path.y + _path.radius, _path.radius, 0, Math.PI * 2, true);
-                }
-
-                this.ctx.closePath();
-            }
-        }, {
-            key: 'rectangle',
-            value: function rectangle(x, y, width, height, color) {
-                this.ctx.fillStyle = color.toString();
-                this.ctx.fillRect(x, y, width, height);
-            }
-        }, {
-            key: 'renderLinearGradient',
-            value: function renderLinearGradient(bounds, gradient) {
-                var linearGradient = this.ctx.createLinearGradient(bounds.left + gradient.direction.x1, bounds.top + gradient.direction.y1, bounds.left + gradient.direction.x0, bounds.top + gradient.direction.y0);
-
-                addColorStops(gradient, linearGradient);
-                this.ctx.fillStyle = linearGradient;
-                this.ctx.fillRect(bounds.left, bounds.top, bounds.width, bounds.height);
-            }
-        }, {
-            key: 'renderRadialGradient',
-            value: function renderRadialGradient(bounds, gradient) {
-                var _this3 = this;
-
-                var x = bounds.left + gradient.center.x;
-                var y = bounds.top + gradient.center.y;
-
-                var radialGradient = this.ctx.createRadialGradient(x, y, 0, x, y, gradient.radius.x);
-                if (!radialGradient) {
-                    return;
-                }
-
-                addColorStops(gradient, radialGradient);
-                this.ctx.fillStyle = radialGradient;
-
-                if (gradient.radius.x !== gradient.radius.y) {
-                    // transforms for elliptical radial gradient
-                    var midX = bounds.left + 0.5 * bounds.width;
-                    var midY = bounds.top + 0.5 * bounds.height;
-                    var f = gradient.radius.y / gradient.radius.x;
-                    var invF = 1 / f;
-
-                    this.transform(midX, midY, [1, 0, 0, f, 0, 0], function () {
-                        return _this3.ctx.fillRect(bounds.left, invF * (bounds.top - midY) + midY, bounds.width, bounds.height * invF);
-                    });
-                } else {
-                    this.ctx.fillRect(bounds.left, bounds.top, bounds.width, bounds.height);
-                }
-            }
-        }, {
-            key: 'renderRepeat',
-            value: function renderRepeat(path, image, imageSize, offsetX, offsetY) {
-                this.path(path);
-                this.ctx.fillStyle = this.ctx.createPattern(this.resizeImage(image, imageSize), 'repeat');
-                this.ctx.translate(offsetX, offsetY);
-                this.ctx.fill();
-                this.ctx.translate(-offsetX, -offsetY);
-            }
-        }, {
-            key: 'renderTextNode',
-            value: function renderTextNode(textBounds, color, font, textDecoration$$1, textShadows) {
-                var _this4 = this;
-
-                this.ctx.font = [font.fontStyle, font.fontVariant, font.fontWeight, font.fontSize, font.fontFamily].join(' ');
-
-                textBounds.forEach(function (text) {
-                    _this4.ctx.fillStyle = color.toString();
-                    if (textShadows && text.text.trim().length) {
-                        textShadows.slice(0).reverse().forEach(function (textShadow) {
-                            _this4.ctx.shadowColor = textShadow.color.toString();
-                            _this4.ctx.shadowOffsetX = textShadow.offsetX * _this4.options.scale;
-                            _this4.ctx.shadowOffsetY = textShadow.offsetY * _this4.options.scale;
-                            _this4.ctx.shadowBlur = textShadow.blur;
-
-                            _this4.ctx.fillText(text.text, text.bounds.left, text.bounds.top + text.bounds.height);
-                        });
-                    } else {
-                        _this4.ctx.fillText(text.text, text.bounds.left, text.bounds.top + text.bounds.height);
-                    }
-                    _this4.ctx.shadowColor = '';
-                    _this4.ctx.shadowOffsetX = 0;
-                    _this4.ctx.shadowOffsetY = 0;
-                    _this4.ctx.shadowBlur = 0;
-
-                    if (textDecoration$$1 !== null) {
-                        var textDecorationColor = textDecoration$$1.textDecorationColor || color;
-                        textDecoration$$1.textDecorationLine.forEach(function (textDecorationLine) {
-                            switch (textDecorationLine) {
-                                case textDecoration.TEXT_DECORATION_LINE.UNDERLINE:
-                                    // Draws a line at the baseline of the font
-                                    // TODO As some browsers display the line as more than 1px if the font-size is big,
-                                    // need to take that into account both in position and size
-                                    var _options$fontMetrics$ = _this4.options.fontMetrics.getMetrics(font),
-                                        baseline = _options$fontMetrics$.baseline;
-
-                                    _this4.rectangle(text.bounds.left, Math.round(text.bounds.top + baseline), text.bounds.width, 1, textDecorationColor);
-                                    break;
-                                case textDecoration.TEXT_DECORATION_LINE.OVERLINE:
-                                    _this4.rectangle(text.bounds.left, Math.round(text.bounds.top), text.bounds.width, 1, textDecorationColor);
-                                    break;
-                                case textDecoration.TEXT_DECORATION_LINE.LINE_THROUGH:
-                                    // TODO try and find exact position for line-through
-                                    var _options$fontMetrics$2 = _this4.options.fontMetrics.getMetrics(font),
-                                        middle = _options$fontMetrics$2.middle;
-
-                                    _this4.rectangle(text.bounds.left, Math.ceil(text.bounds.top + middle), text.bounds.width, 1, textDecorationColor);
-                                    break;
-                            }
-                        });
-                    }
-                });
-            }
-        }, {
-            key: 'resizeImage',
-            value: function resizeImage(image, size) {
-                if (image.width === size.width && image.height === size.height) {
-                    return image;
-                }
-
-                var canvas = this.canvas.ownerDocument.createElement('canvas');
-                canvas.width = size.width;
-                canvas.height = size.height;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, size.width, size.height);
-                return canvas;
-            }
-        }, {
-            key: 'setOpacity',
-            value: function setOpacity(opacity) {
-                this.ctx.globalAlpha = opacity;
-            }
-        }, {
-            key: 'transform',
-            value: function transform(offsetX, offsetY, matrix, callback) {
-                this.ctx.save();
-                this.ctx.translate(offsetX, offsetY);
-                this.ctx.transform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-                this.ctx.translate(-offsetX, -offsetY);
-
-                callback();
-
-                this.ctx.restore();
-            }
-        }]);
-
-        return CanvasRenderer;
-    }();
-
-    exports.default = CanvasRenderer;
-    });
-
-    var CanvasRenderer = unwrapExports(CanvasRenderer_1);
-
-    var Font = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.FontMetrics = undefined;
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var SAMPLE_TEXT = 'Hidden Text';
-
-    var FontMetrics = exports.FontMetrics = function () {
-        function FontMetrics(document) {
-            _classCallCheck(this, FontMetrics);
-
-            this._data = {};
-            this._document = document;
-        }
-
-        _createClass(FontMetrics, [{
-            key: '_parseMetrics',
-            value: function _parseMetrics(font) {
-                var container = this._document.createElement('div');
-                var img = this._document.createElement('img');
-                var span = this._document.createElement('span');
-
-                var body = this._document.body;
-                if (!body) {
-                    throw new Error('');
-                }
-
-                container.style.visibility = 'hidden';
-                container.style.fontFamily = font.fontFamily;
-                container.style.fontSize = font.fontSize;
-                container.style.margin = '0';
-                container.style.padding = '0';
-
-                body.appendChild(container);
-
-                img.src = Util.SMALL_IMAGE;
-                img.width = 1;
-                img.height = 1;
-
-                img.style.margin = '0';
-                img.style.padding = '0';
-                img.style.verticalAlign = 'baseline';
-
-                span.style.fontFamily = font.fontFamily;
-                span.style.fontSize = font.fontSize;
-                span.style.margin = '0';
-                span.style.padding = '0';
-
-                span.appendChild(this._document.createTextNode(SAMPLE_TEXT));
-                container.appendChild(span);
-                container.appendChild(img);
-                var baseline = img.offsetTop - span.offsetTop + 2;
-
-                container.removeChild(span);
-                container.appendChild(this._document.createTextNode(SAMPLE_TEXT));
-
-                container.style.lineHeight = 'normal';
-                img.style.verticalAlign = 'super';
-
-                var middle = img.offsetTop - container.offsetTop + 2;
-
-                body.removeChild(container);
-
-                return { baseline: baseline, middle: middle };
-            }
-        }, {
-            key: 'getMetrics',
-            value: function getMetrics(font) {
-                var key = font.fontFamily + ' ' + font.fontSize;
-                if (this._data[key] === undefined) {
-                    this._data[key] = this._parseMetrics(font);
-                }
-
-                return this._data[key];
-            }
-        }]);
-
-        return FontMetrics;
-    }();
-    });
-
-    unwrapExports(Font);
-    var Font_1 = Font.FontMetrics;
-
-    var Angle = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var ANGLE = /([+-]?\d*\.?\d+)(deg|grad|rad|turn)/i;
-
-    var parseAngle = exports.parseAngle = function parseAngle(angle) {
-        var match = angle.match(ANGLE);
-
-        if (match) {
-            var value = parseFloat(match[1]);
-            switch (match[2].toLowerCase()) {
-                case 'deg':
-                    return Math.PI * value / 180;
-                case 'grad':
-                    return Math.PI / 200 * value;
-                case 'rad':
-                    return value;
-                case 'turn':
-                    return Math.PI * 2 * value;
-            }
-        }
-
-        return null;
-    };
-    });
-
-    unwrapExports(Angle);
-    var Angle_1 = Angle.parseAngle;
-
-    var Gradient = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.transformWebkitRadialGradientArgs = exports.parseGradient = exports.RadialGradient = exports.LinearGradient = exports.RADIAL_GRADIENT_SHAPE = exports.GRADIENT_TYPE = undefined;
-
-    var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-
-
-    var _NodeContainer2 = _interopRequireDefault(NodeContainer_1);
-
-
-
-
-
-    var _Color2 = _interopRequireDefault(Color_1);
-
-
-
-    var _Length2 = _interopRequireDefault(Length_1);
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var SIDE_OR_CORNER = /^(to )?(left|top|right|bottom)( (left|top|right|bottom))?$/i;
-    var PERCENTAGE_ANGLES = /^([+-]?\d*\.?\d+)% ([+-]?\d*\.?\d+)%$/i;
-    var ENDS_WITH_LENGTH = /(px)|%|( 0)$/i;
-    var FROM_TO_COLORSTOP = /^(from|to|color-stop)\((?:([\d.]+)(%)?,\s*)?(.+?)\)$/i;
-    var RADIAL_SHAPE_DEFINITION = /^\s*(circle|ellipse)?\s*((?:([\d.]+)(px|r?em|%)\s*(?:([\d.]+)(px|r?em|%))?)|closest-side|closest-corner|farthest-side|farthest-corner)?\s*(?:at\s*(?:(left|center|right)|([\d.]+)(px|r?em|%))\s+(?:(top|center|bottom)|([\d.]+)(px|r?em|%)))?(?:\s|$)/i;
-
-    var GRADIENT_TYPE = exports.GRADIENT_TYPE = {
-        LINEAR_GRADIENT: 0,
-        RADIAL_GRADIENT: 1
-    };
-
-    var RADIAL_GRADIENT_SHAPE = exports.RADIAL_GRADIENT_SHAPE = {
-        CIRCLE: 0,
-        ELLIPSE: 1
-    };
-
-    var LENGTH_FOR_POSITION = {
-        left: new _Length2.default('0%'),
-        top: new _Length2.default('0%'),
-        center: new _Length2.default('50%'),
-        right: new _Length2.default('100%'),
-        bottom: new _Length2.default('100%')
-    };
-
-    var LinearGradient = exports.LinearGradient = function LinearGradient(colorStops, direction) {
-        _classCallCheck(this, LinearGradient);
-
-        this.type = GRADIENT_TYPE.LINEAR_GRADIENT;
-        this.colorStops = colorStops;
-        this.direction = direction;
-    };
-
-    var RadialGradient = exports.RadialGradient = function RadialGradient(colorStops, shape, center, radius) {
-        _classCallCheck(this, RadialGradient);
-
-        this.type = GRADIENT_TYPE.RADIAL_GRADIENT;
-        this.colorStops = colorStops;
-        this.shape = shape;
-        this.center = center;
-        this.radius = radius;
-    };
-
-    var parseGradient = exports.parseGradient = function parseGradient(container, _ref, bounds) {
-        var args = _ref.args,
-            method = _ref.method,
-            prefix = _ref.prefix;
-
-        if (method === 'linear-gradient') {
-            return parseLinearGradient(args, bounds, !!prefix);
-        } else if (method === 'gradient' && args[0] === 'linear') {
-            // TODO handle correct angle
-            return parseLinearGradient(['to bottom'].concat(transformObsoleteColorStops(args.slice(3))), bounds, !!prefix);
-        } else if (method === 'radial-gradient') {
-            return parseRadialGradient(container, prefix === '-webkit-' ? transformWebkitRadialGradientArgs(args) : args, bounds);
-        } else if (method === 'gradient' && args[0] === 'radial') {
-            return parseRadialGradient(container, transformObsoleteColorStops(transformWebkitRadialGradientArgs(args.slice(1))), bounds);
-        }
-    };
-
-    var parseColorStops = function parseColorStops(args, firstColorStopIndex, lineLength) {
-        var colorStops = [];
-
-        for (var i = firstColorStopIndex; i < args.length; i++) {
-            var value = args[i];
-            var HAS_LENGTH = ENDS_WITH_LENGTH.test(value);
-            var lastSpaceIndex = value.lastIndexOf(' ');
-            var _color = new _Color2.default(HAS_LENGTH ? value.substring(0, lastSpaceIndex) : value);
-            var _stop = HAS_LENGTH ? new _Length2.default(value.substring(lastSpaceIndex + 1)) : i === firstColorStopIndex ? new _Length2.default('0%') : i === args.length - 1 ? new _Length2.default('100%') : null;
-            colorStops.push({ color: _color, stop: _stop });
-        }
-
-        var absoluteValuedColorStops = colorStops.map(function (_ref2) {
-            var color = _ref2.color,
-                stop = _ref2.stop;
-
-            var absoluteStop = lineLength === 0 ? 0 : stop ? stop.getAbsoluteValue(lineLength) / lineLength : null;
-
-            return {
-                color: color,
-                // $FlowFixMe
-                stop: absoluteStop
-            };
-        });
-
-        var previousColorStop = absoluteValuedColorStops[0].stop;
-        for (var _i = 0; _i < absoluteValuedColorStops.length; _i++) {
-            if (previousColorStop !== null) {
-                var _stop2 = absoluteValuedColorStops[_i].stop;
-                if (_stop2 === null) {
-                    var n = _i;
-                    while (absoluteValuedColorStops[n].stop === null) {
-                        n++;
-                    }
-                    var steps = n - _i + 1;
-                    var nextColorStep = absoluteValuedColorStops[n].stop;
-                    var stepSize = (nextColorStep - previousColorStop) / steps;
-                    for (; _i < n; _i++) {
-                        previousColorStop = absoluteValuedColorStops[_i].stop = previousColorStop + stepSize;
-                    }
-                } else {
-                    previousColorStop = _stop2;
-                }
-            }
-        }
-
-        return absoluteValuedColorStops;
-    };
-
-    var parseLinearGradient = function parseLinearGradient(args, bounds, hasPrefix) {
-        var angle = (0, Angle.parseAngle)(args[0]);
-        var HAS_SIDE_OR_CORNER = SIDE_OR_CORNER.test(args[0]);
-        var HAS_DIRECTION = HAS_SIDE_OR_CORNER || angle !== null || PERCENTAGE_ANGLES.test(args[0]);
-        var direction = HAS_DIRECTION ? angle !== null ? calculateGradientDirection(
-        // if there is a prefix, the 0° angle points due East (instead of North per W3C)
-        hasPrefix ? angle - Math.PI * 0.5 : angle, bounds) : HAS_SIDE_OR_CORNER ? parseSideOrCorner(args[0], bounds) : parsePercentageAngle(args[0], bounds) : calculateGradientDirection(Math.PI, bounds);
-        var firstColorStopIndex = HAS_DIRECTION ? 1 : 0;
-
-        // TODO: Fix some inaccuracy with color stops with px values
-        var lineLength = Math.min((0, Util.distance)(Math.abs(direction.x0) + Math.abs(direction.x1), Math.abs(direction.y0) + Math.abs(direction.y1)), bounds.width * 2, bounds.height * 2);
-
-        return new LinearGradient(parseColorStops(args, firstColorStopIndex, lineLength), direction);
-    };
-
-    var parseRadialGradient = function parseRadialGradient(container, args, bounds) {
-        var m = args[0].match(RADIAL_SHAPE_DEFINITION);
-        var shape = m && (m[1] === 'circle' || // explicit shape specification
-        m[3] !== undefined && m[5] === undefined) // only one radius coordinate
-        ? RADIAL_GRADIENT_SHAPE.CIRCLE : RADIAL_GRADIENT_SHAPE.ELLIPSE;
-        var radius = {};
-        var center = {};
-
-        if (m) {
-            // Radius
-            if (m[3] !== undefined) {
-                radius.x = (0, Length_1.calculateLengthFromValueWithUnit)(container, m[3], m[4]).getAbsoluteValue(bounds.width);
-            }
-
-            if (m[5] !== undefined) {
-                radius.y = (0, Length_1.calculateLengthFromValueWithUnit)(container, m[5], m[6]).getAbsoluteValue(bounds.height);
-            }
-
-            // Position
-            if (m[7]) {
-                center.x = LENGTH_FOR_POSITION[m[7].toLowerCase()];
-            } else if (m[8] !== undefined) {
-                center.x = (0, Length_1.calculateLengthFromValueWithUnit)(container, m[8], m[9]);
-            }
-
-            if (m[10]) {
-                center.y = LENGTH_FOR_POSITION[m[10].toLowerCase()];
-            } else if (m[11] !== undefined) {
-                center.y = (0, Length_1.calculateLengthFromValueWithUnit)(container, m[11], m[12]);
-            }
-        }
-
-        var gradientCenter = {
-            x: center.x === undefined ? bounds.width / 2 : center.x.getAbsoluteValue(bounds.width),
-            y: center.y === undefined ? bounds.height / 2 : center.y.getAbsoluteValue(bounds.height)
-        };
-        var gradientRadius = calculateRadius(m && m[2] || 'farthest-corner', shape, gradientCenter, radius, bounds);
-
-        return new RadialGradient(parseColorStops(args, m ? 1 : 0, Math.min(gradientRadius.x, gradientRadius.y)), shape, gradientCenter, gradientRadius);
-    };
-
-    var calculateGradientDirection = function calculateGradientDirection(radian, bounds) {
-        var width = bounds.width;
-        var height = bounds.height;
-        var HALF_WIDTH = width * 0.5;
-        var HALF_HEIGHT = height * 0.5;
-        var lineLength = Math.abs(width * Math.sin(radian)) + Math.abs(height * Math.cos(radian));
-        var HALF_LINE_LENGTH = lineLength / 2;
-
-        var x0 = HALF_WIDTH + Math.sin(radian) * HALF_LINE_LENGTH;
-        var y0 = HALF_HEIGHT - Math.cos(radian) * HALF_LINE_LENGTH;
-        var x1 = width - x0;
-        var y1 = height - y0;
-
-        return { x0: x0, x1: x1, y0: y0, y1: y1 };
-    };
-
-    var parseTopRight = function parseTopRight(bounds) {
-        return Math.acos(bounds.width / 2 / ((0, Util.distance)(bounds.width, bounds.height) / 2));
-    };
-
-    var parseSideOrCorner = function parseSideOrCorner(side, bounds) {
-        switch (side) {
-            case 'bottom':
-            case 'to top':
-                return calculateGradientDirection(0, bounds);
-            case 'left':
-            case 'to right':
-                return calculateGradientDirection(Math.PI / 2, bounds);
-            case 'right':
-            case 'to left':
-                return calculateGradientDirection(3 * Math.PI / 2, bounds);
-            case 'top right':
-            case 'right top':
-            case 'to bottom left':
-            case 'to left bottom':
-                return calculateGradientDirection(Math.PI + parseTopRight(bounds), bounds);
-            case 'top left':
-            case 'left top':
-            case 'to bottom right':
-            case 'to right bottom':
-                return calculateGradientDirection(Math.PI - parseTopRight(bounds), bounds);
-            case 'bottom left':
-            case 'left bottom':
-            case 'to top right':
-            case 'to right top':
-                return calculateGradientDirection(parseTopRight(bounds), bounds);
-            case 'bottom right':
-            case 'right bottom':
-            case 'to top left':
-            case 'to left top':
-                return calculateGradientDirection(2 * Math.PI - parseTopRight(bounds), bounds);
-            case 'top':
-            case 'to bottom':
-            default:
-                return calculateGradientDirection(Math.PI, bounds);
-        }
-    };
-
-    var parsePercentageAngle = function parsePercentageAngle(angle, bounds) {
-        var _angle$split$map = angle.split(' ').map(parseFloat),
-            _angle$split$map2 = _slicedToArray(_angle$split$map, 2),
-            left = _angle$split$map2[0],
-            top = _angle$split$map2[1];
-
-        var ratio = left / 100 * bounds.width / (top / 100 * bounds.height);
-
-        return calculateGradientDirection(Math.atan(isNaN(ratio) ? 1 : ratio) + Math.PI / 2, bounds);
-    };
-
-    var findCorner = function findCorner(bounds, x, y, closest) {
-        var corners = [{ x: 0, y: 0 }, { x: 0, y: bounds.height }, { x: bounds.width, y: 0 }, { x: bounds.width, y: bounds.height }];
-
-        // $FlowFixMe
-        return corners.reduce(function (stat, corner) {
-            var d = (0, Util.distance)(x - corner.x, y - corner.y);
-            if (closest ? d < stat.optimumDistance : d > stat.optimumDistance) {
-                return {
-                    optimumCorner: corner,
-                    optimumDistance: d
-                };
-            }
-
-            return stat;
-        }, {
-            optimumDistance: closest ? Infinity : -Infinity,
-            optimumCorner: null
-        }).optimumCorner;
-    };
-
-    var calculateRadius = function calculateRadius(extent, shape, center, radius, bounds) {
-        var x = center.x;
-        var y = center.y;
-        var rx = 0;
-        var ry = 0;
-
-        switch (extent) {
-            case 'closest-side':
-                // The ending shape is sized so that that it exactly meets the side of the gradient box closest to the gradient’s center.
-                // If the shape is an ellipse, it exactly meets the closest side in each dimension.
-                if (shape === RADIAL_GRADIENT_SHAPE.CIRCLE) {
-                    rx = ry = Math.min(Math.abs(x), Math.abs(x - bounds.width), Math.abs(y), Math.abs(y - bounds.height));
-                } else if (shape === RADIAL_GRADIENT_SHAPE.ELLIPSE) {
-                    rx = Math.min(Math.abs(x), Math.abs(x - bounds.width));
-                    ry = Math.min(Math.abs(y), Math.abs(y - bounds.height));
-                }
-                break;
-
-            case 'closest-corner':
-                // The ending shape is sized so that that it passes through the corner of the gradient box closest to the gradient’s center.
-                // If the shape is an ellipse, the ending shape is given the same aspect-ratio it would have if closest-side were specified.
-                if (shape === RADIAL_GRADIENT_SHAPE.CIRCLE) {
-                    rx = ry = Math.min((0, Util.distance)(x, y), (0, Util.distance)(x, y - bounds.height), (0, Util.distance)(x - bounds.width, y), (0, Util.distance)(x - bounds.width, y - bounds.height));
-                } else if (shape === RADIAL_GRADIENT_SHAPE.ELLIPSE) {
-                    // Compute the ratio ry/rx (which is to be the same as for "closest-side")
-                    var c = Math.min(Math.abs(y), Math.abs(y - bounds.height)) / Math.min(Math.abs(x), Math.abs(x - bounds.width));
-                    var corner = findCorner(bounds, x, y, true);
-                    rx = (0, Util.distance)(corner.x - x, (corner.y - y) / c);
-                    ry = c * rx;
-                }
-                break;
-
-            case 'farthest-side':
-                // Same as closest-side, except the ending shape is sized based on the farthest side(s)
-                if (shape === RADIAL_GRADIENT_SHAPE.CIRCLE) {
-                    rx = ry = Math.max(Math.abs(x), Math.abs(x - bounds.width), Math.abs(y), Math.abs(y - bounds.height));
-                } else if (shape === RADIAL_GRADIENT_SHAPE.ELLIPSE) {
-                    rx = Math.max(Math.abs(x), Math.abs(x - bounds.width));
-                    ry = Math.max(Math.abs(y), Math.abs(y - bounds.height));
-                }
-                break;
-
-            case 'farthest-corner':
-                // Same as closest-corner, except the ending shape is sized based on the farthest corner.
-                // If the shape is an ellipse, the ending shape is given the same aspect ratio it would have if farthest-side were specified.
-                if (shape === RADIAL_GRADIENT_SHAPE.CIRCLE) {
-                    rx = ry = Math.max((0, Util.distance)(x, y), (0, Util.distance)(x, y - bounds.height), (0, Util.distance)(x - bounds.width, y), (0, Util.distance)(x - bounds.width, y - bounds.height));
-                } else if (shape === RADIAL_GRADIENT_SHAPE.ELLIPSE) {
-                    // Compute the ratio ry/rx (which is to be the same as for "farthest-side")
-                    var _c = Math.max(Math.abs(y), Math.abs(y - bounds.height)) / Math.max(Math.abs(x), Math.abs(x - bounds.width));
-                    var _corner = findCorner(bounds, x, y, false);
-                    rx = (0, Util.distance)(_corner.x - x, (_corner.y - y) / _c);
-                    ry = _c * rx;
-                }
-                break;
-
-            default:
-                // pixel or percentage values
-                rx = radius.x || 0;
-                ry = radius.y !== undefined ? radius.y : rx;
-                break;
-        }
-
-        return {
-            x: rx,
-            y: ry
-        };
-    };
-
-    var transformWebkitRadialGradientArgs = exports.transformWebkitRadialGradientArgs = function transformWebkitRadialGradientArgs(args) {
-        var shape = '';
-        var radius = '';
-        var extent = '';
-        var position = '';
-        var idx = 0;
-
-        var POSITION = /^(left|center|right|\d+(?:px|r?em|%)?)(?:\s+(top|center|bottom|\d+(?:px|r?em|%)?))?$/i;
-        var SHAPE_AND_EXTENT = /^(circle|ellipse)?\s*(closest-side|closest-corner|farthest-side|farthest-corner|contain|cover)?$/i;
-        var RADIUS = /^\d+(px|r?em|%)?(?:\s+\d+(px|r?em|%)?)?$/i;
-
-        var matchStartPosition = args[idx].match(POSITION);
-        if (matchStartPosition) {
-            idx++;
-        }
-
-        var matchShapeExtent = args[idx].match(SHAPE_AND_EXTENT);
-        if (matchShapeExtent) {
-            shape = matchShapeExtent[1] || '';
-            extent = matchShapeExtent[2] || '';
-            if (extent === 'contain') {
-                extent = 'closest-side';
-            } else if (extent === 'cover') {
-                extent = 'farthest-corner';
-            }
-            idx++;
-        }
-
-        var matchStartRadius = args[idx].match(RADIUS);
-        if (matchStartRadius) {
-            idx++;
-        }
-
-        var matchEndPosition = args[idx].match(POSITION);
-        if (matchEndPosition) {
-            idx++;
-        }
-
-        var matchEndRadius = args[idx].match(RADIUS);
-        if (matchEndRadius) {
-            idx++;
-        }
-
-        var matchPosition = matchEndPosition || matchStartPosition;
-        if (matchPosition && matchPosition[1]) {
-            position = matchPosition[1] + (/^\d+$/.test(matchPosition[1]) ? 'px' : '');
-            if (matchPosition[2]) {
-                position += ' ' + matchPosition[2] + (/^\d+$/.test(matchPosition[2]) ? 'px' : '');
-            }
-        }
-
-        var matchRadius = matchEndRadius || matchStartRadius;
-        if (matchRadius) {
-            radius = matchRadius[0];
-            if (!matchRadius[1]) {
-                radius += 'px';
-            }
-        }
-
-        if (position && !shape && !radius && !extent) {
-            radius = position;
-            position = '';
-        }
-
-        if (position) {
-            position = 'at ' + position;
-        }
-
-        return [[shape, extent, radius, position].filter(function (s) {
-            return !!s;
-        }).join(' ')].concat(args.slice(idx));
-    };
-
-    var transformObsoleteColorStops = function transformObsoleteColorStops(args) {
-        return args.map(function (color) {
-            return color.match(FROM_TO_COLORSTOP);
-        })
-        // $FlowFixMe
-        .map(function (v, index) {
-            if (!v) {
-                return args[index];
-            }
-
-            switch (v[1]) {
-                case 'from':
-                    return v[4] + ' 0%';
-                case 'to':
-                    return v[4] + ' 100%';
-                case 'color-stop':
-                    if (v[3] === '%') {
-                        return v[4] + ' ' + v[2];
-                    }
-                    return v[4] + ' ' + parseFloat(v[2]) * 100 + '%';
-            }
-        });
-    };
-    });
-
-    unwrapExports(Gradient);
-    var Gradient_1 = Gradient.transformWebkitRadialGradientArgs;
-    var Gradient_2 = Gradient.parseGradient;
-    var Gradient_3 = Gradient.RadialGradient;
-    var Gradient_4 = Gradient.LinearGradient;
-    var Gradient_5 = Gradient.RADIAL_GRADIENT_SHAPE;
-    var Gradient_6 = Gradient.GRADIENT_TYPE;
-
-    var Renderer_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-
-
-
-
-
-
-    var _TextContainer2 = _interopRequireDefault(TextContainer_1);
-
-
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var Renderer = function () {
-        function Renderer(target, options) {
-            _classCallCheck(this, Renderer);
-
-            this.target = target;
-            this.options = options;
-            target.render(options);
-        }
-
-        _createClass(Renderer, [{
-            key: 'renderNode',
-            value: function renderNode(container) {
-                if (container.isVisible()) {
-                    this.renderNodeBackgroundAndBorders(container);
-                    this.renderNodeContent(container);
-                }
-            }
-        }, {
-            key: 'renderNodeContent',
-            value: function renderNodeContent(container) {
-                var _this = this;
-
-                var callback = function callback() {
-                    if (container.childNodes.length) {
-                        container.childNodes.forEach(function (child) {
-                            if (child instanceof _TextContainer2.default) {
-                                var style = child.parent.style;
-                                _this.target.renderTextNode(child.bounds, style.color, style.font, style.textDecoration, style.textShadow);
-                            } else {
-                                _this.target.drawShape(child, container.style.color);
-                            }
-                        });
-                    }
-
-                    if (container.image) {
-                        var _image = _this.options.imageStore.get(container.image);
-                        if (_image) {
-                            var contentBox = (0, Bounds_1.calculateContentBox)(container.bounds, container.style.padding, container.style.border);
-                            var _width = typeof _image.width === 'number' && _image.width > 0 ? _image.width : contentBox.width;
-                            var _height = typeof _image.height === 'number' && _image.height > 0 ? _image.height : contentBox.height;
-                            if (_width > 0 && _height > 0) {
-                                _this.target.clip([(0, Bounds_1.calculatePaddingBoxPath)(container.curvedBounds)], function () {
-                                    _this.target.drawImage(_image, new Bounds_1.Bounds(0, 0, _width, _height), contentBox);
-                                });
-                            }
-                        }
-                    }
-                };
-                var paths = container.getClipPaths();
-                if (paths.length) {
-                    this.target.clip(paths, callback);
-                } else {
-                    callback();
-                }
-            }
-        }, {
-            key: 'renderNodeBackgroundAndBorders',
-            value: function renderNodeBackgroundAndBorders(container) {
-                var _this2 = this;
-
-                var HAS_BACKGROUND = !container.style.background.backgroundColor.isTransparent() || container.style.background.backgroundImage.length;
-
-                var hasRenderableBorders = container.style.border.some(function (border$$1) {
-                    return border$$1.borderStyle !== border.BORDER_STYLE.NONE && !border$$1.borderColor.isTransparent();
-                });
-
-                var callback = function callback() {
-                    var backgroundPaintingArea = (0, background.calculateBackgroungPaintingArea)(container.curvedBounds, container.style.background.backgroundClip);
-
-                    if (HAS_BACKGROUND) {
-                        _this2.target.clip([backgroundPaintingArea], function () {
-                            if (!container.style.background.backgroundColor.isTransparent()) {
-                                _this2.target.fill(container.style.background.backgroundColor);
-                            }
-
-                            _this2.renderBackgroundImage(container);
-                        });
-                    }
-
-                    container.style.border.forEach(function (border$$1, side) {
-                        if (border$$1.borderStyle !== border.BORDER_STYLE.NONE && !border$$1.borderColor.isTransparent()) {
-                            _this2.renderBorder(border$$1, side, container.curvedBounds);
-                        }
-                    });
-                };
-
-                if (HAS_BACKGROUND || hasRenderableBorders) {
-                    var paths = container.parent ? container.parent.getClipPaths() : [];
-                    if (paths.length) {
-                        this.target.clip(paths, callback);
-                    } else {
-                        callback();
-                    }
-                }
-            }
-        }, {
-            key: 'renderBackgroundImage',
-            value: function renderBackgroundImage(container) {
-                var _this3 = this;
-
-                container.style.background.backgroundImage.slice(0).reverse().forEach(function (backgroundImage) {
-                    if (backgroundImage.source.method === 'url' && backgroundImage.source.args.length) {
-                        _this3.renderBackgroundRepeat(container, backgroundImage);
-                    } else if (/gradient/i.test(backgroundImage.source.method)) {
-                        _this3.renderBackgroundGradient(container, backgroundImage);
-                    }
-                });
-            }
-        }, {
-            key: 'renderBackgroundRepeat',
-            value: function renderBackgroundRepeat(container, background$$1) {
-                var image = this.options.imageStore.get(background$$1.source.args[0]);
-                if (image) {
-                    var backgroundPositioningArea = (0, background.calculateBackgroungPositioningArea)(container.style.background.backgroundOrigin, container.bounds, container.style.padding, container.style.border);
-                    var backgroundImageSize = (0, background.calculateBackgroundSize)(background$$1, image, backgroundPositioningArea);
-                    var position = (0, background.calculateBackgroundPosition)(background$$1.position, backgroundImageSize, backgroundPositioningArea);
-                    var _path = (0, background.calculateBackgroundRepeatPath)(background$$1, position, backgroundImageSize, backgroundPositioningArea, container.bounds);
-
-                    var _offsetX = Math.round(backgroundPositioningArea.left + position.x);
-                    var _offsetY = Math.round(backgroundPositioningArea.top + position.y);
-                    this.target.renderRepeat(_path, image, backgroundImageSize, _offsetX, _offsetY);
-                }
-            }
-        }, {
-            key: 'renderBackgroundGradient',
-            value: function renderBackgroundGradient(container, background$$1) {
-                var backgroundPositioningArea = (0, background.calculateBackgroungPositioningArea)(container.style.background.backgroundOrigin, container.bounds, container.style.padding, container.style.border);
-                var backgroundImageSize = (0, background.calculateGradientBackgroundSize)(background$$1, backgroundPositioningArea);
-                var position = (0, background.calculateBackgroundPosition)(background$$1.position, backgroundImageSize, backgroundPositioningArea);
-                var gradientBounds = new Bounds_1.Bounds(Math.round(backgroundPositioningArea.left + position.x), Math.round(backgroundPositioningArea.top + position.y), backgroundImageSize.width, backgroundImageSize.height);
-
-                var gradient = (0, Gradient.parseGradient)(container, background$$1.source, gradientBounds);
-                if (gradient) {
-                    switch (gradient.type) {
-                        case Gradient.GRADIENT_TYPE.LINEAR_GRADIENT:
-                            // $FlowFixMe
-                            this.target.renderLinearGradient(gradientBounds, gradient);
-                            break;
-                        case Gradient.GRADIENT_TYPE.RADIAL_GRADIENT:
-                            // $FlowFixMe
-                            this.target.renderRadialGradient(gradientBounds, gradient);
-                            break;
-                    }
-                }
-            }
-        }, {
-            key: 'renderBorder',
-            value: function renderBorder(border$$1, side, curvePoints) {
-                this.target.drawShape((0, Bounds_1.parsePathForBorder)(curvePoints, side), border$$1.borderColor);
-            }
-        }, {
-            key: 'renderStack',
-            value: function renderStack(stack) {
-                var _this4 = this;
-
-                if (stack.container.isVisible()) {
-                    var _opacity = stack.getOpacity();
-                    if (_opacity !== this._opacity) {
-                        this.target.setOpacity(stack.getOpacity());
-                        this._opacity = _opacity;
-                    }
-
-                    var _transform = stack.container.style.transform;
-                    if (_transform !== null) {
-                        this.target.transform(stack.container.bounds.left + _transform.transformOrigin[0].value, stack.container.bounds.top + _transform.transformOrigin[1].value, _transform.transform, function () {
-                            return _this4.renderStackContent(stack);
-                        });
-                    } else {
-                        this.renderStackContent(stack);
-                    }
-                }
-            }
-        }, {
-            key: 'renderStackContent',
-            value: function renderStackContent(stack) {
-                var _splitStackingContext = splitStackingContexts(stack),
-                    _splitStackingContext2 = _slicedToArray(_splitStackingContext, 5),
-                    negativeZIndex = _splitStackingContext2[0],
-                    zeroOrAutoZIndexOrTransformedOrOpacity = _splitStackingContext2[1],
-                    positiveZIndex = _splitStackingContext2[2],
-                    nonPositionedFloats = _splitStackingContext2[3],
-                    nonPositionedInlineLevel = _splitStackingContext2[4];
-
-                var _splitDescendants = splitDescendants(stack),
-                    _splitDescendants2 = _slicedToArray(_splitDescendants, 2),
-                    inlineLevel = _splitDescendants2[0],
-                    nonInlineLevel = _splitDescendants2[1];
-
-                // https://www.w3.org/TR/css-position-3/#painting-order
-                // 1. the background and borders of the element forming the stacking context.
-
-
-                this.renderNodeBackgroundAndBorders(stack.container);
-                // 2. the child stacking contexts with negative stack levels (most negative first).
-                negativeZIndex.sort(sortByZIndex).forEach(this.renderStack, this);
-                // 3. For all its in-flow, non-positioned, block-level descendants in tree order:
-                this.renderNodeContent(stack.container);
-                nonInlineLevel.forEach(this.renderNode, this);
-                // 4. All non-positioned floating descendants, in tree order. For each one of these,
-                // treat the element as if it created a new stacking context, but any positioned descendants and descendants
-                // which actually create a new stacking context should be considered part of the parent stacking context,
-                // not this new one.
-                nonPositionedFloats.forEach(this.renderStack, this);
-                // 5. the in-flow, inline-level, non-positioned descendants, including inline tables and inline blocks.
-                nonPositionedInlineLevel.forEach(this.renderStack, this);
-                inlineLevel.forEach(this.renderNode, this);
-                // 6. All positioned, opacity or transform descendants, in tree order that fall into the following categories:
-                //  All positioned descendants with 'z-index: auto' or 'z-index: 0', in tree order.
-                //  For those with 'z-index: auto', treat the element as if it created a new stacking context,
-                //  but any positioned descendants and descendants which actually create a new stacking context should be
-                //  considered part of the parent stacking context, not this new one. For those with 'z-index: 0',
-                //  treat the stacking context generated atomically.
-                //
-                //  All opacity descendants with opacity less than 1
-                //
-                //  All transform descendants with transform other than none
-                zeroOrAutoZIndexOrTransformedOrOpacity.forEach(this.renderStack, this);
-                // 7. Stacking contexts formed by positioned descendants with z-indices greater than or equal to 1 in z-index
-                // order (smallest first) then tree order.
-                positiveZIndex.sort(sortByZIndex).forEach(this.renderStack, this);
-            }
-        }, {
-            key: 'render',
-            value: function render(stack) {
-
-                if (this.options.backgroundColor) {
-                    this.target.rectangle(this.options.x, this.options.y, this.options.width, this.options.height, this.options.backgroundColor);
-                }
-                this.renderStack(stack);
-                var target = this.target.getTarget();
-                return target;
-            }
-        }]);
-
-        return Renderer;
-    }();
-
-    exports.default = Renderer;
-
-
-    var splitDescendants = function splitDescendants(stack) {
-        var inlineLevel = [];
-        var nonInlineLevel = [];
-
-        var length = stack.children.length;
-        for (var i = 0; i < length; i++) {
-            var child = stack.children[i];
-            if (child.isInlineLevel()) {
-                inlineLevel.push(child);
-            } else {
-                nonInlineLevel.push(child);
-            }
-        }
-        return [inlineLevel, nonInlineLevel];
-    };
-
-    var splitStackingContexts = function splitStackingContexts(stack) {
-        var negativeZIndex = [];
-        var zeroOrAutoZIndexOrTransformedOrOpacity = [];
-        var positiveZIndex = [];
-        var nonPositionedFloats = [];
-        var nonPositionedInlineLevel = [];
-        var length = stack.contexts.length;
-        for (var i = 0; i < length; i++) {
-            var child = stack.contexts[i];
-            if (child.container.isPositioned() || child.container.style.opacity < 1 || child.container.isTransformed()) {
-                if (child.container.style.zIndex.order < 0) {
-                    negativeZIndex.push(child);
-                } else if (child.container.style.zIndex.order > 0) {
-                    positiveZIndex.push(child);
-                } else {
-                    zeroOrAutoZIndexOrTransformedOrOpacity.push(child);
-                }
-            } else {
-                if (child.container.isFloating()) {
-                    nonPositionedFloats.push(child);
-                } else {
-                    nonPositionedInlineLevel.push(child);
-                }
-            }
-        }
-        return [negativeZIndex, zeroOrAutoZIndexOrTransformedOrOpacity, positiveZIndex, nonPositionedFloats, nonPositionedInlineLevel];
-    };
-
-    var sortByZIndex = function sortByZIndex(a, b) {
-        if (a.container.style.zIndex.order > b.container.style.zIndex.order) {
-            return 1;
-        } else if (a.container.style.zIndex.order < b.container.style.zIndex.order) {
-            return -1;
-        }
-
-        return a.container.index > b.container.index ? 1 : -1;
-    };
-    });
-
-    var Renderer = unwrapExports(Renderer_1);
-
-    var _Proxy = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.Proxy = undefined;
-
-
-
-    var _Feature2 = _interopRequireDefault(Feature);
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    var Proxy = exports.Proxy = function Proxy(src, options) {
-        if (!options.proxy) {
-            return Promise.reject(null);
-        }
-        var proxy = options.proxy;
-
-        return new Promise(function (resolve, reject) {
-            var responseType = _Feature2.default.SUPPORT_CORS_XHR && _Feature2.default.SUPPORT_RESPONSE_TYPE ? 'blob' : 'text';
-            var xhr = _Feature2.default.SUPPORT_CORS_XHR ? new XMLHttpRequest() : new XDomainRequest();
-            xhr.onload = function () {
-                if (xhr instanceof XMLHttpRequest) {
-                    if (xhr.status === 200) {
-                        if (responseType === 'text') {
-                            resolve(xhr.response);
-                        } else {
-                            var reader = new FileReader();
-                            // $FlowFixMe
-                            reader.addEventListener('load', function () {
-                                return resolve(reader.result);
-                            }, false);
-                            // $FlowFixMe
-                            reader.addEventListener('error', function (e) {
-                                return reject(e);
-                            }, false);
-                            reader.readAsDataURL(xhr.response);
-                        }
-                    } else {
-                        reject('');
-                    }
-                } else {
-                    resolve(xhr.responseText);
-                }
-            };
-
-            xhr.onerror = reject;
-            xhr.open('GET', proxy + '?url=' + encodeURIComponent(src) + '&responseType=' + responseType);
-
-            if (responseType !== 'text' && xhr instanceof XMLHttpRequest) {
-                xhr.responseType = responseType;
-            }
-
-            if (options.imageTimeout) {
-                var timeout = options.imageTimeout;
-                xhr.timeout = timeout;
-                xhr.ontimeout = function () {
-                    return reject('');
-                };
-            }
-
-            xhr.send();
-        });
-    };
-    });
-
-    unwrapExports(_Proxy);
-    var _Proxy_1 = _Proxy.Proxy;
-
-    var ResourceLoader_1 = createCommonjsModule(function (module, exports) {
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.ResourceStore = undefined;
-
-    var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-
-
-    var _Feature2 = _interopRequireDefault(Feature);
-
-
-
-    function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-    var ResourceLoader = function () {
-        function ResourceLoader(options, logger, window) {
-            _classCallCheck(this, ResourceLoader);
-
-            this.options = options;
-            this._window = window;
-            this.origin = this.getOrigin(window.location.href);
-            this.cache = {};
-            this.logger = logger;
-            this._index = 0;
-        }
-
-        _createClass(ResourceLoader, [{
-            key: 'loadImage',
-            value: function loadImage(src) {
-                var _this = this;
-
-                if (this.hasResourceInCache(src)) {
-                    return src;
-                }
-                if (isBlobImage(src)) {
-                    this.cache[src] = _loadImage(src, this.options.imageTimeout || 0);
-                    return src;
-                }
-
-                if (!isSVG(src) || _Feature2.default.SUPPORT_SVG_DRAWING) {
-                    if (this.options.allowTaint === true || isInlineImage(src) || this.isSameOrigin(src)) {
-                        return this.addImage(src, src, false);
-                    } else if (!this.isSameOrigin(src)) {
-                        if (typeof this.options.proxy === 'string') {
-                            this.cache[src] = (0, _Proxy.Proxy)(src, this.options).then(function (src) {
-                                return _loadImage(src, _this.options.imageTimeout || 0);
-                            });
-                            return src;
-                        } else if (this.options.useCORS === true && _Feature2.default.SUPPORT_CORS_IMAGES) {
-                            return this.addImage(src, src, true);
-                        }
-                    }
-                }
-            }
-        }, {
-            key: 'inlineImage',
-            value: function inlineImage(src) {
-                var _this2 = this;
-
-                if (isInlineImage(src)) {
-                    return _loadImage(src, this.options.imageTimeout || 0);
-                }
-                if (this.hasResourceInCache(src)) {
-                    return this.cache[src];
-                }
-                if (!this.isSameOrigin(src) && typeof this.options.proxy === 'string') {
-                    return this.cache[src] = (0, _Proxy.Proxy)(src, this.options).then(function (src) {
-                        return _loadImage(src, _this2.options.imageTimeout || 0);
-                    });
-                }
-
-                return this.xhrImage(src);
-            }
-        }, {
-            key: 'xhrImage',
-            value: function xhrImage(src) {
-                var _this3 = this;
-
-                this.cache[src] = new Promise(function (resolve, reject) {
-                    var xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState === 4) {
-                            if (xhr.status !== 200) {
-                                reject('Failed to fetch image ' + src.substring(0, 256) + ' with status code ' + xhr.status);
-                            } else {
-                                var reader = new FileReader();
-                                reader.addEventListener('load', function () {
-                                    // $FlowFixMe
-                                    var result = reader.result;
-                                    resolve(result);
-                                }, false);
-                                reader.addEventListener('error', function (e) {
-                                    return reject(e);
-                                }, false);
-                                reader.readAsDataURL(xhr.response);
-                            }
-                        }
-                    };
-                    xhr.responseType = 'blob';
-                    if (_this3.options.imageTimeout) {
-                        var timeout = _this3.options.imageTimeout;
-                        xhr.timeout = timeout;
-                        xhr.ontimeout = function () {
-                            return reject('');
-                        };
-                    }
-                    xhr.open('GET', src, true);
-                    xhr.send();
-                }).then(function (src) {
-                    return _loadImage(src, _this3.options.imageTimeout || 0);
-                });
-
-                return this.cache[src];
-            }
-        }, {
-            key: 'loadCanvas',
-            value: function loadCanvas(node) {
-                var key = String(this._index++);
-                this.cache[key] = Promise.resolve(node);
-                return key;
-            }
-        }, {
-            key: 'hasResourceInCache',
-            value: function hasResourceInCache(key) {
-                return typeof this.cache[key] !== 'undefined';
-            }
-        }, {
-            key: 'addImage',
-            value: function addImage(key, src, useCORS) {
-                var _this4 = this;
-
-                var imageLoadHandler = function imageLoadHandler(supportsDataImages) {
-                    return new Promise(function (resolve, reject) {
-                        var img = new Image();
-                        img.onload = function () {
-                            return resolve(img);
-                        };
-                        //ios safari 10.3 taints canvas with data urls unless crossOrigin is set to anonymous
-                        if (!supportsDataImages || useCORS) {
-                            img.crossOrigin = 'anonymous';
-                        }
-
-                        img.onerror = reject;
-                        img.src = src;
-                        if (img.complete === true) {
-                            // Inline XML images may fail to parse, throwing an Error later on
-                            setTimeout(function () {
-                                resolve(img);
-                            }, 500);
-                        }
-                        if (_this4.options.imageTimeout) {
-                            var timeout = _this4.options.imageTimeout;
-                            setTimeout(function () {
-                                return reject('');
-                            }, timeout);
-                        }
-                    });
-                };
-
-                this.cache[key] = isInlineBase64Image(src) && !isSVG(src) ? // $FlowFixMe
-                _Feature2.default.SUPPORT_BASE64_DRAWING(src).then(imageLoadHandler) : imageLoadHandler(true);
-                return key;
-            }
-        }, {
-            key: 'isSameOrigin',
-            value: function isSameOrigin(url) {
-                return this.getOrigin(url) === this.origin;
-            }
-        }, {
-            key: 'getOrigin',
-            value: function getOrigin(url) {
-                var link = this._link || (this._link = this._window.document.createElement('a'));
-                link.href = url;
-                link.href = link.href; // IE9, LOL! - http://jsfiddle.net/niklasvh/2e48b/
-                return link.protocol + link.hostname + link.port;
-            }
-        }, {
-            key: 'ready',
-            value: function ready() {
-                var _this5 = this;
-
-                var keys = Object.keys(this.cache);
-                var values = keys.map(function (str) {
-                    return _this5.cache[str].catch(function (e) {
-                        return null;
-                    });
-                });
-                return Promise.all(values).then(function (images) {
-                    return new ResourceStore(keys, images);
-                });
-            }
-        }]);
-
-        return ResourceLoader;
-    }();
-
-    exports.default = ResourceLoader;
-
-    var ResourceStore = exports.ResourceStore = function () {
-        function ResourceStore(keys, resources) {
-            _classCallCheck(this, ResourceStore);
-
-            this._keys = keys;
-            this._resources = resources;
-        }
-
-        _createClass(ResourceStore, [{
-            key: 'get',
-            value: function get(key) {
-                var index = this._keys.indexOf(key);
-                return index === -1 ? null : this._resources[index];
-            }
-        }]);
-
-        return ResourceStore;
-    }();
-
-    var INLINE_SVG = /^data:image\/svg\+xml/i;
-    var INLINE_BASE64 = /^data:image\/.*;base64,/i;
-    var INLINE_IMG = /^data:image\/.*/i;
-
-    var isInlineImage = function isInlineImage(src) {
-        return INLINE_IMG.test(src);
-    };
-    var isInlineBase64Image = function isInlineBase64Image(src) {
-        return INLINE_BASE64.test(src);
-    };
-    var isBlobImage = function isBlobImage(src) {
-        return src.substr(0, 4) === 'blob';
-    };
-
-    var isSVG = function isSVG(src) {
-        return src.substr(-3).toLowerCase() === 'svg' || INLINE_SVG.test(src);
-    };
-
-    var _loadImage = function _loadImage(src, timeout) {
-        return new Promise(function (resolve, reject) {
-            var img = new Image();
-            img.onload = function () {
-                return resolve(img);
-            };
-            img.onerror = reject;
-            img.src = src;
-            if (img.complete === true) {
-                // Inline XML images may fail to parse, throwing an Error later on
-                setTimeout(function () {
-                    resolve(img);
-                }, 500);
-            }
-            if (timeout) {
-                setTimeout(function () {
-                    return reject('');
-                }, timeout);
-            }
-        });
-    };
-    });
-
-    var ResourceLoader = unwrapExports(ResourceLoader_1);
-    var ResourceLoader_2 = ResourceLoader_1.ResourceStore;
+    		var x = euler.x, y = euler.y, z = euler.z;
+    		var a = Math.cos( x ), b = Math.sin( x );
+    		var c = Math.cos( y ), d = Math.sin( y );
+    		var e = Math.cos( z ), f = Math.sin( z );
+
+    		if ( euler.order === 'XYZ' ) {
+
+    			var ae = a * e, af = a * f, be = b * e, bf = b * f;
+
+    			te[ 0 ] = c * e;
+    			te[ 4 ] = - c * f;
+    			te[ 8 ] = d;
+
+    			te[ 1 ] = af + be * d;
+    			te[ 5 ] = ae - bf * d;
+    			te[ 9 ] = - b * c;
+
+    			te[ 2 ] = bf - ae * d;
+    			te[ 6 ] = be + af * d;
+    			te[ 10 ] = a * c;
+
+    		} else if ( euler.order === 'YXZ' ) {
+
+    			var ce = c * e, cf = c * f, de = d * e, df = d * f;
+
+    			te[ 0 ] = ce + df * b;
+    			te[ 4 ] = de * b - cf;
+    			te[ 8 ] = a * d;
+
+    			te[ 1 ] = a * f;
+    			te[ 5 ] = a * e;
+    			te[ 9 ] = - b;
+
+    			te[ 2 ] = cf * b - de;
+    			te[ 6 ] = df + ce * b;
+    			te[ 10 ] = a * c;
+
+    		} else if ( euler.order === 'ZXY' ) {
+
+    			var ce = c * e, cf = c * f, de = d * e, df = d * f;
+
+    			te[ 0 ] = ce - df * b;
+    			te[ 4 ] = - a * f;
+    			te[ 8 ] = de + cf * b;
+
+    			te[ 1 ] = cf + de * b;
+    			te[ 5 ] = a * e;
+    			te[ 9 ] = df - ce * b;
+
+    			te[ 2 ] = - a * d;
+    			te[ 6 ] = b;
+    			te[ 10 ] = a * c;
+
+    		} else if ( euler.order === 'ZYX' ) {
+
+    			var ae = a * e, af = a * f, be = b * e, bf = b * f;
+
+    			te[ 0 ] = c * e;
+    			te[ 4 ] = be * d - af;
+    			te[ 8 ] = ae * d + bf;
+
+    			te[ 1 ] = c * f;
+    			te[ 5 ] = bf * d + ae;
+    			te[ 9 ] = af * d - be;
+
+    			te[ 2 ] = - d;
+    			te[ 6 ] = b * c;
+    			te[ 10 ] = a * c;
+
+    		} else if ( euler.order === 'YZX' ) {
+
+    			var ac = a * c, ad = a * d, bc = b * c, bd = b * d;
+
+    			te[ 0 ] = c * e;
+    			te[ 4 ] = bd - ac * f;
+    			te[ 8 ] = bc * f + ad;
+
+    			te[ 1 ] = f;
+    			te[ 5 ] = a * e;
+    			te[ 9 ] = - b * e;
+
+    			te[ 2 ] = - d * e;
+    			te[ 6 ] = ad * f + bc;
+    			te[ 10 ] = ac - bd * f;
+
+    		} else if ( euler.order === 'XZY' ) {
+
+    			var ac = a * c, ad = a * d, bc = b * c, bd = b * d;
+
+    			te[ 0 ] = c * e;
+    			te[ 4 ] = - f;
+    			te[ 8 ] = d * e;
+
+    			te[ 1 ] = ac * f + bd;
+    			te[ 5 ] = a * e;
+    			te[ 9 ] = ad * f - bc;
+
+    			te[ 2 ] = bc * f - ad;
+    			te[ 6 ] = b * e;
+    			te[ 10 ] = bd * f + ac;
+
+    		}
+
+    		// bottom row
+    		te[ 3 ] = 0;
+    		te[ 7 ] = 0;
+    		te[ 11 ] = 0;
+
+    		// last column
+    		te[ 12 ] = 0;
+    		te[ 13 ] = 0;
+    		te[ 14 ] = 0;
+    		te[ 15 ] = 1;
+
+    		return this;
+
+    	},
+
+    	makeRotationFromQuaternion: function ( q ) {
+
+    		return this.compose( _zero, q, _one );
+
+    	},
+
+    	lookAt: function ( eye, target, up ) {
+
+    		var te = this.elements;
+
+    		_z.subVectors( eye, target );
+
+    		if ( _z.lengthSq() === 0 ) {
+
+    			// eye and target are in the same position
+
+    			_z.z = 1;
+
+    		}
+
+    		_z.normalize();
+    		_x.crossVectors( up, _z );
+
+    		if ( _x.lengthSq() === 0 ) {
+
+    			// up and z are parallel
+
+    			if ( Math.abs( up.z ) === 1 ) {
+
+    				_z.x += 0.0001;
+
+    			} else {
+
+    				_z.z += 0.0001;
+
+    			}
+
+    			_z.normalize();
+    			_x.crossVectors( up, _z );
+
+    		}
+
+    		_x.normalize();
+    		_y.crossVectors( _z, _x );
+
+    		te[ 0 ] = _x.x; te[ 4 ] = _y.x; te[ 8 ] = _z.x;
+    		te[ 1 ] = _x.y; te[ 5 ] = _y.y; te[ 9 ] = _z.y;
+    		te[ 2 ] = _x.z; te[ 6 ] = _y.z; te[ 10 ] = _z.z;
+
+    		return this;
+
+    	},
+
+    	multiply: function ( m, n ) {
+
+    		if ( n !== undefined ) {
+
+    			console.warn( 'THREE.Matrix4: .multiply() now only accepts one argument. Use .multiplyMatrices( a, b ) instead.' );
+    			return this.multiplyMatrices( m, n );
+
+    		}
+
+    		return this.multiplyMatrices( this, m );
+
+    	},
+
+    	premultiply: function ( m ) {
+
+    		return this.multiplyMatrices( m, this );
+
+    	},
+
+    	multiplyMatrices: function ( a, b ) {
+
+    		var ae = a.elements;
+    		var be = b.elements;
+    		var te = this.elements;
+
+    		var a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
+    		var a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
+    		var a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
+    		var a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
+
+    		var b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
+    		var b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
+    		var b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
+    		var b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
+
+    		te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+    		te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+    		te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+    		te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+    		te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+    		te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+    		te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+    		te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+    		te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+    		te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+    		te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+    		te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+    		te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+    		te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+    		te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+    		te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+
+    		return this;
+
+    	},
+
+    	multiplyScalar: function ( s ) {
+
+    		var te = this.elements;
+
+    		te[ 0 ] *= s; te[ 4 ] *= s; te[ 8 ] *= s; te[ 12 ] *= s;
+    		te[ 1 ] *= s; te[ 5 ] *= s; te[ 9 ] *= s; te[ 13 ] *= s;
+    		te[ 2 ] *= s; te[ 6 ] *= s; te[ 10 ] *= s; te[ 14 ] *= s;
+    		te[ 3 ] *= s; te[ 7 ] *= s; te[ 11 ] *= s; te[ 15 ] *= s;
+
+    		return this;
+
+    	},
+
+    	applyToBufferAttribute: function ( attribute ) {
+
+    		for ( var i = 0, l = attribute.count; i < l; i ++ ) {
+
+    			_v1.x = attribute.getX( i );
+    			_v1.y = attribute.getY( i );
+    			_v1.z = attribute.getZ( i );
+
+    			_v1.applyMatrix4( this );
+
+    			attribute.setXYZ( i, _v1.x, _v1.y, _v1.z );
+
+    		}
+
+    		return attribute;
+
+    	},
+
+    	determinant: function () {
+
+    		var te = this.elements;
+
+    		var n11 = te[ 0 ], n12 = te[ 4 ], n13 = te[ 8 ], n14 = te[ 12 ];
+    		var n21 = te[ 1 ], n22 = te[ 5 ], n23 = te[ 9 ], n24 = te[ 13 ];
+    		var n31 = te[ 2 ], n32 = te[ 6 ], n33 = te[ 10 ], n34 = te[ 14 ];
+    		var n41 = te[ 3 ], n42 = te[ 7 ], n43 = te[ 11 ], n44 = te[ 15 ];
+
+    		//TODO: make this more efficient
+    		//( based on http://www.euclideanspace.com/maths/algebra/matrix/functions/inverse/fourD/index.htm )
+
+    		return (
+    			n41 * (
+    				+ n14 * n23 * n32
+    				 - n13 * n24 * n32
+    				 - n14 * n22 * n33
+    				 + n12 * n24 * n33
+    				 + n13 * n22 * n34
+    				 - n12 * n23 * n34
+    			) +
+    			n42 * (
+    				+ n11 * n23 * n34
+    				 - n11 * n24 * n33
+    				 + n14 * n21 * n33
+    				 - n13 * n21 * n34
+    				 + n13 * n24 * n31
+    				 - n14 * n23 * n31
+    			) +
+    			n43 * (
+    				+ n11 * n24 * n32
+    				 - n11 * n22 * n34
+    				 - n14 * n21 * n32
+    				 + n12 * n21 * n34
+    				 + n14 * n22 * n31
+    				 - n12 * n24 * n31
+    			) +
+    			n44 * (
+    				- n13 * n22 * n31
+    				 - n11 * n23 * n32
+    				 + n11 * n22 * n33
+    				 + n13 * n21 * n32
+    				 - n12 * n21 * n33
+    				 + n12 * n23 * n31
+    			)
+
+    		);
+
+    	},
+
+    	transpose: function () {
+
+    		var te = this.elements;
+    		var tmp;
+
+    		tmp = te[ 1 ]; te[ 1 ] = te[ 4 ]; te[ 4 ] = tmp;
+    		tmp = te[ 2 ]; te[ 2 ] = te[ 8 ]; te[ 8 ] = tmp;
+    		tmp = te[ 6 ]; te[ 6 ] = te[ 9 ]; te[ 9 ] = tmp;
+
+    		tmp = te[ 3 ]; te[ 3 ] = te[ 12 ]; te[ 12 ] = tmp;
+    		tmp = te[ 7 ]; te[ 7 ] = te[ 13 ]; te[ 13 ] = tmp;
+    		tmp = te[ 11 ]; te[ 11 ] = te[ 14 ]; te[ 14 ] = tmp;
+
+    		return this;
+
+    	},
+
+    	setPosition: function ( x, y, z ) {
+
+    		var te = this.elements;
+
+    		if ( x.isVector3 ) {
+
+    			te[ 12 ] = x.x;
+    			te[ 13 ] = x.y;
+    			te[ 14 ] = x.z;
+
+    		} else {
+
+    			te[ 12 ] = x;
+    			te[ 13 ] = y;
+    			te[ 14 ] = z;
+
+    		}
+
+    		return this;
+
+    	},
+
+    	getInverse: function ( m, throwOnDegenerate ) {
+
+    		// based on http://www.euclideanspace.com/maths/algebra/matrix/functions/inverse/fourD/index.htm
+    		var te = this.elements,
+    			me = m.elements,
+
+    			n11 = me[ 0 ], n21 = me[ 1 ], n31 = me[ 2 ], n41 = me[ 3 ],
+    			n12 = me[ 4 ], n22 = me[ 5 ], n32 = me[ 6 ], n42 = me[ 7 ],
+    			n13 = me[ 8 ], n23 = me[ 9 ], n33 = me[ 10 ], n43 = me[ 11 ],
+    			n14 = me[ 12 ], n24 = me[ 13 ], n34 = me[ 14 ], n44 = me[ 15 ],
+
+    			t11 = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44,
+    			t12 = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44,
+    			t13 = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44,
+    			t14 = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
+
+    		var det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
+
+    		if ( det === 0 ) {
+
+    			var msg = "THREE.Matrix4: .getInverse() can't invert matrix, determinant is 0";
+
+    			if ( throwOnDegenerate === true ) {
+
+    				throw new Error( msg );
+
+    			} else {
+
+    				console.warn( msg );
+
+    			}
+
+    			return this.identity();
+
+    		}
+
+    		var detInv = 1 / det;
+
+    		te[ 0 ] = t11 * detInv;
+    		te[ 1 ] = ( n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44 ) * detInv;
+    		te[ 2 ] = ( n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 + n21 * n32 * n44 ) * detInv;
+    		te[ 3 ] = ( n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 - n21 * n32 * n43 ) * detInv;
+
+    		te[ 4 ] = t12 * detInv;
+    		te[ 5 ] = ( n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 + n11 * n33 * n44 ) * detInv;
+    		te[ 6 ] = ( n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 - n11 * n32 * n44 ) * detInv;
+    		te[ 7 ] = ( n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 + n11 * n32 * n43 ) * detInv;
+
+    		te[ 8 ] = t13 * detInv;
+    		te[ 9 ] = ( n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 - n11 * n23 * n44 ) * detInv;
+    		te[ 10 ] = ( n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 + n11 * n22 * n44 ) * detInv;
+    		te[ 11 ] = ( n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 - n11 * n22 * n43 ) * detInv;
+
+    		te[ 12 ] = t14 * detInv;
+    		te[ 13 ] = ( n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 + n11 * n23 * n34 ) * detInv;
+    		te[ 14 ] = ( n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34 ) * detInv;
+    		te[ 15 ] = ( n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33 ) * detInv;
+
+    		return this;
+
+    	},
+
+    	scale: function ( v ) {
+
+    		var te = this.elements;
+    		var x = v.x, y = v.y, z = v.z;
+
+    		te[ 0 ] *= x; te[ 4 ] *= y; te[ 8 ] *= z;
+    		te[ 1 ] *= x; te[ 5 ] *= y; te[ 9 ] *= z;
+    		te[ 2 ] *= x; te[ 6 ] *= y; te[ 10 ] *= z;
+    		te[ 3 ] *= x; te[ 7 ] *= y; te[ 11 ] *= z;
+
+    		return this;
+
+    	},
+
+    	getMaxScaleOnAxis: function () {
+
+    		var te = this.elements;
+
+    		var scaleXSq = te[ 0 ] * te[ 0 ] + te[ 1 ] * te[ 1 ] + te[ 2 ] * te[ 2 ];
+    		var scaleYSq = te[ 4 ] * te[ 4 ] + te[ 5 ] * te[ 5 ] + te[ 6 ] * te[ 6 ];
+    		var scaleZSq = te[ 8 ] * te[ 8 ] + te[ 9 ] * te[ 9 ] + te[ 10 ] * te[ 10 ];
+
+    		return Math.sqrt( Math.max( scaleXSq, scaleYSq, scaleZSq ) );
+
+    	},
+
+    	makeTranslation: function ( x, y, z ) {
+
+    		this.set(
+
+    			1, 0, 0, x,
+    			0, 1, 0, y,
+    			0, 0, 1, z,
+    			0, 0, 0, 1
+
+    		);
+
+    		return this;
+
+    	},
+
+    	makeRotationX: function ( theta ) {
+
+    		var c = Math.cos( theta ), s = Math.sin( theta );
+
+    		this.set(
+
+    			1, 0, 0, 0,
+    			0, c, - s, 0,
+    			0, s, c, 0,
+    			0, 0, 0, 1
+
+    		);
+
+    		return this;
+
+    	},
+
+    	makeRotationY: function ( theta ) {
+
+    		var c = Math.cos( theta ), s = Math.sin( theta );
+
+    		this.set(
+
+    			 c, 0, s, 0,
+    			 0, 1, 0, 0,
+    			- s, 0, c, 0,
+    			 0, 0, 0, 1
+
+    		);
+
+    		return this;
+
+    	},
+
+    	makeRotationZ: function ( theta ) {
+
+    		var c = Math.cos( theta ), s = Math.sin( theta );
+
+    		this.set(
+
+    			c, - s, 0, 0,
+    			s, c, 0, 0,
+    			0, 0, 1, 0,
+    			0, 0, 0, 1
+
+    		);
+
+    		return this;
+
+    	},
+
+    	makeRotationAxis: function ( axis, angle ) {
+
+    		// Based on http://www.gamedev.net/reference/articles/article1199.asp
+
+    		var c = Math.cos( angle );
+    		var s = Math.sin( angle );
+    		var t = 1 - c;
+    		var x = axis.x, y = axis.y, z = axis.z;
+    		var tx = t * x, ty = t * y;
+
+    		this.set(
+
+    			tx * x + c, tx * y - s * z, tx * z + s * y, 0,
+    			tx * y + s * z, ty * y + c, ty * z - s * x, 0,
+    			tx * z - s * y, ty * z + s * x, t * z * z + c, 0,
+    			0, 0, 0, 1
+
+    		);
+
+    		 return this;
+
+    	},
+
+    	makeScale: function ( x, y, z ) {
+
+    		this.set(
+
+    			x, 0, 0, 0,
+    			0, y, 0, 0,
+    			0, 0, z, 0,
+    			0, 0, 0, 1
+
+    		);
+
+    		return this;
+
+    	},
+
+    	makeShear: function ( x, y, z ) {
+
+    		this.set(
+
+    			1, y, z, 0,
+    			x, 1, z, 0,
+    			x, y, 1, 0,
+    			0, 0, 0, 1
+
+    		);
+
+    		return this;
+
+    	},
+
+    	compose: function ( position, quaternion, scale ) {
+
+    		var te = this.elements;
+
+    		var x = quaternion._x, y = quaternion._y, z = quaternion._z, w = quaternion._w;
+    		var x2 = x + x,	y2 = y + y, z2 = z + z;
+    		var xx = x * x2, xy = x * y2, xz = x * z2;
+    		var yy = y * y2, yz = y * z2, zz = z * z2;
+    		var wx = w * x2, wy = w * y2, wz = w * z2;
+
+    		var sx = scale.x, sy = scale.y, sz = scale.z;
+
+    		te[ 0 ] = ( 1 - ( yy + zz ) ) * sx;
+    		te[ 1 ] = ( xy + wz ) * sx;
+    		te[ 2 ] = ( xz - wy ) * sx;
+    		te[ 3 ] = 0;
+
+    		te[ 4 ] = ( xy - wz ) * sy;
+    		te[ 5 ] = ( 1 - ( xx + zz ) ) * sy;
+    		te[ 6 ] = ( yz + wx ) * sy;
+    		te[ 7 ] = 0;
+
+    		te[ 8 ] = ( xz + wy ) * sz;
+    		te[ 9 ] = ( yz - wx ) * sz;
+    		te[ 10 ] = ( 1 - ( xx + yy ) ) * sz;
+    		te[ 11 ] = 0;
+
+    		te[ 12 ] = position.x;
+    		te[ 13 ] = position.y;
+    		te[ 14 ] = position.z;
+    		te[ 15 ] = 1;
+
+    		return this;
+
+    	},
+
+    	decompose: function ( position, quaternion, scale ) {
+
+    		var te = this.elements;
+
+    		var sx = _v1.set( te[ 0 ], te[ 1 ], te[ 2 ] ).length();
+    		var sy = _v1.set( te[ 4 ], te[ 5 ], te[ 6 ] ).length();
+    		var sz = _v1.set( te[ 8 ], te[ 9 ], te[ 10 ] ).length();
+
+    		// if determine is negative, we need to invert one scale
+    		var det = this.determinant();
+    		if ( det < 0 ) sx = - sx;
+
+    		position.x = te[ 12 ];
+    		position.y = te[ 13 ];
+    		position.z = te[ 14 ];
+
+    		// scale the rotation part
+    		_m1.copy( this );
+
+    		var invSX = 1 / sx;
+    		var invSY = 1 / sy;
+    		var invSZ = 1 / sz;
+
+    		_m1.elements[ 0 ] *= invSX;
+    		_m1.elements[ 1 ] *= invSX;
+    		_m1.elements[ 2 ] *= invSX;
+
+    		_m1.elements[ 4 ] *= invSY;
+    		_m1.elements[ 5 ] *= invSY;
+    		_m1.elements[ 6 ] *= invSY;
+
+    		_m1.elements[ 8 ] *= invSZ;
+    		_m1.elements[ 9 ] *= invSZ;
+    		_m1.elements[ 10 ] *= invSZ;
+
+    		quaternion.setFromRotationMatrix( _m1 );
+
+    		scale.x = sx;
+    		scale.y = sy;
+    		scale.z = sz;
+
+    		return this;
+
+    	},
+
+    	makePerspective: function ( left, right, top, bottom, near, far ) {
+
+    		if ( far === undefined ) {
+
+    			console.warn( 'THREE.Matrix4: .makePerspective() has been redefined and has a new signature. Please check the docs.' );
+
+    		}
+
+    		var te = this.elements;
+    		var x = 2 * near / ( right - left );
+    		var y = 2 * near / ( top - bottom );
+
+    		var a = ( right + left ) / ( right - left );
+    		var b = ( top + bottom ) / ( top - bottom );
+    		var c = - ( far + near ) / ( far - near );
+    		var d = - 2 * far * near / ( far - near );
+
+    		te[ 0 ] = x;	te[ 4 ] = 0;	te[ 8 ] = a;	te[ 12 ] = 0;
+    		te[ 1 ] = 0;	te[ 5 ] = y;	te[ 9 ] = b;	te[ 13 ] = 0;
+    		te[ 2 ] = 0;	te[ 6 ] = 0;	te[ 10 ] = c;	te[ 14 ] = d;
+    		te[ 3 ] = 0;	te[ 7 ] = 0;	te[ 11 ] = - 1;	te[ 15 ] = 0;
+
+    		return this;
+
+    	},
+
+    	makeOrthographic: function ( left, right, top, bottom, near, far ) {
+
+    		var te = this.elements;
+    		var w = 1.0 / ( right - left );
+    		var h = 1.0 / ( top - bottom );
+    		var p = 1.0 / ( far - near );
+
+    		var x = ( right + left ) * w;
+    		var y = ( top + bottom ) * h;
+    		var z = ( far + near ) * p;
+
+    		te[ 0 ] = 2 * w;	te[ 4 ] = 0;	te[ 8 ] = 0;	te[ 12 ] = - x;
+    		te[ 1 ] = 0;	te[ 5 ] = 2 * h;	te[ 9 ] = 0;	te[ 13 ] = - y;
+    		te[ 2 ] = 0;	te[ 6 ] = 0;	te[ 10 ] = - 2 * p;	te[ 14 ] = - z;
+    		te[ 3 ] = 0;	te[ 7 ] = 0;	te[ 11 ] = 0;	te[ 15 ] = 1;
+
+    		return this;
+
+    	},
+
+    	equals: function ( matrix ) {
+
+    		var te = this.elements;
+    		var me = matrix.elements;
+
+    		for ( var i = 0; i < 16; i ++ ) {
+
+    			if ( te[ i ] !== me[ i ] ) return false;
+
+    		}
+
+    		return true;
+
+    	},
+
+    	fromArray: function ( array, offset ) {
+
+    		if ( offset === undefined ) offset = 0;
+
+    		for ( var i = 0; i < 16; i ++ ) {
+
+    			this.elements[ i ] = array[ i + offset ];
+
+    		}
+
+    		return this;
+
+    	},
+
+    	toArray: function ( array, offset ) {
+
+    		if ( array === undefined ) array = [];
+    		if ( offset === undefined ) offset = 0;
+
+    		var te = this.elements;
+
+    		array[ offset ] = te[ 0 ];
+    		array[ offset + 1 ] = te[ 1 ];
+    		array[ offset + 2 ] = te[ 2 ];
+    		array[ offset + 3 ] = te[ 3 ];
+
+    		array[ offset + 4 ] = te[ 4 ];
+    		array[ offset + 5 ] = te[ 5 ];
+    		array[ offset + 6 ] = te[ 6 ];
+    		array[ offset + 7 ] = te[ 7 ];
+
+    		array[ offset + 8 ] = te[ 8 ];
+    		array[ offset + 9 ] = te[ 9 ];
+    		array[ offset + 10 ] = te[ 10 ];
+    		array[ offset + 11 ] = te[ 11 ];
+
+    		array[ offset + 12 ] = te[ 12 ];
+    		array[ offset + 13 ] = te[ 13 ];
+    		array[ offset + 14 ] = te[ 14 ];
+    		array[ offset + 15 ] = te[ 15 ];
+
+    		return array;
+
+    	}
+
+    } );
 
     function id(element) {
         return element.id ? `#${element.id}` : '';
@@ -6960,13 +3369,13 @@
         const value = el.value;
         const textContent = el.textContent;
     }
-    function traverseDOM(node, each, bind, level = 0) {
+    function traverseChildElements(node, each, bind, level = 0) {
         level++;
         for (let child = node.firstChild; child; child = child.nextSibling) {
             if (child.nodeType === Node.ELEMENT_NODE) {
                 const el = child;
                 if (each.call(bind, el, level)) {
-                    traverseDOM(el, each, bind, level);
+                    traverseChildElements(el, each, bind, level);
                 }
             }
         }
@@ -6979,7 +3388,37 @@
             sheet.addRule(selector, rules, index);
         }
     }
-    function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+    class Bounds {
+        constructor() {
+            this.left = 0;
+            this.top = 0;
+            this.width = 0;
+            this.height = 0;
+        }
+        copy(rect) {
+            this.top = rect.top;
+            this.left = rect.left;
+            this.width = rect.width;
+            this.height = rect.height;
+            return this;
+        }
+    }
+    class Edges {
+        constructor() {
+            this.left = 0;
+            this.top = 0;
+            this.right = 0;
+            this.bottom = 0;
+        }
+        copy(rect) {
+            this.top = rect.top;
+            this.left = rect.left;
+            this.right = rect.right;
+            this.bottom = rect.bottom;
+            return this;
+        }
+    }
+    function getBounds(element, bounds = new Bounds, referenceElement) {
         const doc = element.ownerDocument;
         const defaultView = element.ownerDocument.defaultView;
         const docEl = doc.documentElement;
@@ -6987,13 +3426,25 @@
         if (element === docEl) {
             return getDocumentBounds(doc, bounds);
         }
+        if (referenceElement === element) {
+            bounds.left = 0;
+            bounds.top = 0;
+            bounds.width = element.offsetWidth;
+            bounds.height = element.offsetHeight;
+            return;
+        }
         let el = element;
         let computedStyle;
         let offsetParent = el.offsetParent;
         let prevComputedStyle = defaultView.getComputedStyle(el, null);
         let top = el.offsetTop;
         let left = el.offsetLeft;
-        while ((el = el.parentNode) && el !== body && el !== docEl) {
+        if (offsetParent && referenceElement && offsetParent.contains(referenceElement) && offsetParent !== referenceElement) {
+            getBounds(referenceElement, bounds, offsetParent);
+            left -= bounds.left;
+            top -= bounds.top;
+        }
+        while ((el = el.parentNode) && el !== body && el !== docEl && el !== referenceElement) {
             if (prevComputedStyle.position === 'fixed') {
                 break;
             }
@@ -7039,6 +3490,27 @@
         bounds.height = element.offsetHeight;
         return bounds;
     }
+    function getMargin(element, margin) {
+        let style = getComputedStyle(element);
+        margin.left = parseFloat(style.marginLeft) || 0;
+        margin.right = parseFloat(style.marginRight) || 0;
+        margin.top = parseFloat(style.marginTop) || 0;
+        margin.bottom = parseFloat(style.marginBottom) || 0;
+    }
+    function getBorder(element, border) {
+        let style = getComputedStyle(element);
+        border.left = parseFloat(style.borderLeftWidth) || 0;
+        border.right = parseFloat(style.borderRightWidth) || 0;
+        border.top = parseFloat(style.borderTopWidth) || 0;
+        border.bottom = parseFloat(style.borderBottomWidth) || 0;
+    }
+    function getPadding(element, padding) {
+        let style = getComputedStyle(element);
+        padding.left = parseFloat(style.paddingLeft) || 0;
+        padding.right = parseFloat(style.paddingRight) || 0;
+        padding.top = parseFloat(style.paddingTop) || 0;
+        padding.bottom = parseFloat(style.paddingBottom) || 0;
+    }
     /*
      * On some mobile browsers, the value reported by window.innerHeight
      * is not the true viewport height. This method returns
@@ -7079,79 +3551,1835 @@
     }
 
     var domUtils = /*#__PURE__*/Object.freeze({
+        __proto__: null,
         path: path,
         hash: hash,
-        traverseDOM: traverseDOM,
+        traverseChildElements: traverseChildElements,
         addCSSRule: addCSSRule,
+        Bounds: Bounds,
+        Edges: Edges,
         getBounds: getBounds,
+        getMargin: getMargin,
+        getBorder: getBorder,
+        getPadding: getPadding,
         getViewportBounds: getViewportBounds,
         getDocumentBounds: getDocumentBounds
     });
 
+    var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+    function unwrapExports (x) {
+    	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+    }
+
+    function createCommonjsModule(fn, module) {
+    	return module = { exports: {} }, fn(module, module.exports), module.exports;
+    }
+
+    var lru = createCommonjsModule(function (module, exports) {
+    /**
+     * A doubly linked list-based Least Recently Used (LRU) cache. Will keep most
+     * recently used items while discarding least recently used items when its limit
+     * is reached.
+     *
+     * Licensed under MIT. Copyright (c) 2010 Rasmus Andersson <http://hunch.se/>
+     * See README.md for details.
+     *
+     * Illustration of the design:
+     *
+     *       entry             entry             entry             entry
+     *       ______            ______            ______            ______
+     *      | head |.newer => |      |.newer => |      |.newer => | tail |
+     *      |  A   |          |  B   |          |  C   |          |  D   |
+     *      |______| <= older.|______| <= older.|______| <= older.|______|
+     *
+     *  removed  <--  <--  <--  <--  <--  <--  <--  <--  <--  <--  <--  added
+     */
+    (function(g,f){
+      const e =  exports ;
+      f(e);
+    })(commonjsGlobal, function(exports) {
+
+    const NEWER = Symbol('newer');
+    const OLDER = Symbol('older');
+
+    function LRUMap(limit, entries) {
+      if (typeof limit !== 'number') {
+        // called as (entries)
+        entries = limit;
+        limit = 0;
+      }
+
+      this.size = 0;
+      this.limit = limit;
+      this.oldest = this.newest = undefined;
+      this._keymap = new Map();
+
+      if (entries) {
+        this.assign(entries);
+        if (limit < 1) {
+          this.limit = this.size;
+        }
+      }
+    }
+
+    exports.LRUMap = LRUMap;
+
+    function Entry(key, value) {
+      this.key = key;
+      this.value = value;
+      this[NEWER] = undefined;
+      this[OLDER] = undefined;
+    }
+
+
+    LRUMap.prototype._markEntryAsUsed = function(entry) {
+      if (entry === this.newest) {
+        // Already the most recenlty used entry, so no need to update the list
+        return;
+      }
+      // HEAD--------------TAIL
+      //   <.older   .newer>
+      //  <--- add direction --
+      //   A  B  C  <D>  E
+      if (entry[NEWER]) {
+        if (entry === this.oldest) {
+          this.oldest = entry[NEWER];
+        }
+        entry[NEWER][OLDER] = entry[OLDER]; // C <-- E.
+      }
+      if (entry[OLDER]) {
+        entry[OLDER][NEWER] = entry[NEWER]; // C. --> E
+      }
+      entry[NEWER] = undefined; // D --x
+      entry[OLDER] = this.newest; // D. --> E
+      if (this.newest) {
+        this.newest[NEWER] = entry; // E. <-- D
+      }
+      this.newest = entry;
+    };
+
+    LRUMap.prototype.assign = function(entries) {
+      let entry, limit = this.limit || Number.MAX_VALUE;
+      this._keymap.clear();
+      let it = entries[Symbol.iterator]();
+      for (let itv = it.next(); !itv.done; itv = it.next()) {
+        let e = new Entry(itv.value[0], itv.value[1]);
+        this._keymap.set(e.key, e);
+        if (!entry) {
+          this.oldest = e;
+        } else {
+          entry[NEWER] = e;
+          e[OLDER] = entry;
+        }
+        entry = e;
+        if (limit-- == 0) {
+          throw new Error('overflow');
+        }
+      }
+      this.newest = entry;
+      this.size = this._keymap.size;
+    };
+
+    LRUMap.prototype.get = function(key) {
+      // First, find our cache entry
+      var entry = this._keymap.get(key);
+      if (!entry) return; // Not cached. Sorry.
+      // As <key> was found in the cache, register it as being requested recently
+      this._markEntryAsUsed(entry);
+      return entry.value;
+    };
+
+    LRUMap.prototype.set = function(key, value) {
+      var entry = this._keymap.get(key);
+
+      if (entry) {
+        // update existing
+        entry.value = value;
+        this._markEntryAsUsed(entry);
+        return this;
+      }
+
+      // new entry
+      this._keymap.set(key, (entry = new Entry(key, value)));
+
+      if (this.newest) {
+        // link previous tail to the new tail (entry)
+        this.newest[NEWER] = entry;
+        entry[OLDER] = this.newest;
+      } else {
+        // we're first in -- yay
+        this.oldest = entry;
+      }
+
+      // add new entry to the end of the linked list -- it's now the freshest entry.
+      this.newest = entry;
+      ++this.size;
+      if (this.size > this.limit) {
+        // we hit the limit -- remove the head
+        this.shift();
+      }
+
+      return this;
+    };
+
+    LRUMap.prototype.shift = function() {
+      // todo: handle special case when limit == 1
+      var entry = this.oldest;
+      if (entry) {
+        if (this.oldest[NEWER]) {
+          // advance the list
+          this.oldest = this.oldest[NEWER];
+          this.oldest[OLDER] = undefined;
+        } else {
+          // the cache is exhausted
+          this.oldest = undefined;
+          this.newest = undefined;
+        }
+        // Remove last strong reference to <entry> and remove links from the purged
+        // entry being returned:
+        entry[NEWER] = entry[OLDER] = undefined;
+        this._keymap.delete(entry.key);
+        --this.size;
+        return [entry.key, entry.value];
+      }
+    };
+
+    // ----------------------------------------------------------------------------
+    // Following code is optional and can be removed without breaking the core
+    // functionality.
+
+    LRUMap.prototype.find = function(key) {
+      let e = this._keymap.get(key);
+      return e ? e.value : undefined;
+    };
+
+    LRUMap.prototype.has = function(key) {
+      return this._keymap.has(key);
+    };
+
+    LRUMap.prototype['delete'] = function(key) {
+      var entry = this._keymap.get(key);
+      if (!entry) return;
+      this._keymap.delete(entry.key);
+      if (entry[NEWER] && entry[OLDER]) {
+        // relink the older entry with the newer entry
+        entry[OLDER][NEWER] = entry[NEWER];
+        entry[NEWER][OLDER] = entry[OLDER];
+      } else if (entry[NEWER]) {
+        // remove the link to us
+        entry[NEWER][OLDER] = undefined;
+        // link the newer entry to head
+        this.oldest = entry[NEWER];
+      } else if (entry[OLDER]) {
+        // remove the link to us
+        entry[OLDER][NEWER] = undefined;
+        // link the newer entry to head
+        this.newest = entry[OLDER];
+      } else {// if(entry[OLDER] === undefined && entry.newer === undefined) {
+        this.oldest = this.newest = undefined;
+      }
+
+      this.size--;
+      return entry.value;
+    };
+
+    LRUMap.prototype.clear = function() {
+      // Not clearing links should be safe, as we don't expose live links to user
+      this.oldest = this.newest = undefined;
+      this.size = 0;
+      this._keymap.clear();
+    };
+
+
+    function EntryIterator(oldestEntry) { this.entry = oldestEntry; }
+    EntryIterator.prototype[Symbol.iterator] = function() { return this; };
+    EntryIterator.prototype.next = function() {
+      let ent = this.entry;
+      if (ent) {
+        this.entry = ent[NEWER];
+        return { done: false, value: [ent.key, ent.value] };
+      } else {
+        return { done: true, value: undefined };
+      }
+    };
+
+
+    function KeyIterator(oldestEntry) { this.entry = oldestEntry; }
+    KeyIterator.prototype[Symbol.iterator] = function() { return this; };
+    KeyIterator.prototype.next = function() {
+      let ent = this.entry;
+      if (ent) {
+        this.entry = ent[NEWER];
+        return { done: false, value: ent.key };
+      } else {
+        return { done: true, value: undefined };
+      }
+    };
+
+    function ValueIterator(oldestEntry) { this.entry = oldestEntry; }
+    ValueIterator.prototype[Symbol.iterator] = function() { return this; };
+    ValueIterator.prototype.next = function() {
+      let ent = this.entry;
+      if (ent) {
+        this.entry = ent[NEWER];
+        return { done: false, value: ent.value };
+      } else {
+        return { done: true, value: undefined };
+      }
+    };
+
+
+    LRUMap.prototype.keys = function() {
+      return new KeyIterator(this.oldest);
+    };
+
+    LRUMap.prototype.values = function() {
+      return new ValueIterator(this.oldest);
+    };
+
+    LRUMap.prototype.entries = function() {
+      return this;
+    };
+
+    LRUMap.prototype[Symbol.iterator] = function() {
+      return new EntryIterator(this.oldest);
+    };
+
+    LRUMap.prototype.forEach = function(fun, thisObj) {
+      if (typeof thisObj !== 'object') {
+        thisObj = this;
+      }
+      let entry = this.oldest;
+      while (entry) {
+        fun.call(thisObj, entry.value, entry.key, this);
+        entry = entry[NEWER];
+      }
+    };
+
+    /** Returns a JSON (array) representation */
+    LRUMap.prototype.toJSON = function() {
+      var s = new Array(this.size), i = 0, entry = this.oldest;
+      while (entry) {
+        s[i++] = { key: entry.key, value: entry.value };
+        entry = entry[NEWER];
+      }
+      return s;
+    };
+
+    /** Returns a String representation */
+    LRUMap.prototype.toString = function() {
+      var s = '', entry = this.oldest;
+      while (entry) {
+        s += String(entry.key)+':'+entry.value;
+        entry = entry[NEWER];
+        if (entry) {
+          s += ' < ';
+        }
+      }
+      return s;
+    };
+
+    });
+    });
+    var lru_1 = lru.LRUMap;
+
+    var sha256 = createCommonjsModule(function (module) {
+    (function (root, factory) {
+        // Hack to make all exports of this module sha256 function object properties.
+        var exports = {};
+        factory(exports);
+        var sha256 = exports["default"];
+        for (var k in exports) {
+            sha256[k] = exports[k];
+        }
+            
+        {
+            module.exports = sha256;
+        }
+    })(commonjsGlobal, function(exports) {
+    exports.__esModule = true;
+    // SHA-256 (+ HMAC and PBKDF2) for JavaScript.
+    //
+    // Written in 2014-2016 by Dmitry Chestnykh.
+    // Public domain, no warranty.
+    //
+    // Functions (accept and return Uint8Arrays):
+    //
+    //   sha256(message) -> hash
+    //   sha256.hmac(key, message) -> mac
+    //   sha256.pbkdf2(password, salt, rounds, dkLen) -> dk
+    //
+    //  Classes:
+    //
+    //   new sha256.Hash()
+    //   new sha256.HMAC(key)
+    //
+    exports.digestLength = 32;
+    exports.blockSize = 64;
+    // SHA-256 constants
+    var K = new Uint32Array([
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b,
+        0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
+        0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
+        0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+        0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152,
+        0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+        0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+        0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
+        0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
+        0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f,
+        0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]);
+    function hashBlocks(w, v, p, pos, len) {
+        var a, b, c, d, e, f, g, h, u, i, j, t1, t2;
+        while (len >= 64) {
+            a = v[0];
+            b = v[1];
+            c = v[2];
+            d = v[3];
+            e = v[4];
+            f = v[5];
+            g = v[6];
+            h = v[7];
+            for (i = 0; i < 16; i++) {
+                j = pos + i * 4;
+                w[i] = (((p[j] & 0xff) << 24) | ((p[j + 1] & 0xff) << 16) |
+                    ((p[j + 2] & 0xff) << 8) | (p[j + 3] & 0xff));
+            }
+            for (i = 16; i < 64; i++) {
+                u = w[i - 2];
+                t1 = (u >>> 17 | u << (32 - 17)) ^ (u >>> 19 | u << (32 - 19)) ^ (u >>> 10);
+                u = w[i - 15];
+                t2 = (u >>> 7 | u << (32 - 7)) ^ (u >>> 18 | u << (32 - 18)) ^ (u >>> 3);
+                w[i] = (t1 + w[i - 7] | 0) + (t2 + w[i - 16] | 0);
+            }
+            for (i = 0; i < 64; i++) {
+                t1 = (((((e >>> 6 | e << (32 - 6)) ^ (e >>> 11 | e << (32 - 11)) ^
+                    (e >>> 25 | e << (32 - 25))) + ((e & f) ^ (~e & g))) | 0) +
+                    ((h + ((K[i] + w[i]) | 0)) | 0)) | 0;
+                t2 = (((a >>> 2 | a << (32 - 2)) ^ (a >>> 13 | a << (32 - 13)) ^
+                    (a >>> 22 | a << (32 - 22))) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+                h = g;
+                g = f;
+                f = e;
+                e = (d + t1) | 0;
+                d = c;
+                c = b;
+                b = a;
+                a = (t1 + t2) | 0;
+            }
+            v[0] += a;
+            v[1] += b;
+            v[2] += c;
+            v[3] += d;
+            v[4] += e;
+            v[5] += f;
+            v[6] += g;
+            v[7] += h;
+            pos += 64;
+            len -= 64;
+        }
+        return pos;
+    }
+    // Hash implements SHA256 hash algorithm.
+    var Hash = /** @class */ (function () {
+        function Hash() {
+            this.digestLength = exports.digestLength;
+            this.blockSize = exports.blockSize;
+            // Note: Int32Array is used instead of Uint32Array for performance reasons.
+            this.state = new Int32Array(8); // hash state
+            this.temp = new Int32Array(64); // temporary state
+            this.buffer = new Uint8Array(128); // buffer for data to hash
+            this.bufferLength = 0; // number of bytes in buffer
+            this.bytesHashed = 0; // number of total bytes hashed
+            this.finished = false; // indicates whether the hash was finalized
+            this.reset();
+        }
+        // Resets hash state making it possible
+        // to re-use this instance to hash other data.
+        Hash.prototype.reset = function () {
+            this.state[0] = 0x6a09e667;
+            this.state[1] = 0xbb67ae85;
+            this.state[2] = 0x3c6ef372;
+            this.state[3] = 0xa54ff53a;
+            this.state[4] = 0x510e527f;
+            this.state[5] = 0x9b05688c;
+            this.state[6] = 0x1f83d9ab;
+            this.state[7] = 0x5be0cd19;
+            this.bufferLength = 0;
+            this.bytesHashed = 0;
+            this.finished = false;
+            return this;
+        };
+        // Cleans internal buffers and re-initializes hash state.
+        Hash.prototype.clean = function () {
+            for (var i = 0; i < this.buffer.length; i++) {
+                this.buffer[i] = 0;
+            }
+            for (var i = 0; i < this.temp.length; i++) {
+                this.temp[i] = 0;
+            }
+            this.reset();
+        };
+        // Updates hash state with the given data.
+        //
+        // Optionally, length of the data can be specified to hash
+        // fewer bytes than data.length.
+        //
+        // Throws error when trying to update already finalized hash:
+        // instance must be reset to use it again.
+        Hash.prototype.update = function (data, dataLength) {
+            if (dataLength === void 0) { dataLength = data.length; }
+            if (this.finished) {
+                throw new Error("SHA256: can't update because hash was finished.");
+            }
+            var dataPos = 0;
+            this.bytesHashed += dataLength;
+            if (this.bufferLength > 0) {
+                while (this.bufferLength < 64 && dataLength > 0) {
+                    this.buffer[this.bufferLength++] = data[dataPos++];
+                    dataLength--;
+                }
+                if (this.bufferLength === 64) {
+                    hashBlocks(this.temp, this.state, this.buffer, 0, 64);
+                    this.bufferLength = 0;
+                }
+            }
+            if (dataLength >= 64) {
+                dataPos = hashBlocks(this.temp, this.state, data, dataPos, dataLength);
+                dataLength %= 64;
+            }
+            while (dataLength > 0) {
+                this.buffer[this.bufferLength++] = data[dataPos++];
+                dataLength--;
+            }
+            return this;
+        };
+        // Finalizes hash state and puts hash into out.
+        //
+        // If hash was already finalized, puts the same value.
+        Hash.prototype.finish = function (out) {
+            if (!this.finished) {
+                var bytesHashed = this.bytesHashed;
+                var left = this.bufferLength;
+                var bitLenHi = (bytesHashed / 0x20000000) | 0;
+                var bitLenLo = bytesHashed << 3;
+                var padLength = (bytesHashed % 64 < 56) ? 64 : 128;
+                this.buffer[left] = 0x80;
+                for (var i = left + 1; i < padLength - 8; i++) {
+                    this.buffer[i] = 0;
+                }
+                this.buffer[padLength - 8] = (bitLenHi >>> 24) & 0xff;
+                this.buffer[padLength - 7] = (bitLenHi >>> 16) & 0xff;
+                this.buffer[padLength - 6] = (bitLenHi >>> 8) & 0xff;
+                this.buffer[padLength - 5] = (bitLenHi >>> 0) & 0xff;
+                this.buffer[padLength - 4] = (bitLenLo >>> 24) & 0xff;
+                this.buffer[padLength - 3] = (bitLenLo >>> 16) & 0xff;
+                this.buffer[padLength - 2] = (bitLenLo >>> 8) & 0xff;
+                this.buffer[padLength - 1] = (bitLenLo >>> 0) & 0xff;
+                hashBlocks(this.temp, this.state, this.buffer, 0, padLength);
+                this.finished = true;
+            }
+            for (var i = 0; i < 8; i++) {
+                out[i * 4 + 0] = (this.state[i] >>> 24) & 0xff;
+                out[i * 4 + 1] = (this.state[i] >>> 16) & 0xff;
+                out[i * 4 + 2] = (this.state[i] >>> 8) & 0xff;
+                out[i * 4 + 3] = (this.state[i] >>> 0) & 0xff;
+            }
+            return this;
+        };
+        // Returns the final hash digest.
+        Hash.prototype.digest = function () {
+            var out = new Uint8Array(this.digestLength);
+            this.finish(out);
+            return out;
+        };
+        // Internal function for use in HMAC for optimization.
+        Hash.prototype._saveState = function (out) {
+            for (var i = 0; i < this.state.length; i++) {
+                out[i] = this.state[i];
+            }
+        };
+        // Internal function for use in HMAC for optimization.
+        Hash.prototype._restoreState = function (from, bytesHashed) {
+            for (var i = 0; i < this.state.length; i++) {
+                this.state[i] = from[i];
+            }
+            this.bytesHashed = bytesHashed;
+            this.finished = false;
+            this.bufferLength = 0;
+        };
+        return Hash;
+    }());
+    exports.Hash = Hash;
+    // HMAC implements HMAC-SHA256 message authentication algorithm.
+    var HMAC = /** @class */ (function () {
+        function HMAC(key) {
+            this.inner = new Hash();
+            this.outer = new Hash();
+            this.blockSize = this.inner.blockSize;
+            this.digestLength = this.inner.digestLength;
+            var pad = new Uint8Array(this.blockSize);
+            if (key.length > this.blockSize) {
+                (new Hash()).update(key).finish(pad).clean();
+            }
+            else {
+                for (var i = 0; i < key.length; i++) {
+                    pad[i] = key[i];
+                }
+            }
+            for (var i = 0; i < pad.length; i++) {
+                pad[i] ^= 0x36;
+            }
+            this.inner.update(pad);
+            for (var i = 0; i < pad.length; i++) {
+                pad[i] ^= 0x36 ^ 0x5c;
+            }
+            this.outer.update(pad);
+            this.istate = new Uint32Array(8);
+            this.ostate = new Uint32Array(8);
+            this.inner._saveState(this.istate);
+            this.outer._saveState(this.ostate);
+            for (var i = 0; i < pad.length; i++) {
+                pad[i] = 0;
+            }
+        }
+        // Returns HMAC state to the state initialized with key
+        // to make it possible to run HMAC over the other data with the same
+        // key without creating a new instance.
+        HMAC.prototype.reset = function () {
+            this.inner._restoreState(this.istate, this.inner.blockSize);
+            this.outer._restoreState(this.ostate, this.outer.blockSize);
+            return this;
+        };
+        // Cleans HMAC state.
+        HMAC.prototype.clean = function () {
+            for (var i = 0; i < this.istate.length; i++) {
+                this.ostate[i] = this.istate[i] = 0;
+            }
+            this.inner.clean();
+            this.outer.clean();
+        };
+        // Updates state with provided data.
+        HMAC.prototype.update = function (data) {
+            this.inner.update(data);
+            return this;
+        };
+        // Finalizes HMAC and puts the result in out.
+        HMAC.prototype.finish = function (out) {
+            if (this.outer.finished) {
+                this.outer.finish(out);
+            }
+            else {
+                this.inner.finish(out);
+                this.outer.update(out, this.digestLength).finish(out);
+            }
+            return this;
+        };
+        // Returns message authentication code.
+        HMAC.prototype.digest = function () {
+            var out = new Uint8Array(this.digestLength);
+            this.finish(out);
+            return out;
+        };
+        return HMAC;
+    }());
+    exports.HMAC = HMAC;
+    // Returns SHA256 hash of data.
+    function hash(data) {
+        var h = (new Hash()).update(data);
+        var digest = h.digest();
+        h.clean();
+        return digest;
+    }
+    exports.hash = hash;
+    // Function hash is both available as module.hash and as default export.
+    exports["default"] = hash;
+    // Returns HMAC-SHA256 of data under the key.
+    function hmac(key, data) {
+        var h = (new HMAC(key)).update(data);
+        var digest = h.digest();
+        h.clean();
+        return digest;
+    }
+    exports.hmac = hmac;
+    // Derives a key from password and salt using PBKDF2-HMAC-SHA256
+    // with the given number of iterations.
+    //
+    // The number of bytes returned is equal to dkLen.
+    //
+    // (For better security, avoid dkLen greater than hash length - 32 bytes).
+    function pbkdf2(password, salt, iterations, dkLen) {
+        var prf = new HMAC(password);
+        var len = prf.digestLength;
+        var ctr = new Uint8Array(4);
+        var t = new Uint8Array(len);
+        var u = new Uint8Array(len);
+        var dk = new Uint8Array(dkLen);
+        for (var i = 0; i * len < dkLen; i++) {
+            var c = i + 1;
+            ctr[0] = (c >>> 24) & 0xff;
+            ctr[1] = (c >>> 16) & 0xff;
+            ctr[2] = (c >>> 8) & 0xff;
+            ctr[3] = (c >>> 0) & 0xff;
+            prf.reset();
+            prf.update(salt);
+            prf.update(ctr);
+            prf.finish(u);
+            for (var j = 0; j < len; j++) {
+                t[j] = u[j];
+            }
+            for (var j = 2; j <= iterations; j++) {
+                prf.reset();
+                prf.update(u).finish(u);
+                for (var k = 0; k < len; k++) {
+                    t[k] ^= u[k];
+                }
+            }
+            for (var j = 0; j < len && i * len + j < dkLen; j++) {
+                dk[i * len + j] = t[j];
+            }
+        }
+        for (var i = 0; i < len; i++) {
+            t[i] = u[i] = 0;
+        }
+        for (var i = 0; i < 4; i++) {
+            ctr[i] = 0;
+        }
+        prf.clean();
+        return dk;
+    }
+    exports.pbkdf2 = pbkdf2;
+    });
+    });
+
+    unwrapExports(sha256);
+    var sha256_1 = sha256.hash;
+
+    function ensureElementIsInDocument(element) {
+        const document = element.ownerDocument;
+        if (document.contains(element)) {
+            return element;
+        }
+        const container = document.createElement('div');
+        container.setAttribute(WebRenderer.CONTAINER_ATTRIBUTE, '');
+        container.style.position = 'fixed';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.top = '-100000px';
+        container.style['contain'] = 'strict';
+        container.appendChild(element);
+        document.documentElement.appendChild(container);
+        // document.body.appendChild(container)
+        return element;
+    }
+    const scratchMat1 = new Matrix4;
+    const scratchMat2 = new Matrix4;
+    const textDecoder = new TextDecoder();
+    const microtask = Promise.resolve();
+    class WebLayer {
+        constructor(element, eventCallback) {
+            this.element = element;
+            this.eventCallback = eventCallback;
+            this.id = WebLayer._nextID++;
+            this.cachedBounds = new Map();
+            this.cachedMargin = new Map();
+            this.needsRefresh = true;
+            this.needsRemoval = false;
+            this.svg = new Image;
+            this.bounds = new Bounds;
+            this.padding = new Edges;
+            this.margin = new Edges;
+            this.border = new Edges;
+            this.childLayers = [];
+            this.cssTransform = new Matrix4;
+            this._svgDocument = '';
+            this._svgSrc = '';
+            this._hashingCanvas = document.createElement('canvas');
+            WebRenderer.layers.set(element, this);
+            element.setAttribute(WebRenderer.LAYER_ATTRIBUTE, '' + this.id);
+            this.parentLayer = WebRenderer.getLayerForElement(this.element.parentElement);
+            this.eventCallback('layercreated', { target: element });
+            WebLayer.cachedCanvases.limit = WebRenderer.layers.size * WebLayer.DEFAULT_CACHE_SIZE;
+        }
+        set canvas(val) {
+            if (this._canvas !== val) {
+                this._canvas = val;
+                if (this.eventCallback)
+                    this.eventCallback('layerpainted', { target: this.element });
+            }
+        }
+        get canvas() {
+            return this._canvas;
+        }
+        get depth() {
+            const parentLayer = this.parentLayer;
+            let depth = 0;
+            if (parentLayer) {
+                let el = this.element;
+                while (el !== parentLayer.element) {
+                    el = el.parentElement;
+                    depth++;
+                }
+            }
+            return depth;
+        }
+        get rootLayer() {
+            let rootLayer = this;
+            while (rootLayer.parentLayer)
+                rootLayer = rootLayer.parentLayer;
+            return rootLayer;
+        }
+        traverseParentLayers(each, ...params) {
+            const parentLayer = this.parentLayer;
+            if (parentLayer) {
+                parentLayer.traverseParentLayers(each, ...params);
+                each(parentLayer, ...params);
+            }
+        }
+        traverseLayers(each, ...params) {
+            each(this, ...params);
+            this.traverseChildLayers(each, ...params);
+        }
+        traverseChildLayers(each, ...params) {
+            for (const child of this.childLayers) {
+                child.traverseLayers(each, ...params);
+            }
+        }
+        refresh(forceRefresh = true) {
+            getBounds(this.element, this.bounds, this.parentLayer && this.parentLayer.element);
+            if (this.needsRefresh || forceRefresh) {
+                this._refreshParentAndChildLayers();
+                WebRenderer.addToSerializeQueue(this);
+            }
+            if (!this.parentLayer) {
+                WebRenderer.scheduleTasks();
+            }
+        }
+        _refreshParentAndChildLayers() {
+            const element = this.element;
+            const childLayers = this.childLayers;
+            const oldChildLayers = childLayers.slice();
+            const previousParentLayer = this.parentLayer;
+            this.parentLayer = WebRenderer.getLayerForElement(this.element.parentElement);
+            if (previousParentLayer !== this.parentLayer) {
+                this.parentLayer && this.parentLayer.childLayers.push(this);
+                this.eventCallback('parentchanged', { target: element });
+            }
+            childLayers.length = 0;
+            traverseChildElements(element, this._tryConvertElementToWebLayer, this);
+            for (const child of oldChildLayers) {
+                const parentLayer = WebRenderer.getLayerForElement(child.element.parentElement);
+                if (!parentLayer) {
+                    child.needsRemoval = true;
+                    childLayers.push(child);
+                }
+            }
+        }
+        _tryConvertElementToWebLayer(el) {
+            const styles = getComputedStyle(el);
+            const id = el.getAttribute(WebRenderer.LAYER_ATTRIBUTE);
+            if (id !== null || el.nodeName === 'VIDEO' || styles.transform !== 'none') {
+                let child = WebRenderer.layers.get(el);
+                if (!child) {
+                    child = new WebLayer(el, this.eventCallback);
+                }
+                child.needsRemoval = this.needsRemoval;
+                this.childLayers.push(child);
+                return false; // stop traversing this subtree
+            }
+            return true;
+        }
+        async serialize() {
+            if (this.element.nodeName === 'VIDEO')
+                return;
+            this.needsRefresh = false;
+            const [svgPageCSS] = await Promise.all([WebRenderer.getEmbeddedPageCSS(), WebRenderer.embedExternalResources(this.element)]);
+            let { width, height } = this.bounds;
+            if (width * height > 0) {
+                getPadding(this.element, this.padding);
+                getMargin(this.element, this.margin);
+                getBorder(this.element, this.border);
+                // add margins
+                width += Math.max(this.margin.left, 0) + Math.max(this.margin.right, 0);
+                height += Math.max(this.margin.top, 0) + Math.max(this.margin.bottom, 0);
+                // width += Math.max(this.border.left,0) + Math.max(this.border.right,0)
+                // height += Math.max(this.border.top,0) + Math.max(this.border.bottom,0)
+                // create svg markup
+                const layerAttribute = `data-layer="${this.id}"`;
+                const layerElement = this.element;
+                const needsInlineBlock = getComputedStyle(layerElement).display === 'inline';
+                const layerHTML = WebRenderer.serializer.serializeToString(layerElement).replace(layerAttribute, 'data-layer="" ' + WebRenderer.RENDERING_ATTRIBUTE + '="" ' + (needsInlineBlock ? 'data-layer-rendering-inline="" ' : ''));
+                const parentsHTML = this._getParentsHTML(layerElement);
+                parentsHTML[0] = parentsHTML[0].replace('html', 'html ' + WebRenderer.RENDERING_DOCUMENT_ATTRIBUTE + '="" ');
+                const docString = '<svg width="' + width + '" height="' + height
+                    + '" xmlns="http://www.w3.org/2000/svg"><defs><style type="text/css"><![CDATA[a[href]{color:#0000EE;text-decoration:underline;}'
+                    + svgPageCSS.join('') + ']]></style></defs><foreignObject x="0" y="0" width="' + width + '" height="' + height + '">'
+                    + parentsHTML[0] + layerHTML + parentsHTML[1] + '</foreignObject></svg>';
+                this._svgDocument = docString;
+                const svgSrc = this._svgSrc = "data:image/svg+xml;utf8," + encodeURIComponent(docString);
+                // check for existing canvas
+                const canvasHash = WebLayer.canvasHashes.get(svgSrc);
+                if (canvasHash && WebLayer.cachedCanvases.has(canvasHash)) {
+                    this.canvas = WebLayer.cachedCanvases.get(canvasHash);
+                    return;
+                }
+                // rasterize the svg document if no existing canvas matches
+                this.cachedBounds.set(svgSrc, new Bounds().copy(this.bounds));
+                this.cachedMargin.set(svgSrc, new Edges().copy(this.margin));
+                WebRenderer.addToRasterizeQueue(this);
+            }
+        }
+        async rasterize() {
+            return new Promise((resolve) => {
+                this.svg.onload = () => {
+                    WebRenderer.addToRenderQueue(this);
+                    resolve();
+                };
+                this.svg.src = this._svgSrc;
+                if (this.svg.complete && this.svg.currentSrc === this.svg.src) {
+                    WebRenderer.addToRenderQueue(this);
+                    this.svg.onload = undefined;
+                    resolve();
+                }
+            });
+        }
+        render() {
+            const src = this.svg.currentSrc;
+            if (!this.svg.complete || !this.cachedBounds.has(src) || !this.cachedMargin.has(src)) {
+                this.needsRefresh = true;
+                return;
+            }
+            let { width, height } = this.cachedBounds.get(src);
+            let { left, top } = this.cachedMargin.get(src);
+            const hashingCanvas = this._hashingCanvas;
+            let hw = hashingCanvas.width = Math.max(width * 0.05, 40);
+            let hh = hashingCanvas.height = Math.max(height * 0.05, 40);
+            const hctx = hashingCanvas.getContext('2d');
+            hctx.clearRect(0, 0, hw, hh);
+            hctx.drawImage(this.svg, left, top, width, height, 0, 0, hw, hh);
+            const hashData = hctx.getImageData(0, 0, hw, hh).data;
+            const newHash = WebRenderer.arrayBufferToBase64(sha256_1(new Uint8Array(hashData))) + '?w=' + width + ';h=' + height;
+            WebLayer.canvasHashes.set(src, newHash);
+            if (WebLayer.cachedCanvases.has(newHash)) {
+                this.canvas = WebLayer.cachedCanvases.get(newHash);
+                return;
+            }
+            const pixelRatio = this.pixelRatio || parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) || window.devicePixelRatio;
+            const newCanvas = WebLayer.cachedCanvases.size === WebLayer.cachedCanvases.limit ?
+                WebLayer.cachedCanvases.shift()[1] : document.createElement('canvas');
+            let w = newCanvas.width = width * pixelRatio;
+            let h = newCanvas.height = height * pixelRatio;
+            const ctx = newCanvas.getContext('2d');
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(this.svg, left, top, width, height, 0, 0, w, h);
+            WebLayer.cachedCanvases.set(newHash, newCanvas);
+            this.canvas = newCanvas;
+        }
+        // Get all parents of the embeded html as these can effect the resulting styles
+        _getParentsHTML(element) {
+            const opens = [];
+            const closes = [];
+            let parent = element.parentElement;
+            do {
+                let tag = parent.tagName.toLowerCase();
+                let attributes = ' ';
+                for (const a of parent.attributes) {
+                    if (a.name === 'style')
+                        continue;
+                    if (a.name === 'data-layer') {
+                        attributes += 'data-layer="" '; // remove layer id to increase cache hits for similar element heirarchies
+                        continue;
+                    }
+                    attributes += `${a.name}="${a.value}" `;
+                }
+                const open = '<' + tag + (tag === 'html' ? ` xmlns="http://www.w3.org/1999/xhtml" style="--x-width:${this.bounds.width + 0.5}px;--x-height:${this.bounds.height}px;--x-inline-top:${this.border.top + this.margin.top + this.padding.top}px" ` : '') + attributes + ' data-layer-rendering-parent="" >';
+                opens.unshift(open);
+                const close = '</' + tag + '>';
+                closes.push(close);
+                if (tag == 'html')
+                    break;
+            } while (parent = parent.parentElement);
+            return [opens.join(''), closes.join('')];
+        }
+    }
+    WebLayer.DEFAULT_CACHE_SIZE = 4;
+    WebLayer.canvasHashes = new lru_1(1000);
+    WebLayer.cachedCanvases = new lru_1(WebLayer.DEFAULT_CACHE_SIZE);
+    WebLayer._nextID = 0;
+    class WebRenderer {
+        static _init() {
+            if (this._didInit)
+                return;
+            this._didInit = true;
+            // const inputStyles = document.createElement("style")
+            // inputStyles.innerHTML = "input, select,textarea{border: 1px solid #000000;margin: 0;background-color: #ffffff;-webkit-appearance: none;}:-webkit-autofill {color: #fff !important;}input[type='checkbox']{width: 20px;height: 20px;display: inline-block;}input[type='radio']{width: 20px;height: 20px;display: inline-block;border-radius: 50%;}input[type='checkbox'][checked],input[type='radio'][checked]{background-color: #555555;}"
+            // document.head.insertBefore(inputStyles, document.head.firstChild)
+            const style = document.createElement('style');
+            document.head.append(style);
+            const sheet = style.sheet;
+            let i = 0;
+            addCSSRule(sheet, `[${WebRenderer.RENDERING_DOCUMENT_ATTRIBUTE}] *`, 'transform: none !important;', i++);
+            addCSSRule(sheet, `[${WebRenderer.RENDERING_ATTRIBUTE}], [${WebRenderer.RENDERING_ATTRIBUTE}] *`, 'visibility: visible !important;', i++);
+            addCSSRule(sheet, `[${WebRenderer.RENDERING_ATTRIBUTE}] [${WebRenderer.LAYER_ATTRIBUTE}], [${WebRenderer.RENDERING_ATTRIBUTE}] [${WebRenderer.LAYER_ATTRIBUTE}] *`, 'visibility: hidden !important;', i++);
+            addCSSRule(sheet, `[${WebRenderer.RENDERING_ATTRIBUTE}]`, 'position: relative; top: 0 !important; left: 0 !important; float: none; box-sizing:border-box; width:var(--x-width); height:var(--x-height);', i++);
+            addCSSRule(sheet, `[data-layer-rendering-inline]`, 'top: var(--x-inline-top) !important; width:auto !important', i++);
+            addCSSRule(sheet, `[data-layer-rendering-parent]`, 'transform: none;left: 0;top: 0;margin: 0;border:0;border-radius:0;height:100%;padding:0;position:static;text-align:left;display:block;background:rgba(0,0,0,0);box-shadow:none', i++);
+            addCSSRule(sheet, `[data-layer-rendering-parent]::before, [data-layer-rendering-parent]::after`, 'content:none; box-shadow:none;', i++);
+            let previousHash = '';
+            const onHashChange = () => {
+                if (previousHash != window.location.hash) {
+                    var currentTarget = document.querySelector('.x-target');
+                    if (currentTarget) {
+                        currentTarget.classList.remove('x-target');
+                    }
+                    if (window.location.hash) {
+                        try {
+                            var newTarget = document.querySelector(window.location.hash);
+                            if (newTarget) {
+                                newTarget.classList.add('x-target');
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                previousHash = window.location.hash;
+            };
+            window.addEventListener('hashchange', onHashChange, false);
+            onHashChange();
+        }
+        static addToSerializeQueue(layer) {
+            if (this.serializeQueue.indexOf(layer) === -1)
+                this.serializeQueue.push(layer);
+        }
+        static addToRasterizeQueue(layer) {
+            if (this.rasterizeQueue.indexOf(layer) === -1)
+                this.rasterizeQueue.push(layer);
+        }
+        static addToRenderQueue(layer) {
+            if (this.renderQueue.indexOf(layer) === -1)
+                this.renderQueue.push(layer);
+        }
+        static async scheduleTasks() {
+            await microtask;
+            const serializeQueue = WebRenderer.serializeQueue;
+            const rasterizeQueue = WebRenderer.rasterizeQueue;
+            const renderQueue = WebRenderer.renderQueue;
+            let startTime = performance.now();
+            // while (renderQueue.length && performance.now() - startTime < this.TASK_RENDER_MAX_TIME/2) {
+            //     renderQueue.shift()!.render()
+            // }
+            // startTime = performance.now()
+            while (serializeQueue.length && performance.now() - startTime < this.TASK_SERIALIZE_MAX_TIME) {
+                serializeQueue.shift().serialize();
+            }
+            startTime = performance.now();
+            while (rasterizeQueue.length && performance.now() - startTime < this.TASK_RASTERIZE_MAX_TIME &&
+                this.rasterizeTaskCount < this.TASK_RASTERIZE_MAX_SIMULTANEOUS) {
+                this.rasterizeTaskCount++;
+                rasterizeQueue.shift().rasterize().then(() => { this.rasterizeTaskCount--; });
+            }
+            startTime = performance.now();
+            while (renderQueue.length && performance.now() - startTime < this.TASK_RENDER_MAX_TIME / 2) {
+                renderQueue.shift().render();
+            }
+        }
+        static setLayerNeedsUpdate(layer) {
+            layer.needsRefresh = true;
+        }
+        static createLayerTree(element, eventCallback) {
+            if (WebRenderer.getLayerForElement(element))
+                throw new Error('A root WebLayer for the given element already exists');
+            WebRenderer._init();
+            ensureElementIsInDocument(element);
+            const observer = new MutationObserver(WebRenderer.handleMutations);
+            this.mutationObservers.set(element, observer);
+            this.startMutationObserver(element);
+            const resizeObserver = new index(records => {
+                for (const record of records) {
+                    const layer = this.getLayerForElement(record.target);
+                    layer.needsRefresh = true;
+                }
+            });
+            resizeObserver.observe(element);
+            this.resizeObservers.set(element, resizeObserver);
+            element.addEventListener('mousemove', this._onmousemove, { capture: true });
+            element.addEventListener('input', this._triggerRefresh, { capture: true });
+            element.addEventListener('keydown', this._triggerRefresh, { capture: true });
+            element.addEventListener('submit', this._triggerRefresh, { capture: true });
+            element.addEventListener('change', this._triggerRefresh, { capture: true });
+            element.addEventListener('focus', this._triggerRefresh, { capture: true });
+            element.addEventListener('blur', this._triggerRefresh, { capture: true });
+            element.addEventListener('transitionend', this._triggerRefresh, { capture: true });
+            const layer = new WebLayer(element, eventCallback);
+            this.rootLayers.set(element, layer);
+            return layer;
+        }
+        static disposeLayer(layer) {
+            if (this.rootLayers.has(layer.element)) {
+                this.rootLayers.delete(layer.element);
+                const observer = this.mutationObservers.get(layer.element);
+                observer.disconnect();
+                this.mutationObservers.delete(layer.element);
+                const resizeObserver = this.resizeObservers.get(layer.element);
+                resizeObserver.disconnect();
+                this.resizeObservers.delete(layer.element);
+                layer.element.removeEventListener('mousemove', this._onmousemove, { capture: true });
+                layer.element.removeEventListener('input', this._triggerRefresh, { capture: true });
+                layer.element.removeEventListener('change', this._triggerRefresh, { capture: true });
+                layer.element.removeEventListener('focus', this._triggerRefresh, { capture: true });
+                layer.element.removeEventListener('blur', this._triggerRefresh, { capture: true });
+                layer.element.removeEventListener('transitionend', this._triggerRefresh, { capture: true });
+            }
+        }
+        static getLayerForElement(element) {
+            const closestLayerElement = element && element.closest(`[${WebRenderer.LAYER_ATTRIBUTE}]`);
+            return this.layers.get(closestLayerElement);
+        }
+        static getCSSTransformForElement(element, out = new Matrix4) {
+            const styles = getComputedStyle(element);
+            var transformcss = styles["transform"];
+            if (transformcss.indexOf("matrix(") == 0) {
+                out.identity();
+                var mat = transformcss.substring(7, transformcss.length - 1).split(", ").map(parseFloat);
+                out.elements[0] = mat[0];
+                out.elements[1] = mat[1];
+                out.elements[4] = mat[2];
+                out.elements[5] = mat[3];
+                out.elements[12] = mat[4];
+                out.elements[13] = mat[5];
+            }
+            else if (transformcss.indexOf("matrix3d(") == 0) {
+                var mat = transformcss.substring(9, transformcss.length - 1).split(", ").map(parseFloat);
+                out.fromArray(mat);
+            }
+            else {
+                return out.identity();
+            }
+            var origincss = styles["transform-origin"];
+            origincss = origincss.split(" ").map(parseFloat);
+            var ox = origincss[0];
+            var oy = origincss[1];
+            var oz = origincss[2] || 0;
+            var T1 = scratchMat1.identity().makeTranslation(-ox, -oy, -oz);
+            var T2 = scratchMat2.identity().makeTranslation(ox, oy, oz);
+            return out.premultiply(T2).multiply(T1);
+        }
+        static async embedExternalResources(element) {
+            const promises = [];
+            const elements = element.querySelectorAll("*");
+            for (const element of elements) {
+                const link = element.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+                if (link) {
+                    promises.push(WebRenderer.getDataURL(link).then(dataURL => {
+                        element.removeAttributeNS("http://www.w3.org/1999/xlink", "href");
+                        element.setAttribute("href", dataURL);
+                    }));
+                }
+                const imgElement = element;
+                if (element.tagName == "IMG" && imgElement.src.substr(0, 4) != "data") {
+                    promises.push(WebRenderer.getDataURL(imgElement.src).then(dataURL => {
+                        element.setAttribute("src", dataURL);
+                    }));
+                }
+                if (element.namespaceURI == "http://www.w3.org/1999/xhtml" && element.hasAttribute("style")) {
+                    const style = element.getAttribute("style");
+                    promises.push(WebRenderer.generateEmbeddedCSS(window.location, style).then((css) => {
+                        if (style != css)
+                            element.setAttribute("style", css);
+                    }));
+                }
+            }
+            const styles = element.querySelectorAll("style");
+            for (const style of styles) {
+                promises.push(WebRenderer.generateEmbeddedCSS(window.location, style.innerHTML).then((css) => {
+                    if (style.innerHTML != css)
+                        style.innerHTML = css;
+                }));
+            }
+            return Promise.all(promises);
+        }
+        static pauseMutationObservers() {
+            const mutationObservers = WebRenderer.mutationObservers.values();
+            for (const m of mutationObservers) {
+                WebRenderer.handleMutations(m.takeRecords());
+                m.disconnect();
+            }
+        }
+        static resumeMutationObservers() {
+            for (const [e] of WebRenderer.mutationObservers) {
+                this.startMutationObserver(e);
+            }
+        }
+        static startMutationObserver(element) {
+            const observer = WebRenderer.mutationObservers.get(element);
+            observer.observe(element, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+                characterData: true,
+                characterDataOldValue: true,
+                attributeOldValue: true,
+            });
+        }
+        static _addDynamicPseudoClassRulesToPage() {
+            const sheets = document.styleSheets;
+            for (let i = 0; i < sheets.length; i++) {
+                try {
+                    const sheet = sheets[i];
+                    const rules = sheet.cssRules;
+                    const newRules = [];
+                    for (var j = 0; j < rules.length; j++) {
+                        if (rules[j].cssText.indexOf(':hover') > -1) {
+                            newRules.push(rules[j].cssText.replace(new RegExp(":hover", "g"), ".x-hover"));
+                        }
+                        if (rules[j].cssText.indexOf(':active') > -1) {
+                            newRules.push(rules[j].cssText.replace(new RegExp(":active", "g"), ".x-active"));
+                        }
+                        if (rules[j].cssText.indexOf(':focus') > -1) {
+                            newRules.push(rules[j].cssText.replace(new RegExp(":focus", "g"), ".x-focus"));
+                        }
+                        if (rules[j].cssText.indexOf(':target') > -1) {
+                            newRules.push(rules[j].cssText.replace(new RegExp(":target", "g"), ".x-target"));
+                        }
+                        var idx = newRules.indexOf(rules[j].cssText);
+                        if (idx > -1) {
+                            newRules.splice(idx, 1);
+                        }
+                    }
+                    for (var j = 0; j < newRules.length; j++) {
+                        sheet.insertRule(newRules[j]);
+                    }
+                }
+                catch (e) { }
+            }
+        }
+        static arrayBufferToBase64(bytes) {
+            var binary = '';
+            var len = bytes.byteLength;
+            for (var i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+        static async generateEmbeddedCSS(url, css) {
+            let found;
+            const promises = [];
+            // Add classes for psuedo-classes
+            css = css.replace(new RegExp(":hover", "g"), ".x-hover");
+            css = css.replace(new RegExp(":active", "g"), ".x-active");
+            css = css.replace(new RegExp(":focus", "g"), ".x-focus");
+            css = css.replace(new RegExp(":target", "g"), ".x-target");
+            // Replace all urls in the css
+            const regEx = RegExp(/url\((?!['"]?(?:data):)['"]?([^'"\)]*)['"]?\)/gi);
+            while (found = regEx.exec(css)) {
+                promises.push(this.getDataURL(new URL(found[1], url)).then(url => {
+                    css = css.replace(found[1], url);
+                }));
+            }
+            await Promise.all(promises);
+            return css;
+        }
+        static async getURL(url) {
+            url = (new URL(url, window.location.href)).href;
+            return new Promise(resolve => {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.responseType = 'arraybuffer';
+                xhr.onload = () => {
+                    resolve(xhr);
+                };
+                xhr.send();
+            });
+        }
+        static async getEmbeddedPageCSS() {
+            const embedded = this._embeddedPageCSS;
+            const styleElements = Array.from(document.querySelectorAll("style, link[type='text/css'], link[rel='stylesheet']"));
+            let foundNewStyles = false;
+            for (const element of styleElements) {
+                if (!embedded.has(element)) {
+                    foundNewStyles = true;
+                    if (element.tagName == "STYLE") {
+                        const sheet = element.sheet;
+                        let cssText = '';
+                        for (const rule of sheet.cssRules) {
+                            cssText += rule.cssText + '\n';
+                        }
+                        embedded.set(element, this.generateEmbeddedCSS(window.location, cssText));
+                    }
+                    else {
+                        embedded.set(element, this.getURL(element.getAttribute("href")).then(xhr => {
+                            var css = textDecoder.decode(xhr.response);
+                            return this.generateEmbeddedCSS(window.location, css);
+                        }));
+                    }
+                }
+            }
+            if (foundNewStyles)
+                this._addDynamicPseudoClassRulesToPage();
+            return Promise.all(embedded.values());
+        }
+        // Generate and returns a dataurl for the given url
+        static async getDataURL(url) {
+            const xhr = await this.getURL(url);
+            const arr = new Uint8Array(xhr.response);
+            const contentType = xhr.getResponseHeader("Content-Type").split(";")[0];
+            if (contentType == "text/css") {
+                let css = textDecoder.decode(arr);
+                css = await this.generateEmbeddedCSS(url, css);
+                const base64 = window.btoa(css);
+                if (base64.length > 0) {
+                    return 'data:' + contentType + ';base64,' + base64;
+                }
+                else {
+                    return '';
+                }
+            }
+            else {
+                return 'data:' + contentType + ';base64,' + this.arrayBufferToBase64(arr);
+            }
+        }
+        // Transforms a point into an elements frame of reference
+        static transformPoint(elementStyles, x, y, offsetX, offsetY) {
+            // Get the elements tranform matrix
+            var transformcss = elementStyles["transform"];
+            if (transformcss.indexOf("matrix(") == 0) {
+                var transform = new Matrix4();
+                var mat = transformcss.substring(7, transformcss.length - 1).split(", ").map(parseFloat);
+                transform.elements[0] = mat[0];
+                transform.elements[1] = mat[1];
+                transform.elements[4] = mat[2];
+                transform.elements[5] = mat[3];
+                transform.elements[12] = mat[4];
+                transform.elements[13] = mat[5];
+            }
+            else if (transformcss.indexOf("matrix3d(") == 0) {
+                var transform = new Matrix4();
+                var mat = transformcss.substring(9, transformcss.length - 1).split(", ").map(parseFloat);
+                transform.elements = mat;
+            }
+            else {
+                return [x, y];
+            }
+            // Get the elements tranform origin
+            var origincss = elementStyles["transform-origin"];
+            origincss = origincss.replace(new RegExp("px", "g"), "").split(" ").map(parseFloat);
+            // Apply the transform to the origin
+            var ox = offsetX + origincss[0];
+            var oy = offsetY + origincss[1];
+            var oz = 0;
+            if (origincss[2])
+                oz += origincss[2];
+            var T1 = new Matrix4().makeTranslation(-ox, -oy, -oz);
+            var T2 = new Matrix4().makeTranslation(ox, oy, oz);
+            transform = T2.multiply(transform).multiply(T1);
+            // return if matrix determinate is not zero
+            if (transform.determinant() != 0)
+                return [x, y];
+            // Inverse the transform so we can go from page space to element space
+            var inverse = new Matrix4().getInverse(transform);
+            // Calculate a ray in the direction of the plane
+            var v1 = new Vector3(x, y, 0);
+            var v2 = new Vector3(x, y, -1);
+            v1.applyMatrix4(inverse);
+            v2.applyMatrix4(inverse);
+            var dir = v2.sub(v1).normalize();
+            // If ray is parallel to the plane then there is no intersection
+            if (dir.z == 0) {
+                return false;
+            }
+            // Get the point of intersection on the element plane
+            var result = dir.multiplyScalar(-v1.z / dir.z).add(v1);
+            return [result.x, result.y];
+        }
+        static getBorderRadii(element, style) {
+            var properties = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
+            var result;
+            // Parse the css results
+            var corners = [];
+            for (var i = 0; i < properties.length; i++) {
+                var borderRadiusString = style[properties[i]];
+                var reExp = /(\d*)([a-z%]{1,3})/gi;
+                var rec = [];
+                while (result = reExp.exec(borderRadiusString)) {
+                    rec.push({
+                        value: result[1],
+                        unit: result[2]
+                    });
+                }
+                if (rec.length == 1)
+                    rec.push(rec[0]);
+                corners.push(rec);
+            }
+            const unitConv = {
+                'px': 1,
+                '%': element.offsetWidth / 100
+            };
+            // Convert all corners into pixels
+            var pixelCorners = [];
+            for (var i = 0; i < corners.length; i++) {
+                var corner = corners[i];
+                var rec = [];
+                for (var j = 0; j < corner.length; j++) {
+                    rec.push(corner[j].value * unitConv[corner[j].unit]);
+                }
+                pixelCorners.push(rec);
+            }
+            // Initial corner point scales
+            var c1scale = 1;
+            var c2scale = 1;
+            var c3scale = 1;
+            var c4scale = 1;
+            // Change scales of top left and top right corners based on offsetWidth
+            var borderTop = pixelCorners[0][0] + pixelCorners[1][0];
+            if (borderTop > element.offsetWidth) {
+                var f = 1 / borderTop * element.offsetWidth;
+                c1scale = Math.min(c1scale, f);
+                c2scale = Math.min(c2scale, f);
+            }
+            // Change scales of bottom right and top right corners based on offsetHeight
+            var borderLeft = pixelCorners[1][1] + pixelCorners[2][1];
+            if (borderLeft > element.offsetHeight) {
+                f = 1 / borderLeft * element.offsetHeight;
+                c3scale = Math.min(c3scale, f);
+                c2scale = Math.min(c2scale, f);
+            }
+            // Change scales of bottom left and bottom right corners based on offsetWidth
+            var borderBottom = pixelCorners[2][0] + pixelCorners[3][0];
+            if (borderBottom > element.offsetWidth) {
+                f = 1 / borderBottom * element.offsetWidth;
+                c3scale = Math.min(c3scale, f);
+                c4scale = Math.min(c4scale, f);
+            }
+            // Change scales of bottom left and top right corners based on offsetHeight
+            var borderRight = pixelCorners[0][1] + pixelCorners[3][1];
+            if (borderRight > element.offsetHeight) {
+                f = 1 / borderRight * element.offsetHeight;
+                c1scale = Math.min(c1scale, f);
+                c4scale = Math.min(c4scale, f);
+            }
+            // Scale the corners to fix within the confines of the element
+            pixelCorners[0][0] = pixelCorners[0][0] * c1scale;
+            pixelCorners[0][1] = pixelCorners[0][1] * c1scale;
+            pixelCorners[1][0] = pixelCorners[1][0] * c2scale;
+            pixelCorners[1][1] = pixelCorners[1][1] * c2scale;
+            pixelCorners[2][0] = pixelCorners[2][0] * c3scale;
+            pixelCorners[2][1] = pixelCorners[2][1] * c3scale;
+            pixelCorners[3][0] = pixelCorners[3][0] * c4scale;
+            pixelCorners[3][1] = pixelCorners[3][1] * c4scale;
+            return pixelCorners;
+        }
+        // Check that the element is with the confines of rounded corners
+        static checkInBorder(element, style, x, y, left, top) {
+            if (style['border-radius'] == "0px")
+                return true;
+            var width = element.offsetWidth;
+            var height = element.offsetHeight;
+            var corners = this.getBorderRadii(element, style);
+            // Check top left corner
+            if (x < corners[0][0] + left && y < corners[0][1] + top) {
+                var x1 = (corners[0][0] + left - x) / corners[0][0];
+                var y1 = (corners[0][1] + top - y) / corners[0][1];
+                if (x1 * x1 + y1 * y1 > 1) {
+                    return false;
+                }
+            }
+            // Check top right corner
+            if (x > left + width - corners[1][0] && y < corners[1][1] + top) {
+                var x1 = (x - (left + width - corners[1][0])) / corners[1][0];
+                var y1 = (corners[1][1] + top - y) / corners[1][1];
+                if (x1 * x1 + y1 * y1 > 1) {
+                    return false;
+                }
+            }
+            // Check bottom right corner
+            if (x > left + width - corners[2][0] && y > top + height - corners[2][1]) {
+                var x1 = (x - (left + width - corners[2][0])) / corners[2][0];
+                var y1 = (y - (top + height - corners[2][1])) / corners[2][1];
+                if (x1 * x1 + y1 * y1 > 1) {
+                    return false;
+                }
+            }
+            // Check bottom left corner
+            if (x < corners[3][0] + left && y > top + height - corners[3][1]) {
+                var x1 = (corners[3][0] + left - x) / corners[3][0];
+                var y1 = (y - (top + height - corners[3][1])) / corners[3][1];
+                if (x1 * x1 + y1 * y1 > 1) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        // Check if element it under the current position
+        // x,y - the position to check
+        // offsetx, offsety - the current left and top offsets
+        // offsetz - the current z offset on the current z-index
+        // level - the current z-index
+        // element - element being tested
+        // result - the final result of the hover target
+        static checkElement(x, y, offsetx, offsety, offsetz, level, element, result) {
+            // Return if this element isn't visible
+            if (!element.offsetParent)
+                return;
+            var style = window.getComputedStyle(element);
+            // Calculate absolute position and dimensions
+            var left = element.offsetLeft + offsetx;
+            var top = element.offsetTop + offsety;
+            var width = element.offsetWidth;
+            var height = element.offsetHeight;
+            var zIndex = style['z-index'];
+            if (zIndex != 'auto') {
+                offsetz = 0;
+                level = parseInt(zIndex);
+            }
+            // If the element isn't static the increment the offsetz
+            // if (style['position'] != 'static' && element != this.element) {
+            //     if (zIndex == 'auto') offsetz += 1
+            // }
+            // If there is a transform then transform point
+            if ((style['display'] == "block" || style['display'] == "inline-block") && style['transform'] != 'none') {
+                // Apply css transforms to click point
+                var newcoord = this.transformPoint(style, x, y, left, top);
+                if (!newcoord)
+                    return;
+                x = newcoord[0];
+                y = newcoord[1];
+                if (zIndex == 'auto')
+                    offsetz += 1;
+            }
+            // Check if in confines of bounding box
+            if (x > left && x < left + width && y > top && y < top + height) {
+                // Check if in confines of rounded corders
+                if (this.checkInBorder(element, style, x, y, left, top)) {
+                    //check if above other elements
+                    if ((offsetz >= result.zIndex || level > result.level) && level >= result.level && style['pointer-events'] != "none") {
+                        result.zIndex = offsetz;
+                        result.element = element;
+                        result.level = level;
+                    }
+                }
+            }
+            else if (style['overflow'] != 'visible') {
+                // If the element has no overflow and the point is outsize then skip it's children
+                return;
+            }
+            // Check each of the child elements for intersection of the point
+            var child = element.firstChild;
+            if (child)
+                do {
+                    if (child.nodeType == 1) {
+                        if (child.offsetParent == element) {
+                            this.checkElement(x, y, offsetx + left, offsety + top, offsetz, level, child, result);
+                        }
+                        else {
+                            this.checkElement(x, y, offsetx, offsety, offsetz, level, child, result);
+                        }
+                    }
+                } while (child = child.nextSibling);
+        }
+        static elementAt(element, x, y) {
+            element.style.display = 'block';
+            var result = {
+                zIndex: 0,
+                element: null,
+                level: 0
+            };
+            this.checkElement(x, y, 0, 0, 0, 0, element, result);
+            element.style.display = 'none';
+            return result.element;
+        }
+        static mousemove(layer, x, y, button) {
+            const mouseState = {
+                screenX: x,
+                screenY: y,
+                clientX: x,
+                clientY: y,
+                button: button ? button : 0,
+                bubbles: true,
+                cancelable: true
+            };
+            const mouseStateHover = {
+                clientX: x,
+                clientY: y,
+                button: button ? button : 0,
+                bubbles: false
+            };
+            const ele = this.elementAt(layer.element, x, y);
+            // If the element under cusor isn't the same as lasttime then update hoverstates and fire off events
+            if (ele != this.mouseoverElement) {
+                if (ele) {
+                    var parents = [];
+                    var current = ele;
+                    if (this.mouseoverElement)
+                        this.mouseoverElement.dispatchEvent(new MouseEvent('mouseout', mouseState));
+                    ele.dispatchEvent(new MouseEvent('mouseover', mouseState));
+                    // Update overElements and fire corresponding events
+                    do {
+                        if (current == element)
+                            break;
+                        if (this.overElements.indexOf(current) == -1) {
+                            if (current.classList)
+                                current.classList.add("x-hover");
+                            current.dispatchEvent(new MouseEvent('mouseenter', mouseStateHover));
+                            this.overElements.push(current);
+                        }
+                        parents.push(current);
+                    } while (current = current.parentNode);
+                    for (var i = 0; i < this.overElements.length; i++) {
+                        var element = this.overElements[i];
+                        if (parents.indexOf(element) == -1) {
+                            if (element.classList)
+                                element.classList.remove("x-hover");
+                            element.dispatchEvent(new MouseEvent('mouseleave', mouseStateHover));
+                            this.overElements.splice(i, 1);
+                            i--;
+                        }
+                    }
+                }
+                else {
+                    while (element = this.overElements.pop()) {
+                        if (element.classList)
+                            element.classList.remove("x-hover");
+                        element.dispatchEvent(new MouseEvent('mouseout', mouseState));
+                    }
+                }
+            }
+            if (ele && this.overElements.indexOf(ele) == -1)
+                this.overElements.push(ele);
+            this.mouseoverElement = ele;
+            if (ele)
+                ele.dispatchEvent(new MouseEvent('mousemove', mouseState));
+        }
+        // Mouse down on the HTML Element
+        static mousedown(layer, x, y, button) {
+            var mouseState = {
+                screenX: x,
+                screenY: y,
+                clientX: x,
+                clientY: y,
+                button: button ? button : 0,
+                bubbles: true,
+                cancelable: true
+            };
+            var ele = this.elementAt(layer.element, x, y);
+            if (ele) {
+                this.activeElement = ele;
+                ele.classList.add("x-active");
+                ele.classList.remove("x-hover");
+                ele.dispatchEvent(new MouseEvent('mousedown', mouseState));
+            }
+            this.mousedownElement = ele;
+        }
+        static updateInputAttributes(element) {
+            if (element.matches('input'))
+                this._updateInputAttribute(element);
+            for (const e of element.getElementsByTagName("input"))
+                this._updateInputAttribute(e);
+        }
+        static _updateInputAttribute(inputElement) {
+            if (inputElement.hasAttribute("checked")) {
+                if (!inputElement.checked)
+                    inputElement.removeAttribute("checked");
+            }
+            else {
+                if (inputElement.checked)
+                    inputElement.setAttribute("checked", "");
+            }
+            inputElement.setAttribute("value", inputElement.value);
+        }
+        static setFocus(ele) {
+            ele.dispatchEvent(new FocusEvent('focus'));
+            ele.dispatchEvent(new CustomEvent('focusin', {
+                bubbles: true,
+                cancelable: false
+            }));
+            ele.classList.add('x-focus');
+            this.focusElement = ele;
+        }
+        static setBlur() {
+            if (this.focusElement) {
+                this.focusElement.classList.remove("x-focus");
+                this.focusElement.dispatchEvent(new FocusEvent('blur'));
+                this.focusElement.dispatchEvent(new CustomEvent('focusout', {
+                    bubbles: true,
+                    cancelable: false
+                }));
+            }
+        }
+        static clearHover() {
+            let element;
+            while (element = this.overElements.pop()) {
+                if (element.classList)
+                    element.classList.remove("x-hover");
+                element.dispatchEvent(new MouseEvent('mouseout', {
+                    bubbles: true,
+                    cancelable: true
+                }));
+            }
+            if (this.mouseoverElement)
+                this.mouseoverElement.dispatchEvent(new MouseEvent('mouseleave', {
+                    bubbles: true,
+                    cancelable: true
+                }));
+            this.mouseoverElement = null;
+            const activeElement = document.querySelector(".x-active");
+            if (activeElement) {
+                activeElement.classList.remove("x-active");
+                this.activeElement = null;
+            }
+        }
+        static mouseup(layer, x, y, button) {
+            const mouseState = {
+                screenX: x,
+                screenY: y,
+                clientX: x,
+                clientY: y,
+                button: button ? button : 0,
+                bubbles: true,
+                cancelable: true
+            };
+            const ele = WebRenderer.elementAt(layer.element, x, y);
+            if (this.activeElement) {
+                this.activeElement.classList.remove("x-active");
+                if (ele) {
+                    ele.classList.add("x-hover");
+                    if (this.overElements.indexOf(ele) == -1)
+                        this.overElements.push(ele);
+                }
+                this.activeElement = null;
+            }
+            if (ele) {
+                ele.dispatchEvent(new MouseEvent('mouseup', mouseState));
+                if (ele != this.focusElement) {
+                    this.setBlur();
+                    this.setFocus(ele);
+                }
+                if (ele == this.mousedownElement) {
+                    ele.dispatchEvent(new MouseEvent('click', mouseState));
+                    // if (ele.tagName == "INPUT") this.updateCheckedAttributes(ele)
+                    // If the element requires some sort of keyboard interaction then notify of an input requirment
+                    if (ele.tagName == "INPUT" || ele.tagName == "TEXTAREA" || ele.tagName == "SELECT") {
+                        if (layer.eventCallback)
+                            layer.eventCallback('inputrequired', {
+                                target: ele
+                            });
+                    }
+                }
+            }
+            else {
+                if (this.focusElement)
+                    this.focusElement.dispatchEvent(new FocusEvent('blur'));
+                this.focusElement = null;
+            }
+        }
+    }
+    WebRenderer.LAYER_ATTRIBUTE = 'data-layer';
+    WebRenderer.CONTAINER_ATTRIBUTE = 'data-layer-container';
+    WebRenderer.RENDERING_ATTRIBUTE = 'data-layer-rendering';
+    WebRenderer.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
+    WebRenderer.RENDERING_DOCUMENT_ATTRIBUTE = 'data-layer-rendering-document';
+    WebRenderer.serializer = new XMLSerializer();
+    WebRenderer.rootLayers = new Map;
+    WebRenderer.layers = new Map;
+    WebRenderer.mutationObservers = new Map;
+    WebRenderer.resizeObservers = new Map;
+    WebRenderer.serializeQueue = [];
+    WebRenderer.rasterizeQueue = [];
+    WebRenderer.renderQueue = [];
+    WebRenderer.overElements = [];
+    WebRenderer.focusElement = null;
+    WebRenderer.activeElement = null;
+    WebRenderer.mousedownElement = null;
+    WebRenderer.mouseoverElement = null;
+    WebRenderer._didInit = false;
+    WebRenderer.TASK_SERIALIZE_MAX_TIME = 2; // serialization is synchronous
+    WebRenderer.TASK_RASTERIZE_MAX_TIME = 2; // processing of data:svg is async
+    WebRenderer.TASK_RASTERIZE_MAX_SIMULTANEOUS = 2; // since rasterization is async, limit simultaneous rasterizations
+    WebRenderer.TASK_RENDER_MAX_TIME = 3; // rendering to canvas is synchronous 
+    WebRenderer.rasterizeTaskCount = 0;
+    WebRenderer._onmousemove = (e) => {
+        e.stopPropagation();
+    };
+    WebRenderer.handleMutations = (records) => {
+        for (const record of records) {
+            if (record.type === 'attributes') {
+                const target = record.target;
+                if (target.getAttribute(record.attributeName) === record.oldValue) {
+                    continue;
+                }
+            }
+            if (record.type === 'characterData') {
+                const target = record.target;
+                if (target.data === record.oldValue) {
+                    continue;
+                }
+            }
+            const target = record.target.nodeType === Node.ELEMENT_NODE
+                ? record.target
+                : record.target.parentElement;
+            if (!target)
+                continue;
+            const layer = WebRenderer.getLayerForElement(target);
+            if (!layer)
+                continue;
+            if (record.type === 'attributes' && record.attributeName === 'class') {
+                const oldClasses = record.oldValue ? record.oldValue : '';
+                const currentClasses = record.target.className;
+                if (oldClasses === currentClasses)
+                    continue;
+            }
+            // layer.traverseParentLayers(WebRenderer.setLayerNeedsRasterize) // may be needed to support :focus-within() and future :has() selector support
+            layer.parentLayer ?
+                layer.parentLayer.traverseChildLayers(WebRenderer.setLayerNeedsUpdate) :
+                layer.traverseLayers(WebRenderer.setLayerNeedsUpdate);
+        }
+    };
+    WebRenderer._triggerRefresh = async (e) => {
+        await microtask; // allow other handlers to run first
+        const layer = WebRenderer.getLayerForElement(e.target);
+        WebRenderer.updateInputAttributes(e.target);
+        if (layer) {
+            // layer.traverseParentLayers(WebRenderer.setLayerNeedsRasterize) // may be needed to support :focus-within() and future :has() selector support
+            layer.parentLayer ?
+                layer.parentLayer.traverseChildLayers(WebRenderer.setLayerNeedsUpdate) :
+                layer.traverseLayers(WebRenderer.setLayerNeedsUpdate);
+        }
+    };
+    WebRenderer._embeddedPageCSS = new Map();
+
     const scratchVector = new THREE.Vector3();
     const scratchVector2 = new THREE.Vector3();
-    const microtask = Promise.resolve();
-    const scratchBounds = { top: 0, left: 0, width: 0, height: 0 };
-    /**
-     * Transform a DOM tree into 3D layers.
-     *
-     * When an instance is created, a `layer` data-attribute is set on the
-     * the passed DOM element to match this instance's Object3D id.
-     * If the passed DOM element has an `id` attribute, this instance's Object3D name
-     * will be set to match the element id.
-     *
-     * Child WebLayer3D instances can be specified with an empty `layer` data-attribute,
-     * which will be set when the child WebLayer3D instance is created automatically.
-     * The data-attribute can be specified added in HTML or dynamically:
-     *  - `<div data-layer></div>`
-     *  - `element.dataset.layer = ''`
-     *
-     * Additionally, the pixel ratio can be adjusted on each layer, individually:
-     *  - `<div data-layer data-layer-pixel-ratio="0.5"></div>`
-     *  - `element.dataset.layerPixelRatio = '0.5'`
-     *
-     * Finally, each layer can prerender multipe states specified as CSS classes delimited by spaces:
-     *  - `<div data-layer data-layer-states="near far"></div>`
-     *  - `element.dataset.layerStates = 'near far'`
-     *
-     * Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
-     * The texture state can be changed by alternating between the specified classes,
-     * without requiring the DOM to be re-rendered. Setting a state on a parent layer does
-     * not affect the state of a child layer.
-     *
-     * Every layer has an implicit `hover` state which can be mixed with any other declared state,
-     * by using the appropriate CSS selector: `.near.hover` or `.far.hover`. Besides than the
-     * `hover` state. The hover state is controlled by interaction rays, which can be provided
-     * with the `interactionRays` property.
-     *
-     * Default dimensions: 1px = 0.001 world dimensions = 1mm (assuming meters)
-     *     e.g., 500px width means 0.5meters
-     */
-    class WebLayer3D extends THREE.Object3D {
-        constructor(element, options = {}, parentLayer = undefined, _level = 0) {
+    const microtask$1 = Promise.resolve();
+    const scratchBounds = new Bounds;
+    const scratchBounds2 = new Bounds;
+    class WebLayer3DBase extends THREE.Object3D {
+        constructor(element, options = {}) {
             super();
+            this.element = element;
             this.options = options;
-            this.parentLayer = parentLayer;
-            this._level = _level;
-            this.content = new THREE.Object3D();
-            this.mesh = new THREE.Mesh(WebLayer3D.GEOMETRY, new THREE.MeshBasicMaterial({
+            this._webLayer = WebRenderer.getLayerForElement(this.element);
+            this.textures = new Map();
+            this.content = new THREE.Object3D;
+            this.contentMesh = new THREE.Mesh(WebLayer3D.GEOMETRY, new THREE.MeshBasicMaterial({
                 transparent: true,
                 alphaTest: 0.001,
                 opacity: 0
             }));
+            this.cursor = new THREE.Object3D();
             this.depthMaterial = new THREE.MeshDepthMaterial({
                 depthPacking: THREE.RGBADepthPacking,
                 alphaTest: 0.01
             });
-            this.childLayers = [];
             this.target = new THREE.Object3D();
             this.contentTarget = new THREE.Object3D();
-            this.cursor = new THREE.Object3D();
-            this.needsRasterize = true;
             this.contentOpacity = this.transitioner.add(new ethereal.Transitionable({
                 target: 0,
-                path: 'mesh.material.opacity'
+                path: 'contentMesh.material.opacity'
             }));
+            this.childLayers = [];
             /**
              * Specifies whether or not this layer's layout
              * should match the layout stored in the `target` object
@@ -7180,34 +5408,8 @@
             this.shouldApplyContentTargetLayout = true;
             this._lastTargetPosition = new THREE.Vector3();
             this._lastContentTargetScale = new THREE.Vector3(0.01, 0.01, 0.01);
-            this._hover = 0;
-            this._hoverDepth = 0;
-            this._states = {};
-            this._pixelRatio = 1;
-            this._state = '';
-            this._needsRemoval = false;
-            // the following properties are meant to be accessed on the root layer
-            this._rasterizationQueue = [];
-            this._meshMap = new WeakMap();
-            this._interactionRays = [];
-            this._raycaster = new THREE.Raycaster();
-            this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
-            this._layersByElement = new WeakMap();
-            this._normalizedBounds = { left: 0, top: 0, width: 0, height: 0 };
-            this.element = element;
-            this.element.setAttribute(WebLayer3D.LAYER_ATTRIBUTE, this.id.toString());
-            this.rootLayer = this.parentLayer ? this.parentLayer.rootLayer : this;
             this.name = element.id;
-            this.layersByElement.set(element, this);
-            if (!document.contains(element) && this.rootLayer === this) {
-                ensureElementIsInDocument(element, options);
-            }
-            if (!WebLayer3D._didInstallStyleSheet) {
-                const style = document.createElement('style');
-                document.head.append(style);
-                addCSSRule(style.sheet, `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}] *`, 'transform: none !important;', 0);
-                WebLayer3D._didInstallStyleSheet = true;
-            }
+            this.layout.forceBoundsExclusion = true;
             this.transitioner.duration = 1.2;
             this.transitioner.easing = ethereal.easing.easeInOut;
             // this.transitioner.matrixLocal.scale.start.setScalar(0.0001)
@@ -7217,366 +5419,80 @@
             this.add(this.content);
             this.add(this.cursor);
             this.cursor.visible = false;
-            this.mesh.visible = false;
-            this.mesh['customDepthMaterial'] = this.depthMaterial;
-            this.rootLayer._meshMap.set(this.mesh, this);
-            if (this.rootLayer === this) {
-                this._triggerRefresh = (e) => {
-                    const layer = this.getLayerForElement(e.target);
-                    if (layer) {
-                        layer.needsRasterize = true;
-                    }
-                };
-                element.addEventListener('input', this._triggerRefresh, { capture: true });
-                element.addEventListener('change', this._triggerRefresh, { capture: true });
-                element.addEventListener('focus', this._triggerRefresh, { capture: true });
-                element.addEventListener('blur', this._triggerRefresh, { capture: true });
-                element.addEventListener('transitionend', this._triggerRefresh, { capture: true });
-                let target;
-                const setLayerNeedsRasterize = (layer) => {
-                    if (target.contains(layer.element))
-                        layer.needsRasterize = true;
-                };
-                this._processMutations = (records) => {
-                    for (const record of records) {
-                        if (record.type === 'attributes' &&
-                            record.target.getAttribute(record.attributeName) === record.oldValue)
-                            continue;
-                        if (record.type === 'characterData' &&
-                            record.target.data === record.oldValue)
-                            continue;
-                        target =
-                            record.target.nodeType === Node.ELEMENT_NODE
-                                ? record.target
-                                : record.target.parentElement;
-                        if (!target)
-                            continue;
-                        const layer = this.getLayerForElement(target);
-                        if (!layer)
-                            continue;
-                        if (record.type === 'attributes' && record.attributeName === 'class') {
-                            const oldClasses = record.oldValue ? record.oldValue.split(/\s+/) : [];
-                            const currentClasses = record.target.className.split(/\s+/);
-                            const addedClasses = arraySubtract(currentClasses, oldClasses);
-                            const removedClasses = arraySubtract(oldClasses, currentClasses);
-                            let needsRasterize = false;
-                            for (const c of removedClasses) {
-                                if (c === 'hover' || layer._states[c]) {
-                                    continue;
-                                }
-                                needsRasterize = true;
-                            }
-                            for (const c of addedClasses) {
-                                if (c === 'hover' || layer._states[c]) {
-                                    continue;
-                                }
-                                needsRasterize = true;
-                            }
-                            if (!needsRasterize)
-                                continue;
-                        }
-                        layer.needsRasterize = true;
-                        layer.traverseLayers(setLayerNeedsRasterize);
-                    }
-                };
-                this._mutationObserver = new MutationObserver(this._processMutations);
-                this._mutationObserver.observe(element, {
-                    characterData: true,
-                    characterDataOldValue: true,
-                    attributes: true,
-                    attributeOldValue: true,
-                    childList: true,
-                    subtree: true
-                });
-                // stuff for rendering with html2canvas ¯\_(ツ)_/¯
-                this._logger = new Logger(false);
-                this._fontMetrics = new Font_1(document);
-                this._resourceLoader = new ResourceLoader({
-                    imageTimeout: 15000,
-                    allowTaint: options.allowTaint || false
-                }, this._logger, window);
+            this.contentMesh.visible = false;
+            this.contentMesh['customDepthMaterial'] = this.depthMaterial;
+            WebLayer3D.layersByElement.set(this.element, this);
+            WebLayer3D.layersByMesh.set(this.contentMesh, this);
+        }
+        get currentTexture() {
+            let t = this.textures.get(this._webLayer.canvas);
+            if (!t) {
+                t = new THREE.Texture();
+                t.wrapS = THREE.ClampToEdgeWrapping;
+                t.wrapT = THREE.ClampToEdgeWrapping;
+                t.minFilter = THREE.LinearFilter;
+                this.textures.set(this._webLayer.canvas, t);
             }
-            // technically this should only be needed in the root layer,
-            // however the polyfill seems to miss resizes that happen in child
-            // elements unless observing each layer
-            this._resizeObserver = new index(records => {
-                for (const record of records) {
-                    const layer = this.getLayerForElement(record.target);
-                    layer.needsRasterize = true;
-                }
-            });
-            this._resizeObserver.observe(element);
-            if (this.options.onLayerCreate)
-                this.options.onLayerCreate(this);
-            this._refresh();
+            return t;
         }
-        static computeNaturalDistance(projection, renderer) {
-            let projectionMatrix = projection;
-            if (projection.isCamera) {
-                projectionMatrix = projection.projectionMatrix;
-            }
-            const pixelRatio = renderer.getPixelRatio();
-            const widthPixels = renderer.domElement.width / pixelRatio;
-            const width = WebLayer3D.PIXEL_SIZE * widthPixels;
-            const horizontalFOV = getFovs(projectionMatrix).horizontal;
-            const naturalDistance = width / 2 / Math.tan(horizontalFOV / 2);
-            return naturalDistance;
+        get needsRefresh() {
+            return this._webLayer.needsRefresh;
         }
-        static shouldApplyTargetLayout(layer) {
-            const should = layer.shouldApplyTargetLayout;
-            if (should === 'always' || should === true)
-                return true;
-            if (should === 'never' || should === false)
-                return false;
-            if (should === 'auto' && layer.parentLayer && layer.parent === layer.parentLayer)
-                return true;
-            return false;
+        set needsRefresh(value) {
+            this._webLayer.needsRefresh = value;
         }
-        static _updateInteractions(rootLayer) {
-            rootLayer.updateWorldMatrix(true, true);
-            rootLayer.traverseLayers(WebLayer3D._clearHover);
-            WebLayer3D._hoverLayers.clear();
-            for (const ray of rootLayer._interactionRays) {
-                rootLayer._hitIntersections.length = 0;
-                if (ray instanceof THREE.Ray)
-                    rootLayer._raycaster.ray.copy(ray);
-                else
-                    rootLayer._raycaster.ray.set(ray.getWorldPosition(scratchVector), ray.getWorldDirection(scratchVector2));
-                rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections);
-                for (const intersection of rootLayer._hitIntersections) {
-                    let layer = rootLayer._meshMap.get(intersection.object);
-                    if (layer && layer.contentOpacity.current !== 0) {
-                        layer.cursor.position.copy(intersection.point);
-                        layer.worldToLocal(layer.cursor.position);
-                        layer.cursor.visible = true;
-                        while (layer instanceof WebLayer3D) {
-                            WebLayer3D._hoverLayers.add(layer);
-                            layer = layer.parent;
-                        }
-                        break;
-                    }
-                }
-            }
-            rootLayer.traverseLayers(WebLayer3D._setHover);
-            traverseDOM(rootLayer.element, WebLayer3D._setHoverClass);
-        }
-        static async _scheduleRefresh(rootLayer) {
-            await microtask; // wait for render to complete
-            rootLayer._refresh();
-            const queue = rootLayer._rasterizationQueue;
-            if (queue.length === 0 || rootLayer.options.autoRasterize === false)
-                return;
-            if (window.requestIdleCallback) {
-                window.requestIdleCallback(idleDeadline => {
-                    if (!queue.length)
-                        return;
-                    if (WebLayer3D.DEBUG_PERFORMANCE)
-                        performance.mark('rasterize queue start');
-                    while (queue.length && idleDeadline.timeRemaining() > 0) {
-                        if (WebLayer3D.DEBUG_PERFORMANCE)
-                            performance.mark('rasterize start');
-                        queue.shift().rasterize();
-                        if (WebLayer3D.DEBUG_PERFORMANCE)
-                            performance.mark('rasterize end');
-                        if (WebLayer3D.DEBUG_PERFORMANCE)
-                            performance.measure('rasterize', 'rasterize start', 'rasterize end');
-                    }
-                    if (WebLayer3D.DEBUG_PERFORMANCE)
-                        performance.mark('rasterize queue end');
-                    if (WebLayer3D.DEBUG_PERFORMANCE)
-                        performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
-                });
-            }
-            else {
-                const startTime = performance.now();
-                if (WebLayer3D.DEBUG_PERFORMANCE)
-                    performance.mark('rasterize queue start');
-                while (queue.length && performance.now() - startTime < 5) {
-                    if (WebLayer3D.DEBUG_PERFORMANCE)
-                        performance.mark('rasterize start');
-                    queue.shift().rasterize();
-                    if (WebLayer3D.DEBUG_PERFORMANCE)
-                        performance.mark('rasterize end');
-                    if (WebLayer3D.DEBUG_PERFORMANCE)
-                        performance.measure('rasterize', 'rasterize start', 'rasterize end');
-                }
-                if (WebLayer3D.DEBUG_PERFORMANCE)
-                    performance.mark('rasterize queue end');
-                if (WebLayer3D.DEBUG_PERFORMANCE)
-                    performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end');
-            }
-        }
-        /**
-         * @deprecated Use `shouldApplyTargetLayout`
-         */
-        get shouldUseTargetLayout() {
-            return this.shouldApplyTargetLayout;
-        }
-        set shouldUseTargetLayout(value) {
-            this.shouldApplyTargetLayout = value;
-        }
-        /**
-         * Get the texture state.
-         * Note: if a state is not available, the `default` state will be rendered.
-         */
-        get state() {
-            return this._state;
-        }
-        get texture() {
-            const state = this._states[this.state] || this._states[''];
-            return (state[this.hover] || state[0]).texture;
-        }
-        get bounds() {
-            const state = this._states[this.state] || this._states[''];
-            return (state[this.hover] || state[0]).bounds;
-        }
-        get layersByElement() {
-            return this.rootLayer._layersByElement;
-        }
-        get normalizedBounds() {
-            const viewportBounds = getViewportBounds(this._normalizedBounds);
-            const viewportWidth = viewportBounds.width;
-            const viewportHeight = viewportBounds.height;
-            const bounds = this.bounds;
-            const normalizedBounds = this._normalizedBounds;
-            normalizedBounds.left = bounds.left / viewportWidth;
-            normalizedBounds.top = bounds.top / viewportHeight;
-            normalizedBounds.width = bounds.width / viewportWidth;
-            normalizedBounds.height = bounds.height / viewportHeight;
-            return normalizedBounds;
-        }
-        /**
-         * A list of Rays to be used for interaction.
-         * Can only be set on a root WebLayer3D instance.
-         * @param rays
-         */
-        set interactionRays(rays) {
-            this._checkRoot();
-            this._interactionRays = rays;
-        }
-        get interactionRays() {
-            return this._interactionRays;
+        get textureSource() {
+            return this._webLayer.canvas;
         }
         /**
          * Get the hover state
          */
         get hover() {
-            return this._hover;
+            for (const l of WebLayer3D.hoverLayers) {
+                if (this.element.contains(l.element))
+                    return true;
+            }
+            return false;
         }
         /**
-         * Get the layer level
+         * Get the layer depth (distance from this layer's element and the parent layer's element)
          */
-        get level() {
-            return this._level;
+        get depth() {
+            return this._webLayer.depth;
+        }
+        /**
+         *
+         */
+        get index() {
+            return this.parentLayer ? this.parentLayer.childLayers.indexOf(this) : 0;
         }
         /** If true, this layer needs to be removed from the scene */
         get needsRemoval() {
-            return this._needsRemoval;
+            return this._webLayer.needsRemoval;
         }
-        refresh() {
-            if (WebLayer3D.DEBUG_PERFORMANCE)
-                performance.mark('refresh start');
-            this._checkRoot();
-            WebLayer3D._updateInteractions(this);
-            WebLayer3D._scheduleRefresh(this);
-            if (WebLayer3D.DEBUG_PERFORMANCE)
-                performance.mark('refresh end');
-            if (WebLayer3D.DEBUG_PERFORMANCE)
-                performance.measure('refresh', 'refresh start', 'refresh end');
+        get bounds() {
+            return this._webLayer.bounds;
         }
-        /**
-         * Update the pose and opacity of this layer (does not rerender the DOM).
-         * This should be called each frame, and can only be called on a root WebLayer3D instance.
-         *
-         * @param lerp lerp value
-         * @param updateCallback update callback called for each layer. Default is WebLayer3D.UDPATE_DEFAULT
-         */
-        update(lerp = 1, updateCallback = WebLayer3D.UPDATE_DEFAULT) {
-            if (this.options.autoRefresh !== false)
-                this.refresh();
-            this.traverseLayers(updateCallback, lerp);
+        get parentLayer() {
+            return this._webLayer.parentLayer && WebLayer3D.layersByElement.get(this._webLayer.parentLayer.element);
         }
-        traverseLayers(each, ...params) {
-            each(this, ...params);
-            this.traverseChildLayers(each, ...params);
-        }
-        traverseChildLayers(each, ...params) {
-            for (const child of this.childLayers) {
-                child.traverseLayers(each, ...params);
+        refresh(forceRefresh = false) {
+            this._webLayer.refresh(forceRefresh);
+            this.childLayers.length = 0;
+            for (const c of this._webLayer.childLayers) {
+                const child = WebLayer3D.getClosestLayerForElement(c.element);
+                this.childLayers.push(child);
+                child.refresh(forceRefresh);
             }
-            return params;
-        }
-        getLayerForQuery(selector) {
-            const element = this.element.querySelector(selector);
-            if (element) {
-                return this.getLayerForElement(element);
-            }
-            return undefined;
-        }
-        getLayerForElement(element) {
-            const closestLayerElement = element.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`);
-            return this.layersByElement.get(closestLayerElement);
-        }
-        hitTest(ray) {
-            const raycaster = this.rootLayer._raycaster;
-            const intersections = this.rootLayer._hitIntersections;
-            const meshMap = this.rootLayer._meshMap;
-            raycaster.ray.copy(ray);
-            intersections.length = 0;
-            raycaster.intersectObject(this, true, intersections);
-            for (const intersection of intersections) {
-                const layer = meshMap.get(intersection.object);
-                if (!layer)
-                    continue;
-                const layerBoundingRect = layer.bounds;
-                if (!layerBoundingRect.width || !layerBoundingRect.height)
-                    continue;
-                let target = layer.element;
-                const clientX = intersection.uv.x * layerBoundingRect.width;
-                const clientY = (1 - intersection.uv.y) * layerBoundingRect.height;
-                traverseDOM(layer.element, el => {
-                    if (!target.contains(el))
-                        return false;
-                    const elementBoundingRect = getBounds(el, scratchBounds);
-                    const offsetLeft = elementBoundingRect.left - layerBoundingRect.left;
-                    const offsetTop = elementBoundingRect.top - layerBoundingRect.top;
-                    const { width, height } = elementBoundingRect;
-                    const offsetRight = offsetLeft + width;
-                    const offsetBottom = offsetTop + height;
-                    if (clientX > offsetLeft &&
-                        clientX < offsetRight &&
-                        clientY > offsetTop &&
-                        clientY < offsetBottom) {
-                        target = el;
-                        return true;
-                    }
-                    return false; // stop traversal down this path
-                });
-                return { layer, intersection, target };
-            }
-            return undefined;
-        }
-        _refresh(forceRasterize = false) {
-            this._refreshState();
-            this._refreshBounds();
-            if (this.needsRasterize || forceRasterize) {
-                this.needsRasterize = false;
-                if (this.rootLayer._rasterizationQueue.indexOf(this) === -1) {
-                    this.rootLayer._rasterizationQueue.push(this);
-                }
-                this._refreshChildLayers();
-            }
-            for (const child of this.childLayers) {
-                child._refresh(forceRasterize);
-            }
+            this._refreshVideoBounds();
             this._refreshTargetLayout();
             this._refreshMesh();
-            const childMaterial = this.mesh.material;
+            const childMaterial = this.contentMesh.material;
             const isHidden = childMaterial.opacity < 0.005;
             if (isHidden)
-                this.mesh.visible = false;
+                this.contentMesh.visible = false;
             else
-                this.mesh.visible = true;
+                this.contentMesh.visible = true;
             if (this.needsRemoval && isHidden) {
                 if (this.parent)
                     this.parent.remove(this);
@@ -7593,73 +5509,43 @@
                 this.content.scale.copy(this.contentTarget.scale);
             }
         }
+        querySelector(selector) {
+            const element = this.element.querySelector(selector);
+            if (element) {
+                return WebLayer3D.layersByElement.get(element);
+            }
+            return undefined;
+        }
+        traverseParentLayers(each, ...params) {
+            const parentLayer = this.parentLayer;
+            if (parentLayer) {
+                parentLayer.traverseParentLayers(each, ...params);
+                each(parentLayer, ...params);
+            }
+        }
+        traverseLayers(each, ...params) {
+            each(this, ...params);
+            this.traverseChildLayers(each, ...params);
+        }
+        traverseChildLayers(each, ...params) {
+            for (const child of this.childLayers) {
+                child.traverseLayers(each, ...params);
+            }
+            return params;
+        }
         dispose() {
-            if (this._mutationObserver)
-                this._mutationObserver.disconnect();
-            if (this._resizeObserver)
-                this._resizeObserver.disconnect();
+            for (const t of this.textures.values()) {
+                t.dispose();
+            }
+            this.contentMesh.geometry.dispose();
+            WebRenderer.disposeLayer(this._webLayer);
             for (const child of this.childLayers)
                 child.dispose();
         }
-        _refreshState() {
-            const element = this.element;
-            const options = this.options;
-            const window = element.ownerDocument.defaultView;
-            const pixelRatioDefault = options.pixelRatio && options.pixelRatio > 0
-                ? options.pixelRatio
-                : window.devicePixelRatio || 1;
-            const pixelRatioAttribute = parseFloat(element.getAttribute(WebLayer3D.PIXEL_RATIO_ATTRIBUTE) || '1');
-            const pixelRatio = isFinite(pixelRatioAttribute) && pixelRatioAttribute > 0
-                ? pixelRatioAttribute * pixelRatioDefault
-                : pixelRatioDefault;
-            this._pixelRatio = Math.max(pixelRatio, 10e-6);
-            this._hoverDepth = parseInt(element.getAttribute(WebLayer3D.HOVER_DEPTH_ATTRIBUTE) || '0');
-            const states = (element.getAttribute(WebLayer3D.STATES_ATTRIBUTE) || '')
-                .trim()
-                .split(/\s+/)
-                .filter(Boolean);
-            states.push('');
-            // set the current state from classlist
-            const classes = element.classList;
-            let state = '';
-            for (const c of classes) {
-                if (states.indexOf(c) > -1) {
-                    state = c;
-                    break;
-                }
-            }
-            this._state = state;
-            // cleanup unused textures
-            for (const stateKey in this._states) {
-                if (states.indexOf(stateKey) === -1) {
-                    const hoverStates = this._states[stateKey];
-                    for (const hoverState of hoverStates) {
-                        hoverState.texture.dispose();
-                    }
-                    delete this._states[stateKey];
-                }
-            }
-            for (const stateKey of states) {
-                if (this._states[stateKey] === undefined) {
-                    const hoverStates = (this._states[stateKey] = []);
-                    for (let i = 0; i <= this._hoverDepth; i++) {
-                        hoverStates[i] = hoverStates[i] || {
-                            texture: null,
-                            bounds: { left: 0, top: 0, width: 0, height: 0 }
-                        };
-                    }
-                }
-            }
-        }
-        _checkRoot() {
-            if (this.rootLayer !== this)
-                throw new Error('Only call `update` on a root WebLayer3D instance');
-        }
-        _refreshBounds() {
-            getBounds(this.element, this.bounds);
-            if (this.texture && this.element.nodeName === 'VIDEO') {
+        _refreshVideoBounds() {
+            if (this.element.nodeName === 'VIDEO') {
                 const video = this.element;
-                const texture = this.texture;
+                const texture = this.currentTexture;
                 const computedStyle = getComputedStyle(this.element);
                 const { objectFit } = computedStyle;
                 const { width: viewWidth, height: viewHeight } = this.bounds;
@@ -7716,221 +5602,426 @@
                 this.contentOpacity.target = 0;
                 return;
             }
-            const boundingRect = this.bounds;
-            if (boundingRect.width === 0 || boundingRect.height === 0) {
+            const bounds = this.bounds;
+            if (bounds.width === 0 || bounds.height === 0 || !this.currentTexture.image) {
                 this.contentOpacity.target = 0;
                 return;
             }
             this.contentOpacity.target = 1;
-            const pixelSize = WebLayer3D.PIXEL_SIZE;
-            const parentBoundingRect = this.parentLayer instanceof WebLayer3D
-                ? this.parentLayer.bounds
-                : getViewportBounds(scratchBounds);
-            const left = boundingRect.left - parentBoundingRect.left;
-            const top = boundingRect.top - parentBoundingRect.top;
-            const parentOriginX = pixelSize * (-parentBoundingRect.width / 2);
-            const parentOriginY = pixelSize * (parentBoundingRect.height / 2);
-            const layerSeparation = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
-            const myLeft = pixelSize * (left + boundingRect.width / 2);
-            const myTop = pixelSize * (top + boundingRect.height / 2);
-            this.target.position.set(parentOriginX + myLeft, parentOriginY - myTop, layerSeparation);
-            this.contentTarget.scale.set(Math.max(pixelSize * boundingRect.width, 10e-6), Math.max(pixelSize * boundingRect.height, 10e-6), 1);
+            const width = bounds.width;
+            const height = bounds.height;
+            const parentBounds = this.parentLayer instanceof WebLayer3DBase
+                ? this.parentLayer.bounds : getViewportBounds(scratchBounds);
+            const parentWidth = parentBounds.width;
+            const parentHeight = parentBounds.height;
+            const leftEdge = -parentWidth / 2 + width / 2;
+            const topEdge = parentHeight / 2 - height / 2;
+            const pixelSize = 1 / WebLayer3D.DEFAULT_PIXELS_PER_UNIT;
+            const sep = this.options.layerSeparation || WebLayer3D.DEFAULT_LAYER_SEPARATION;
+            this.target.position.set(pixelSize * (leftEdge + bounds.left), pixelSize * (topEdge - bounds.top), this.depth * sep + (this.parentLayer ? this.parentLayer.index * sep * 0.01 : 0) + this.index * sep * 0.001);
+            this.contentTarget.scale.set(Math.max(pixelSize * width, 10e-6), Math.max(pixelSize * height, 10e-6), 1);
             this._lastTargetPosition.copy(this.target.position);
             this._lastContentTargetScale.copy(this.contentTarget.scale);
         }
         _refreshMesh() {
-            const mesh = this.mesh;
-            const texture = this.texture;
-            if (!texture)
+            const mesh = this.contentMesh;
+            const texture = this.currentTexture;
+            if (!texture.image)
                 return;
             const material = mesh.material;
-            material.map = texture;
-            material.needsUpdate = true;
-            this.depthMaterial['map'] = texture;
-            this.depthMaterial.needsUpdate = true;
+            if (material.map !== texture) {
+                material.map = texture;
+                material.needsUpdate = true;
+                this.depthMaterial['map'] = texture;
+                this.depthMaterial.needsUpdate = true;
+            }
             if (!mesh.parent) {
                 this.content.add(mesh);
                 this._refreshTargetLayout();
                 this.content.position.copy(this.contentTarget.position);
                 this.content.scale.copy(this.contentTarget.scale);
             }
-            const index$$1 = this.parentLayer ? this.parentLayer.childLayers.indexOf(this) : 0;
-            mesh.renderOrder = this.level + index$$1 * 0.0001;
+            mesh.renderOrder = this.depth + this.index * 0.001;
         }
-        _showChildLayers(show) {
-            for (const child of this.childLayers) {
-                const childEl = child.element;
-                if (childEl && childEl.style) {
-                    childEl.style.opacity = show ? '1' : '0';
+    }
+    /**
+     * Transform a DOM tree into 3D layers.
+     *
+     * When an instance is created, a `layer` data-attribute is set on the
+     * the passed DOM element to match this instance's Object3D id.
+     * If the passed DOM element has an `id` attribute, this instance's Object3D name
+     * will be set to match the element id.
+     *
+     * Child WebLayer3D instances can be specified with an empty `layer` data-attribute,
+     * which will be set when the child WebLayer3D instance is created automatically.
+     * The data-attribute can be specified added in HTML or dynamically:
+     *  - `<div data-layer></div>`
+     *  - `element.dataset.layer = ''`
+     *
+     * Additionally, the pixel ratio can be adjusted on each layer, individually:
+     *  - `<div data-layer data-layer-pixel-ratio="0.5"></div>`
+     *  - `element.dataset.layerPixelRatio = '0.5'`
+     *
+     * Finally, each layer can prerender multipe states specified as CSS classes delimited by spaces:
+     *  - `<div data-layer data-layer-states="near far"></div>`
+     *  - `element.dataset.layerStates = 'near far'`
+     *
+     * Each WebLayer3D will render each of its states with the corresponding CSS class applied to the element.
+     * The texture state can be changed by alternating between the specified classes,
+     * without requiring the DOM to be re-rendered. Setting a state on a parent layer does
+     * not affect the state of a child layer.
+     *
+     * Every layer has an implicit `hover` state which can be mixed with any other declared state,
+     * by using the appropriate CSS selector: `.near.hover` or `.far.hover`. Besides than the
+     * `hover` state. The hover state is controlled by interaction rays, which can be provided
+     * with the `interactionRays` property.
+     *
+     * Default dimensions: 1px = 0.001 world dimensions = 1mm (assuming meters)
+     *     e.g., 500px width means 0.5meters
+     */
+    class WebLayer3D extends WebLayer3DBase {
+        constructor(element, options = {}) {
+            super(element, options);
+            this.element = element;
+            this.options = options;
+            this._interactionRays = [];
+            this._raycaster = new THREE.Raycaster();
+            this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
+            this._webLayer = WebRenderer.createLayerTree(element, (event, { target }) => {
+                if (event === 'layercreated') {
+                    if (target === this.element)
+                        return;
+                    const layer = new WebLayer3DBase(target, this.options);
+                    layer.parentLayer.add(layer);
+                    if (this.options.onLayerCreate)
+                        this.options.onLayerCreate(layer);
                 }
-            }
-        }
-        _disableTransforms(disabled) {
-            if (disabled) {
-                document.documentElement.setAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE, '');
-            }
-            else {
-                document.documentElement.removeAttribute(WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE);
-            }
-        }
-        _setHoverClasses(hover) {
-            let el = this.element;
-            let skip = hover - 1;
-            while (el) {
-                if (hover === 0) {
-                    if (el.classList.contains('hover'))
-                        el.classList.remove('hover');
+                else if (event === 'layerpainted') {
+                    const layer = WebLayer3D.getClosestLayerForElement(target);
+                    const source = layer.textureSource;
+                    if (!source)
+                        throw new Error('missing texture source');
+                    layer.currentTexture.image = source;
+                    layer.currentTexture.needsUpdate = true;
                 }
-                else if (skip === 0) {
-                    if (!el.classList.contains('hover'))
-                        el.classList.add('hover');
+                else if (event === 'parentchanged') {
+                    const layer = WebLayer3D.getClosestLayerForElement(target);
+                    layer.transitioner.parentTarget = layer.parentLayer;
                 }
-                else {
-                    skip--;
-                    el = this.parent && this.parent instanceof WebLayer3D ? this.parent.element : null;
-                    continue;
-                }
-                el = el.parentElement;
-            }
+            });
+            if (this.options.onLayerCreate)
+                this.options.onLayerCreate(this);
+            this._webLayer.refresh(true);
+            // if (!WebLayer3D._didInstallStyleSheet) {
+            //   const style = document.createElement('style')
+            //   document.head.append(style)
+            //   domUtils.addCSSRule(
+            //     style.sheet as CSSStyleSheet,
+            //     `[${WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE}] *`,
+            //     'transform: none !important;',
+            //     0
+            //   )
+            //   WebLayer3D._didInstallStyleSheet = true
+            // }
+            // if (this.rootLayer === this) {
+            //   this._triggerRefresh = (e: Event) => {
+            //     const layer = WebLayer3D.getLayerForElement(e.target as any)!
+            //     if (layer) {
+            //       layer.needsRasterize = true
+            //     }
+            //   }
+            //   element.addEventListener('input', this._triggerRefresh, { capture: true })
+            //   element.addEventListener('change', this._triggerRefresh, { capture: true })
+            //   element.addEventListener('focus', this._triggerRefresh, { capture: true })
+            //   element.addEventListener('blur', this._triggerRefresh, { capture: true })
+            //   element.addEventListener('transitionend', this._triggerRefresh, { capture: true })
+            //   let target: HTMLElement | null
+            //   const setLayerNeedsRasterize = (layer: WebLayer3D) => {
+            //     if (target!.contains(layer.element)) layer.needsRasterize = true
+            //   }
+            // this._processMutations = (records: MutationRecord[]) => {
+            //   for (const record of records) {
+            //     if (
+            //       record.type === 'attributes' &&
+            //       (record.target as HTMLElement).getAttribute(record.attributeName!) === record.oldValue
+            //     )
+            //       continue
+            //     if (
+            //       record.type === 'characterData' &&
+            //       (record.target as CharacterData).data === record.oldValue
+            //     )
+            //       continue
+            //     target =
+            //       record.target.nodeType === Node.ELEMENT_NODE
+            //         ? (record.target as HTMLElement)
+            //         : record.target.parentElement
+            //     if (!target) continue
+            //     const layer = WebLayer3D.getLayerForElement(target)
+            //     if (!layer) continue
+            //     if (record.type === 'attributes' && record.attributeName === 'class') {
+            //       const oldClasses = record.oldValue ? record.oldValue.split(/\s+/) : []
+            //       const currentClasses = (record.target as HTMLElement).className.split(/\s+/)
+            //       const addedClasses = arraySubtract(currentClasses, oldClasses)
+            //       const removedClasses = arraySubtract(oldClasses, currentClasses)
+            //       let needsRasterize = false
+            //       for (const c of removedClasses) {
+            //         if (c === 'hover' || layer._states[c]) {
+            //           continue
+            //         }
+            //         needsRasterize = true
+            //       }
+            //       for (const c of addedClasses) {
+            //         if (c === 'hover' || layer._states[c]) {
+            //           continue
+            //         }
+            //         needsRasterize = true
+            //       }
+            //       if (!needsRasterize) continue
+            //     }
+            //     layer.needsRasterize = true
+            //     layer.traverseLayers(setLayerNeedsRasterize)
+            //   }
+            // }
+            // this._mutationObserver = new MutationObserver(this._processMutations)
+            // this._mutationObserver.observe(element, {
+            //   characterData: true,
+            //   characterDataOldValue: true,
+            //   attributes: true,
+            //   attributeOldValue: true,
+            //   childList: true,
+            //   subtree: true
+            // })
+            // stuff for rendering with html2canvas ¯\_(ツ)_/¯
+            // this._logger = new Logger(false)
+            // this._fontMetrics = new FontMetrics(document)
+            // this._resourceLoader = new ResourceLoader(
+            //   {
+            //     imageTimeout: 15000,
+            //     allowTaint: options.allowTaint || false
+            //   },
+            //   this._logger,
+            //   window
+            // )
+            // }
+            // technically this should only be needed in the root layer,
+            // however the polyfill seems to miss resizes that happen in child
+            // elements unless observing each layer
+            // this._resizeObserver = new ResizeObserver(records => {
+            //   for (const record of records) {
+            //     const layer = this.getLayerForElement(record.target)!
+            //     layer.needsRasterize = true
+            //   }
+            // })
+            // this._resizeObserver.observe(element)
         }
-        _markForRemoval() {
-            this._needsRemoval = true;
-            for (const child of this.childLayers) {
-                child._markForRemoval();
+        static computeNaturalDistance(projection, renderer) {
+            let projectionMatrix = projection;
+            if (projection.isCamera) {
+                projectionMatrix = projection.projectionMatrix;
             }
+            const pixelRatio = renderer.getPixelRatio();
+            const widthPixels = renderer.domElement.width / pixelRatio;
+            const width = WebLayer3D.DEFAULT_PIXELS_PER_UNIT * widthPixels;
+            const horizontalFOV = getFovs(projectionMatrix).horizontal;
+            const naturalDistance = width / 2 / Math.tan(horizontalFOV / 2);
+            return naturalDistance;
         }
-        _refreshChildLayers() {
-            const element = this.element;
-            const childLayers = this.childLayers;
-            const oldChildLayers = childLayers.slice();
-            childLayers.length = 0;
-            traverseDOM(element, this._tryConvertToWebLayer3D, this, this.level);
-            for (const child of oldChildLayers) {
-                if (childLayers.indexOf(child) === -1) {
-                    child._markForRemoval();
-                    childLayers.push(child);
-                }
-            }
+        static shouldApplyTargetLayout(layer) {
+            const should = layer.shouldApplyTargetLayout;
+            if (should === 'always' || should === true)
+                return true;
+            if (should === 'never' || should === false)
+                return false;
+            if (should === 'auto' && layer.parentLayer && layer.parent === layer.parentLayer)
+                return true;
+            return false;
         }
-        _tryConvertToWebLayer3D(el, level) {
-            const id = el.getAttribute(WebLayer3D.LAYER_ATTRIBUTE);
-            if (id !== null || el.nodeName === 'VIDEO') {
-                let child = this.layersByElement.get(el);
-                if (!child) {
-                    child = new WebLayer3D(el, this.options, this, level);
-                    this.add(child);
-                }
-                this.childLayers.push(child);
-                return false; // stop traversing this subtree
-            }
-            return true;
-        }
-        async rasterize() {
-            const element = this.element;
-            const states = this._states;
-            const renderFunctions = [];
-            this.rootLayer._processMutations(this.rootLayer._mutationObserver.takeRecords());
-            if (this.options.onBeforeRasterize) {
-                this.options.onBeforeRasterize.call(null, this);
-            }
-            const onAfterRasterize = this.options.onAfterRasterize;
-            if (element.nodeName === 'VIDEO') {
-                const state = states[''][0];
-                getBounds(element, state.bounds);
-                state.texture = state.texture || new THREE.VideoTexture(element);
-                if (onAfterRasterize)
-                    onAfterRasterize(this);
-                this.rootLayer._mutationObserver.takeRecords();
-                return;
-            }
-            this._disableTransforms(true);
-            this._showChildLayers(false);
-            const classValue = element.className;
-            for (const stateKey in states) {
-                const hoverStates = states[stateKey];
-                let hoverDepth = this._hoverDepth;
-                for (let hover = 0; hover <= hoverDepth; hover++) {
-                    const state = hoverStates[hover];
-                    const texture = state.texture || new THREE.Texture(document.createElement('canvas'));
-                    if (stateKey)
-                        element.classList.add(stateKey);
-                    this._setHoverClasses(hover);
-                    const bounds = getBounds(element);
-                    const stack = NodeParser_2(element, this.rootLayer._resourceLoader, this.rootLayer._logger);
-                    if (stateKey)
-                        element.classList.remove(stateKey);
-                    this._setHoverClasses(0);
-                    if (!bounds.width || !bounds.height)
-                        continue;
-                    state.bounds = bounds;
-                    renderFunctions.push(() => {
-                        const canvas = texture.image;
-                        const context = canvas.getContext('2d');
-                        context.clearRect(0, 0, canvas.width, canvas.height);
-                        const renderer = new Renderer(new CanvasRenderer(canvas), {
-                            backgroundColor: null,
-                            fontMetrics: this.rootLayer._fontMetrics,
-                            imageStore,
-                            logger: this.rootLayer._logger,
-                            scale: this._pixelRatio,
-                            x: bounds.left,
-                            y: bounds.top,
-                            width: bounds.width,
-                            height: bounds.height,
-                            allowTaint: this.options.allowTaint || false
-                        });
-                        renderer.render(stack);
-                        if (!canvas.width || !canvas.height) {
-                            canvas.width = 1;
-                            canvas.height = 1;
+        static _updateInteractions(rootLayer) {
+            rootLayer.updateWorldMatrix(true, true);
+            rootLayer.traverseLayers(WebLayer3D._clearHover);
+            WebLayer3D.hoverLayers.clear();
+            for (const ray of rootLayer._interactionRays) {
+                rootLayer._hitIntersections.length = 0;
+                if (ray instanceof THREE.Ray)
+                    rootLayer._raycaster.ray.copy(ray);
+                else
+                    rootLayer._raycaster.ray.set(ray.getWorldPosition(scratchVector), ray.getWorldDirection(scratchVector2));
+                rootLayer._raycaster.intersectObject(rootLayer, true, rootLayer._hitIntersections);
+                for (const intersection of rootLayer._hitIntersections) {
+                    let layer = WebLayer3D.layersByMesh.get(intersection.object);
+                    if (layer && layer.contentOpacity.current !== 0) {
+                        layer.cursor.position.copy(intersection.point);
+                        layer.worldToLocal(layer.cursor.position);
+                        layer.cursor.visible = true;
+                        while (layer instanceof WebLayer3DBase) {
+                            WebLayer3D.hoverLayers.add(layer);
+                            layer = layer.parent;
                         }
-                        texture.image = canvas;
-                        texture.minFilter = THREE.LinearFilter;
-                        texture.needsUpdate = true;
-                        state.texture = texture;
-                    });
+                        break;
+                    }
                 }
             }
-            element.className = classValue;
-            this._showChildLayers(true);
-            this._disableTransforms(false);
-            if (onAfterRasterize)
-                onAfterRasterize(this);
-            this.rootLayer._mutationObserver.takeRecords();
-            const imageStore = await this.rootLayer._resourceLoader.ready();
-            for (const render of renderFunctions)
-                render();
+            // rootLayer.traverseLayers(WebLayer3D._setHover)
+            WebLayer3D._setHoverClass(rootLayer.element);
+            traverseChildElements(rootLayer.element, WebLayer3D._setHoverClass);
+        }
+        static async _scheduleRefresh(rootLayer) {
+            await microtask$1;
+            rootLayer.refresh();
+        }
+        /**
+         * A list of Rays to be used for interaction.
+         * Can only be set on a root WebLayer3D instance.
+         * @param rays
+         */
+        set interactionRays(rays) {
+            this._interactionRays = rays;
+        }
+        get interactionRays() {
+            return this._interactionRays;
+        }
+        // refresh(forceRasterize=false) {
+        //   if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('refresh start')
+        //   super.refresh(forceRasterize)
+        //   // WebLayer3D._scheduleRefresh(this)
+        //   if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('refresh end')
+        //   if (WebLayer3D.DEBUG_PERFORMANCE) performance.measure('refresh', 'refresh start', 'refresh end')
+        // }
+        /**
+         * Update the pose and opacity of this layer (does not rerender the DOM).
+         * This should be called each frame, and can only be called on a root WebLayer3D instance.
+         *
+         * @param lerp lerp value
+         * @param updateCallback update callback called for each layer. Default is WebLayer3D.UDPATE_DEFAULT
+         */
+        update(lerp = 1, updateCallback = WebLayer3D.UPDATE_DEFAULT) {
+            if (this.options.autoRefresh !== false)
+                WebLayer3D._scheduleRefresh(this);
+            this.updateWorldMatrix(true, true);
+            this.traverseLayers(updateCallback, lerp);
+            WebLayer3D._updateInteractions(this);
+        }
+        static getLayerForQuery(selector) {
+            const element = document.querySelector(selector);
+            return WebLayer3D.layersByElement.get(element);
+        }
+        static getClosestLayerForElement(element) {
+            const closestLayerElement = element && element.closest(`[${WebLayer3D.LAYER_ATTRIBUTE}]`);
+            return WebLayer3D.layersByElement.get(closestLayerElement);
+        }
+        hitTest(ray) {
+            const raycaster = this._raycaster;
+            const intersections = this._hitIntersections;
+            const meshMap = WebLayer3D.layersByMesh;
+            raycaster.ray.copy(ray);
+            intersections.length = 0;
+            raycaster.intersectObject(this, true, intersections);
+            for (const intersection of intersections) {
+                const layer = meshMap.get(intersection.object);
+                if (!layer)
+                    continue;
+                const layerBoundingRect = getBounds(layer.element, scratchBounds);
+                if (!layerBoundingRect.width || !layerBoundingRect.height)
+                    continue;
+                let target = layer.element;
+                const clientX = intersection.uv.x * layerBoundingRect.width;
+                const clientY = (1 - intersection.uv.y) * layerBoundingRect.height;
+                traverseChildElements(layer.element, el => {
+                    if (!target.contains(el))
+                        return false;
+                    const elementBoundingRect = getBounds(el, scratchBounds2);
+                    const offsetLeft = elementBoundingRect.left - layerBoundingRect.left;
+                    const offsetTop = elementBoundingRect.top - layerBoundingRect.top;
+                    const { width, height } = elementBoundingRect;
+                    const offsetRight = offsetLeft + width;
+                    const offsetBottom = offsetTop + height;
+                    if (clientX > offsetLeft &&
+                        clientX < offsetRight &&
+                        clientY > offsetTop &&
+                        clientY < offsetBottom) {
+                        target = el;
+                        return true;
+                    }
+                    return false; // stop traversal down this path
+                });
+                return { layer, intersection, target };
+            }
+            return undefined;
         }
     }
     WebLayer3D.domUtils = domUtils;
+    WebLayer3D.layersByElement = new WeakMap();
+    WebLayer3D.layersByMesh = new WeakMap();
     WebLayer3D.DEBUG_PERFORMANCE = false;
     WebLayer3D.LAYER_ATTRIBUTE = 'data-layer';
-    WebLayer3D.LAYER_CONTAINER_ATTRIBUTE = 'data-layer-container';
     WebLayer3D.PIXEL_RATIO_ATTRIBUTE = 'data-layer-pixel-ratio';
     WebLayer3D.STATES_ATTRIBUTE = 'data-layer-states';
     WebLayer3D.HOVER_DEPTH_ATTRIBUTE = 'data-layer-hover-depth';
     WebLayer3D.DISABLE_TRANSFORMS_ATTRIBUTE = 'data-layer-disable-transforms';
-    WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.005;
-    WebLayer3D.PIXEL_SIZE = 0.001;
+    WebLayer3D.DEFAULT_LAYER_SEPARATION = 0.001;
+    WebLayer3D.DEFAULT_PIXELS_PER_UNIT = 1000;
     WebLayer3D.GEOMETRY = new THREE.PlaneGeometry(1, 1, 2, 2);
     WebLayer3D.UPDATE_DEFAULT = function (layer, deltaTime = 1) {
-        layer.transitioner.update(deltaTime);
-        layer.content.transitioner.update(deltaTime);
+        layer.transitioner.active = true;
+        layer.content.transitioner.active = true;
+        layer.transitioner.update(deltaTime, false);
+        layer.content.transitioner.update(deltaTime, false);
     };
-    WebLayer3D._hoverLayers = new Set();
+    WebLayer3D.hoverLayers = new Set();
+    // private static refreshBoundsQueue = [] as WebLayer3DBase[]
+    // private static async _scheduleRefreshBounds(rootLayer: WebLayer3D) {
+    //   rootLayer.traverseLayers((layer) => {
+    //     if (this.refreshBoundsQueue.indexOf(layer) === -1) this.refreshBoundsQueue.push(layer)
+    //   })
+    //   await microtask // wait for current frame to complete
+    //   const queue = this.refreshBoundsQueue
+    //   if (queue.length === 0 || rootLayer.options.autoRasterize === false) return
+    //   if (window.requestIdleCallback) {
+    //     window.requestIdleCallback(idleDeadline => {
+    //       if (!queue.length) return
+    //       if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize queue start')
+    //       while (queue.length && idleDeadline.timeRemaining() > 0) {
+    //         if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize start')
+    //         queue.shift()!.rasterize()
+    //         if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize end')
+    //         if (WebLayer3D.DEBUG_PERFORMANCE)
+    //           performance.measure('rasterize', 'rasterize start', 'rasterize end')
+    //       }
+    //       if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize queue end')
+    //       if (WebLayer3D.DEBUG_PERFORMANCE)
+    //         performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end')
+    //     })
+    //   } else {
+    //     const startTime = performance.now()
+    //     if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize queue start')
+    //     while (queue.length && performance.now() - startTime < 5) {
+    //       if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize start')
+    //       queue.shift()!.rasterize()
+    //       if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize end')
+    //       if (WebLayer3D.DEBUG_PERFORMANCE)
+    //         performance.measure('rasterize', 'rasterize start', 'rasterize end')
+    //     }
+    //     if (WebLayer3D.DEBUG_PERFORMANCE) performance.mark('rasterize queue end')
+    //     if (WebLayer3D.DEBUG_PERFORMANCE)
+    //       performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end')
+    //   }
+    // }
     WebLayer3D._clearHover = function (layer) {
-        layer._hover = 0;
         layer.cursor.visible = false;
     };
-    WebLayer3D._setHover = function (layer) {
-        layer._hover = WebLayer3D._hoverLayers.has(layer)
-            ? 1
-            : layer.parent instanceof WebLayer3D && layer.parent._hover > 0
-                ? layer.parent._hover + 1
-                : layer._hover;
-    };
+    // private static _setHover = function(layer: WebLayer3DBase) {
+    //   layer._hover = WebLayer3D._hoverLayers.has(layer)
+    //     ? 1
+    //     : layer.parentLayer && layer.parentLayer._hover > 0
+    //       ? layer.parentLayer._hover + 1
+    //       : layer._hover
+    // }
     WebLayer3D._setHoverClass = function (element) {
-        const hoverLayers = WebLayer3D._hoverLayers;
+        // const hover = WebLayer3D._hoverLayers.has(WebLayer3D.layersByElement.get(element))
+        // if (hover && !element.classList.contains('hover')) element.classList.add('hover')
+        // if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
+        // return true
+        const hoverLayers = WebLayer3D.hoverLayers;
         let hover = false;
         for (const layer of hoverLayers) {
             if (element.contains(layer.element)) {
@@ -7944,35 +6035,6 @@
             element.classList.remove('hover');
         return true;
     };
-    WebLayer3D._didInstallStyleSheet = false;
-    function ensureElementIsInDocument(element, options) {
-        const document = element.ownerDocument;
-        if (document.contains(element)) {
-            return element;
-        }
-        const container = document.createElement('div');
-        container.setAttribute(WebLayer3D.LAYER_CONTAINER_ATTRIBUTE, '');
-        container.style.position = 'fixed';
-        container.style.width = options && 'windowWidth' in options ? options.windowWidth + 'px' : '100%';
-        container.style.height =
-            options && 'windowHeight' in options ? options.windowHeight + 'px' : '100%';
-        // top -100000px allows html2canvas to render input boxes more accurately
-        // on mobile safari than left -10000px
-        // my guess is this has something to do with safari trying to move the viewport
-        // when a text field is focussed
-        container.style.top = '-100000px';
-        container.appendChild(element);
-        document.documentElement.appendChild(container);
-        return element;
-    }
-    function arraySubtract(a, b) {
-        const result = [];
-        for (const item of a) {
-            if (!b.includes(item))
-                result.push(item);
-        }
-        return result;
-    }
     class CameraFOVs {
         constructor() {
             this.top = 0;
@@ -8012,7 +6074,10 @@
         return out;
     }
 
-    return WebLayer3D;
+    exports.WebLayer3D = WebLayer3D;
+    exports.WebLayer3DBase = WebLayer3DBase;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 //# sourceMappingURL=three-web-layer.umd.js.map

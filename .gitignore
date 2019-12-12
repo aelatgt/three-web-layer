@@ -25,6 +25,7 @@ coverage
 
 # Rollup plugin typescript cache (https://github.com/ezolenko/rollup-plugin-typescript2)
 .rpt2_cache
+.rpt2_cache_cjs
 
 # Bower dependency directory (https://bower.io/)
 bower_components

@@ -41,15 +41,15 @@ const TodoItem = vue_1.default.extend({
         const parent = context.parent;
         const todo = context.props.todo;
         return <li key={todo.id} v-show={parent.filteredTodos.includes(todo)}>
-      <div data-layer>
+      <div data-layer class={context.data.class}>
         <div class="view">
           <input id={"toggle-" + todo.id} class="toggle" type="checkbox" v-model={todo.completed}/>
-          <label data-layer data-layer-states="completed" class={context.data.class} for={"toggle-" + todo.id}>{todo.completed ?
+          <label data-layer data-layer-states="completed" for={"toggle-" + todo.id}>{todo.completed ?
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135" style="padding-right:10px"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="3"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>
             : <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#ededed" stroke-width="3"/></svg>}</label>
           <button data-layer data-layer-hover-depth="2" class="destroy" onclick={() => parent.removeTodo(todo)}>x</button>
         </div> 
-        <div data-layer data-layer-states="completed" class={context.data.class}>                       
+        <div data-layer data-layer-states="completed">                       
           <div class="title" onclick={() => parent.editTodo(todo)}>{todo.title}</div>
           <input class="edit" type="text" spellcheck="false" v-model={todo.title} v-todo-focus="todo == editedTodo" onblur={() => parent.doneEdit(todo)} onkeyup={(event) => {
             if (event.key === 'Enter')
@@ -160,7 +160,7 @@ const TodoMVC = vue_1.default.extend({
     },
     render() {
         return <div class="container" data-layer-pixel-ratio="0.5">
-        <section data-layer data-layer-pixel-ratio="0.5" class="todoapp">
+        <section data-layer class="todoapp">
         <header class="header">
             <h1 data-layer>todos</h1>
             <div data-layer>
@@ -184,7 +184,7 @@ const TodoMVC = vue_1.default.extend({
             return <todo-item class={`todo ${classes.join(' ')}`} todo={todo}/>;
         })}</ul>
         </section>
-        <footer data-layer class="footer" v-show={this.todos.length}>
+        <footer class="footer" v-show={this.todos.length}>
             <span data-layer class="todo-count">
             <strong>{this.remaining}</strong> {this.$options.filters.pluralize(this.remaining)} left
             </span>
@@ -200,7 +200,7 @@ const TodoMVC = vue_1.default.extend({
         </section>
         <footer data-layer class="info">
         <p>Click to edit a todo</p>
-        <p>Written by <a data-layer data-layer-hover-depth="1" href="http://ael.gatech.edu/lab/author/gheric/">&nbsp;Gheric Speiginer</a></p>
+        <p>Written by <a data-layer data-layer-hover-depth="1" href="http://ael.gatech.edu/lab/author/gheric/">Gheric Speiginer</a></p>
         <p>Part of <a data-layer data-layer-hover-depth="1" href="http://todomvc.com">TodoMVC</a></p>
         </footer>
     </div>;

@@ -10,7 +10,7 @@ const pkg = require('./package.json')
 const libraryName = 'three-web-layer'
 
 export default {
-  input: `src/${libraryName}.ts`,
+  input: `src/three/${libraryName}.ts`,
   output: [
     { file: pkg.main, name: 'WebLayer3D', format: 'umd', sourcemap: true },
     { file: pkg.module, format: 'es', sourcemap: true },
@@ -24,8 +24,13 @@ export default {
     json(),
     // Compile TypeScript files
     typescript({ useTsconfigDeclarationDir: true }),
-    // Allow bundling cjs modules (unlike webpack, rollup doesn't understand cjs)
-    commonjs(),
+    // Allow bundling cjs modules 
+    commonjs({
+      namedExports: {
+        'lru_map': ['LRUMap'],
+        'fast-sha256': ['hash']
+      }
+    }),
     // replace process.env.NODE_ENV
     replace({
       'process.env.NODE_ENV': JSON.stringify( 'production' )
@@ -34,7 +39,6 @@ export default {
     // which external modules to include in the bundle
     // https://github.com/rollup/rollup-plugin-node-resolve#usage
     resolve(),
-
     // Resolve source maps to the original source
     sourceMaps(),
   ],

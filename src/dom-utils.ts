@@ -42,18 +42,18 @@ export function hash(el: HTMLElement) {
   const textContent = (el as HTMLInputElement).textContent
 }
 
-export function traverseDOM(
+export function traverseChildElements(
   node: Node,
-  each: (node: HTMLElement, level: number) => boolean,
+  each: (node: Element, level: number) => boolean,
   bind?: any,
   level = 0
 ) {
   level++
   for (let child: Node | null = node.firstChild; child; child = child.nextSibling) {
     if (child.nodeType === Node.ELEMENT_NODE) {
-      const el = child as HTMLElement
+      const el = child as Element
       if (each.call(bind, el, level)) {
-        traverseDOM(el, each, bind, level)
+        traverseChildElements(el, each, bind, level)
       }
     }
   }
@@ -67,16 +67,38 @@ export function addCSSRule(sheet, selector, rules, index) {
   }
 }
 
-export interface Bounds {
-  left: number
-  top: number
-  width: number
-  height: number
+export class Bounds {
+  left = 0
+  top = 0
+  width = 0
+  height = 0
+  copy(rect: Bounds) {
+    this.top = rect.top
+    this.left = rect.left
+    this.width = rect.width
+    this.height = rect.height
+    return this
+  }
+}
+
+export class Edges {
+  left = 0
+  top = 0
+  right = 0
+  bottom = 0
+  copy(rect: Edges) {
+    this.top = rect.top
+    this.left = rect.left
+    this.right = rect.right
+    this.bottom = rect.bottom
+    return this
+  }
 }
 
 export function getBounds(
-  element: HTMLElement,
-  bounds: Bounds = { left: 0, top: 0, width: 0, height: 0 }
+  element: Element,
+  bounds: Bounds = new Bounds(),
+  referenceElement?: Element
 ) {
   const doc = element.ownerDocument!
   const defaultView = element.ownerDocument!.defaultView!
@@ -87,7 +109,15 @@ export function getBounds(
     return getDocumentBounds(doc, bounds)
   }
 
-  let el: HTMLElement | null = element
+  if (referenceElement === element) {
+    bounds.left = 0
+    bounds.top = 0
+    bounds.width = (element as HTMLElement).offsetWidth
+    bounds.height = (element as HTMLElement).offsetHeight
+    return
+  }
+
+  let el: HTMLElement | null = element as HTMLElement
 
   let computedStyle
   let offsetParent = el.offsetParent as HTMLElement
@@ -95,7 +125,23 @@ export function getBounds(
   let top = el.offsetTop
   let left = el.offsetLeft
 
-  while ((el = el.parentNode as HTMLElement) && el !== body && el !== docEl) {
+  if (
+    offsetParent &&
+    referenceElement &&
+    offsetParent.contains(referenceElement) &&
+    offsetParent !== referenceElement
+  ) {
+    getBounds(referenceElement, bounds, offsetParent)
+    left -= bounds.left
+    top -= bounds.top
+  }
+
+  while (
+    (el = el.parentNode as HTMLElement) &&
+    el !== body &&
+    el !== docEl &&
+    el !== referenceElement
+  ) {
     if (prevComputedStyle.position === 'fixed') {
       break
     }
@@ -144,9 +190,33 @@ export function getBounds(
 
   bounds.left = left
   bounds.top = top
-  bounds.width = element.offsetWidth
-  bounds.height = element.offsetHeight
+  bounds.width = (element as HTMLElement).offsetWidth
+  bounds.height = (element as HTMLElement).offsetHeight
   return bounds
+}
+
+export function getMargin(element: Element, margin: Edges) {
+  let style = getComputedStyle(element)
+  margin.left = parseFloat(style.marginLeft) || 0
+  margin.right = parseFloat(style.marginRight) || 0
+  margin.top = parseFloat(style.marginTop) || 0
+  margin.bottom = parseFloat(style.marginBottom) || 0
+}
+
+export function getBorder(element: Element, border: Edges) {
+  let style = getComputedStyle(element)
+  border.left = parseFloat(style.borderLeftWidth) || 0
+  border.right = parseFloat(style.borderRightWidth) || 0
+  border.top = parseFloat(style.borderTopWidth) || 0
+  border.bottom = parseFloat(style.borderBottomWidth) || 0
+}
+
+export function getPadding(element: Element, padding: Edges) {
+  let style = getComputedStyle(element)
+  padding.left = parseFloat(style.paddingLeft) || 0
+  padding.right = parseFloat(style.paddingRight) || 0
+  padding.top = parseFloat(style.paddingTop) || 0
+  padding.bottom = parseFloat(style.paddingBottom) || 0
 }
 
 /*

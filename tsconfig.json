@@ -4,7 +4,7 @@
     "target": "esnext",
     "module":"esnext",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "strict": true,
+    "strict": false,
     "sourceMap": true,
     "jsx": "preserve",
     "declaration": true,
@@ -17,7 +17,7 @@
     "baseUrl": "",
     "skipLibCheck": true,
     "paths": {
-      "three": ["node_modules/three/src/Three"]
+      "html2canvas/dist/lib/*": ["node_modules/html2canvas/dist/types/*"]
     }
   },
   "include": [

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const THREE = require("three");
-const three_web_layer_1 = require("../three-web-layer");
+const three_web_layer_1 = require("../three/three-web-layer");
 const TodoMVC_1 = require("./TodoMVC");
 const dat_gui_1 = require("dat.gui");
 const noty_1 = require("noty");
@@ -13,7 +13,7 @@ stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
 stats.dom.style.bottom = '0';
 stats.dom.style.top = '';
 document.body.appendChild(stats.dom);
-three_web_layer_1.default.DEBUG_PERFORMANCE = true;
+three_web_layer_1.WebLayer3D.DEBUG_PERFORMANCE = true;
 // reload on changes during development
 if (module.hot) {
     module.hot.dispose(() => {
@@ -65,7 +65,7 @@ const Controls = {
     moveCamera: true,
     hoverEffect: true,
     shadows: false,
-    layerSeparation: 0.002,
+    layerSeparation: 1,
     lerpSpeed: 3,
     layout: 'dom'
 };
@@ -74,7 +74,7 @@ gui.add(Controls, 'showDOM', true).onChange(toggleDOM);
 gui.add(Controls, 'moveCamera', true);
 gui.add(Controls, 'hoverEffect', true);
 gui.add(Controls, 'shadows', true).onChange(toggleShadows);
-gui.add(Controls, 'layerSeparation', 0.002, 0.2);
+gui.add(Controls, 'layerSeparation', 1, 20);
 gui.add(Controls, 'lerpSpeed', 0.5, 10);
 gui.add(Controls, 'layout', ['dom', 'custom']);
 gui.domElement.style.border = '0';
@@ -123,18 +123,17 @@ const crosshair = new THREE.Mesh(new THREE.RingBufferGeometry(0.02, 0.04, 32), n
 crosshair.position.z = -2;
 camera.add(crosshair);
 // magic: convert DOM hierarchy to WebLayer3D heirarchy
-const todoLayer = (window.todoLayer = new three_web_layer_1.default(todoVue.$el, {
-    windowWidth: 500,
+const todoLayer = (window.todoLayer = new three_web_layer_1.WebLayer3D(todoVue.$el, {
     pixelRatio: window.devicePixelRatio,
     onLayerCreate(layer) {
         layer.cursor.add(new THREE.Mesh(cursorGeometry));
-        layer.mesh.castShadow = true;
-        layer.mesh.receiveShadow = true;
+        layer.contentMesh.castShadow = true;
+        layer.contentMesh.receiveShadow = true;
         if (Controls.shadows) {
-            layer.mesh.material = makeShadowMaterial(layer);
+            layer.contentMesh.material = makeShadowMaterial(layer);
         }
         else {
-            layer.mesh.material = makeDefaultMaterial(layer);
+            layer.contentMesh.material = makeDefaultMaterial(layer);
         }
     }
 }));
@@ -149,27 +148,27 @@ function makeShadowMaterial(layer) {
         blendDst: THREE.OneMinusSrcAlphaFactor,
         blendSrcAlpha: THREE.OneFactor,
         blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-        opacity: layer.mesh.material.opacity
+        opacity: layer.contentMesh.material.opacity
     });
 }
 function makeDefaultMaterial(layer) {
     return new THREE.MeshBasicMaterial({
         transparent: true,
         alphaTest: 0.001,
-        opacity: layer.mesh.material.opacity
+        opacity: layer.contentMesh.material.opacity
     });
 }
 // shadows
 function toggleShadows(enabled) {
     if (enabled) {
         todoLayer.traverseLayers(layer => {
-            layer.mesh.material = makeShadowMaterial(layer);
+            layer.contentMesh.material = makeShadowMaterial(layer);
         });
         // scene.add(shadowCameraHelper)
     }
     else {
         todoLayer.traverseLayers(layer => {
-            layer.mesh.material = makeDefaultMaterial(layer);
+            layer.contentMesh.material = makeDefaultMaterial(layer);
         });
         // scene.remove(shadowCameraHelper)
     }
@@ -184,11 +183,11 @@ function toggleDOM(enabled) {
         containerStyle.height = '100vh';
         containerStyle.transform = 'scale(0.5)';
         containerStyle.transformOrigin = 'bottom left';
-        todoLayer.needsRasterize = true;
+        todoLayer.needsRefresh = true;
     }
     else {
         containerStyle.top = '-100000px';
-        todoLayer.needsRasterize = true;
+        todoLayer.needsRefresh = true;
     }
 }
 // enable hover-state rendering
@@ -311,13 +310,26 @@ function animate() {
         todoLayer.position.set(0, 0, 0);
         todoLayer.quaternion.set(0, 0, 0, 1);
         todoLayer.interactionRays = mouseRays;
+        // update our interaction ray
+        // important: make sure camera pose is updated first!
+        raycaster.setFromCamera(pointer, camera);
     }
-    // update our interaction ray
-    // important: make sure camera pose is updated first!
-    raycaster.setFromCamera(pointer, camera);
-    // update our WebLayer3D heirarchy
+    // update our target states
     // important: update interaction rays first!
-    todoLayer.update(deltaTime, (layer, lerp) => {
+    if (Controls.layout === 'custom') {
+        todoLayer.contentOpacity.target = 0;
+        const h1Layer = todoLayer.querySelector('h1');
+        const infoLayer = todoLayer.querySelector('.info');
+        const mainLayer = todoLayer.querySelector('.todoapp');
+        h1Layer.position.set(-0.4, 0.05, 0);
+        infoLayer.position.set(-0.2, -0.05, 0);
+        mainLayer.position.set(0.2, 0, 0);
+        mainLayer.contentOpacity.target = 0;
+    }
+    else {
+        todoLayer.position.z = 0;
+    }
+    todoLayer.traverseLayers((layer) => {
         layer.transitioner.multiplier = Controls.lerpSpeed;
         layer.content.transitioner.multiplier = Controls.lerpSpeed;
         if (layer.element.matches('.destroy')) {
@@ -328,38 +340,21 @@ function animate() {
             layer.transitioner.duration = 1;
             layer.content.transitioner.duration = 1;
         }
-        layer.position.z = Controls.layerSeparation * layer.level;
+        layer.position.z *= Controls.layerSeparation;
         if (layer.element.matches('.todo-list li *') && layer.contentOpacity.target === 0) {
             if (!layer.element.matches('.destroy'))
                 layer.position.y = 0;
             layer.scale.y = 0.001;
         }
-        if (Controls.hoverEffect) {
-            if (layer.hover === 1 &&
-                layer.level > 2 &&
-                !layer.element.matches('h1') &&
-                !layer.element.matches('.todo-count')) {
-                layer.content.position.z += Controls.layerSeparation * 0.3;
-                layer.content.scale.multiplyScalar(1.1);
+        hover: if (Controls.hoverEffect && layer.hover) {
+            if (layer.element.matches('.todo *, .toggle, .destroy, a')) {
+                layer.scale.multiplyScalar(1.02);
+                break hover;
             }
         }
-        if (Controls.layout === 'custom') {
-            if (layer.level === 0) {
-                layer.contentOpacity.target = 0;
-                const h1Layer = layer.getLayerForQuery('h1');
-                const infoLayer = layer.getLayerForQuery('.info');
-                const mainLayer = layer.getLayerForQuery('.todoapp');
-                const footerLayer = layer.getLayerForQuery('.footer');
-                h1Layer.position.set(-0.4, 0.05, 0);
-                infoLayer.position.set(-0.2, -0.05, 0);
-                mainLayer.position.set(0.2, 0, 0);
-                mainLayer.contentOpacity.target = 0;
-                footerLayer.position.set(-0.2, -0.2, 0);
-                footerLayer.scale.set(1.5, 1.5, 1.5);
-            }
-        }
-        three_web_layer_1.default.UPDATE_DEFAULT(layer, lerp);
     });
+    // update transitions
+    todoLayer.update(deltaTime);
     // render!
     renderer.render(scene, camera);
     stats.end();

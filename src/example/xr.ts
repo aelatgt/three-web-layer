@@ -1,6 +1,6 @@
-export function createXRButton(renderer, options?) {
-  if (options && options.frameOfReferenceType) {
-    renderer.vr.setFrameOfReferenceType(options.frameOfReferenceType)
+export function createXRButton(renderer: THREE.WebGLRenderer, options?) {
+  if (options && options.refereceSpaceType) {
+    renderer.vr.setReferenceSpaceType(options.refereceSpaceType)
   }
 
   function showEnterVR(device) {
@@ -31,22 +31,22 @@ export function createXRButton(renderer, options?) {
     renderer.vr.setDevice(device)
   }
 
-  function showEnterXR(device) {
+  function showEnterXR() {
     var currentSession = null as any
 
     function onSessionStarted(session) {
       session.addEventListener('end', onSessionEnded)
-
-      renderer.vr.setSession(session)
+      ;(renderer.vr as any).setSession(session)
       button.textContent = 'EXIT XR'
 
       currentSession = session
     }
 
     function onSessionEnded(event) {
-      currentSession.removeEventListener('end', onSessionEnded)
-
-      renderer.vr.setSession(null)
+      currentSession
+        .removeEventListener('end', onSessionEnded)
+        (renderer.vr as any)
+        .setSession(null)
       button.textContent = 'ENTER XR'
 
       currentSession = null
@@ -71,15 +71,17 @@ export function createXRButton(renderer, options?) {
 
     button.onclick = function() {
       if (currentSession === null) {
-        device
-          .requestSession({ immersive: true, exclusive: true /* DEPRECATED */ })
-          .then(onSessionStarted)
+        var sessionInit = { optionalFeatures: ['local-floor', 'bounded-floor'] }
+        ;(navigator as any).xr.requestSession('immersive-vr', sessionInit).then(onSessionStarted)
+
+        // var sessionInit = { optionalFeatures: [ 'local-floor', 'bounded-floor' ] };
+        // device
+        //   .requestSession({ immersive: true, exclusive: true /* DEPRECATED */ })
+        //   .then(onSessionStarted)
       } else {
         currentSession.end()
       }
     }
-
-    renderer.vr.setDevice(device)
   }
 
   function showVRNotFound() {
@@ -89,7 +91,7 @@ export function createXRButton(renderer, options?) {
     button.style.right = '20px'
     button.style.width = '150px'
 
-    button.textContent = 'XR DEVICE NOT FOUND'
+    button.textContent = 'XR NOT AVAILABLE'
 
     button.onmouseenter = null
     button.onmouseleave = null
@@ -120,17 +122,17 @@ export function createXRButton(renderer, options?) {
     button.style.display = 'none'
 
     stylizeElement(button)
-    ;(navigator as any).xr
-      .requestDevice()
-      .then(function(device) {
-        device
-          .supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
-          .then(function() {
-            showEnterXR(device)
-          })
-          .catch(showVRNotFound)
-      })
-      .catch(showVRNotFound)
+    // ;(navigator as any).xr
+    //   .requestDevice()
+    //   .then(function(device) {
+    //     device
+    //       .supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
+    //       .then(function() {
+    //         showEnterXR(device)
+    //       })
+    //       .catch(showVRNotFound)
+    //   })
+    //   .catch(showVRNotFound)
 
     return button
   } else if ('getVRDisplays' in navigator) {

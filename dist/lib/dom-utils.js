@@ -42,18 +42,18 @@ function hash(el) {
     const textContent = el.textContent;
 }
 exports.hash = hash;
-function traverseDOM(node, each, bind, level = 0) {
+function traverseChildElements(node, each, bind, level = 0) {
     level++;
     for (let child = node.firstChild; child; child = child.nextSibling) {
         if (child.nodeType === Node.ELEMENT_NODE) {
             const el = child;
             if (each.call(bind, el, level)) {
-                traverseDOM(el, each, bind, level);
+                traverseChildElements(el, each, bind, level);
             }
         }
     }
 }
-exports.traverseDOM = traverseDOM;
+exports.traverseChildElements = traverseChildElements;
 function addCSSRule(sheet, selector, rules, index) {
     if ('insertRule' in sheet) {
         sheet.insertRule(selector + '{' + rules + '}', index);
@@ -63,7 +63,39 @@ function addCSSRule(sheet, selector, rules, index) {
     }
 }
 exports.addCSSRule = addCSSRule;
-function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
+class Bounds {
+    constructor() {
+        this.left = 0;
+        this.top = 0;
+        this.width = 0;
+        this.height = 0;
+    }
+    copy(rect) {
+        this.top = rect.top;
+        this.left = rect.left;
+        this.width = rect.width;
+        this.height = rect.height;
+        return this;
+    }
+}
+exports.Bounds = Bounds;
+class Edges {
+    constructor() {
+        this.left = 0;
+        this.top = 0;
+        this.right = 0;
+        this.bottom = 0;
+    }
+    copy(rect) {
+        this.top = rect.top;
+        this.left = rect.left;
+        this.right = rect.right;
+        this.bottom = rect.bottom;
+        return this;
+    }
+}
+exports.Edges = Edges;
+function getBounds(element, bounds = new Bounds, referenceElement) {
     const doc = element.ownerDocument;
     const defaultView = element.ownerDocument.defaultView;
     const docEl = doc.documentElement;
@@ -71,13 +103,25 @@ function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
     if (element === docEl) {
         return getDocumentBounds(doc, bounds);
     }
+    if (referenceElement === element) {
+        bounds.left = 0;
+        bounds.top = 0;
+        bounds.width = element.offsetWidth;
+        bounds.height = element.offsetHeight;
+        return;
+    }
     let el = element;
     let computedStyle;
     let offsetParent = el.offsetParent;
     let prevComputedStyle = defaultView.getComputedStyle(el, null);
     let top = el.offsetTop;
     let left = el.offsetLeft;
-    while ((el = el.parentNode) && el !== body && el !== docEl) {
+    if (offsetParent && referenceElement && offsetParent.contains(referenceElement) && offsetParent !== referenceElement) {
+        getBounds(referenceElement, bounds, offsetParent);
+        left -= bounds.left;
+        top -= bounds.top;
+    }
+    while ((el = el.parentNode) && el !== body && el !== docEl && el !== referenceElement) {
         if (prevComputedStyle.position === 'fixed') {
             break;
         }
@@ -124,6 +168,30 @@ function getBounds(element, bounds = { left: 0, top: 0, width: 0, height: 0 }) {
     return bounds;
 }
 exports.getBounds = getBounds;
+function getMargin(element, margin) {
+    let style = getComputedStyle(element);
+    margin.left = parseFloat(style.marginLeft) || 0;
+    margin.right = parseFloat(style.marginRight) || 0;
+    margin.top = parseFloat(style.marginTop) || 0;
+    margin.bottom = parseFloat(style.marginBottom) || 0;
+}
+exports.getMargin = getMargin;
+function getBorder(element, border) {
+    let style = getComputedStyle(element);
+    border.left = parseFloat(style.borderLeftWidth) || 0;
+    border.right = parseFloat(style.borderRightWidth) || 0;
+    border.top = parseFloat(style.borderTopWidth) || 0;
+    border.bottom = parseFloat(style.borderBottomWidth) || 0;
+}
+exports.getBorder = getBorder;
+function getPadding(element, padding) {
+    let style = getComputedStyle(element);
+    padding.left = parseFloat(style.paddingLeft) || 0;
+    padding.right = parseFloat(style.paddingRight) || 0;
+    padding.top = parseFloat(style.paddingTop) || 0;
+    padding.bottom = parseFloat(style.paddingBottom) || 0;
+}
+exports.getPadding = getPadding;
 /*
  * On some mobile browsers, the value reported by window.innerHeight
  * is not the true viewport height. This method returns

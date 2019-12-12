@@ -12,7 +12,7 @@ export declare const filters: {
 declare const TodoMVC: import("vue/types/vue").ExtendedVue<Vue, {
     todos: Todo[];
     newTodo: string;
-    editedTodo: Todo | null;
+    editedTodo: Todo;
     visibility: "all" | "active" | "completed";
     beforeEditCache: string;
 }, {

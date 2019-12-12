@@ -1,1 +1,1 @@
-export declare function createXRButton(renderer: any, options?: any): HTMLButtonElement | HTMLAnchorElement;
+export declare function createXRButton(renderer: THREE.WebGLRenderer, options?: any): HTMLButtonElement | HTMLAnchorElement;

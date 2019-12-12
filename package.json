@@ -1,10 +1,11 @@
 {
   "name": "three-web-layer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Use web content in three.js scenes!",
   "main": "dist/three-web-layer.umd.js",
+  "amdName": "WebLayer3D",
   "module": "dist/three-web-layer.es5.js",
-  "typings": "dist/types/three-web-layer.d.ts",
+  "types": "dist/three-web-layer.d.ts",
   "files": [
     "/dist"
   ],
@@ -74,7 +75,7 @@
     "@types/dat.gui": "^0.7.2",
     "@types/node": "^10.11.0",
     "@types/webpack-env": "^1.13.8",
-    "@vue/babel-preset-jsx": "^1.0.0-beta.2",
+    "@vue/babel-preset-jsx": "^1.1.2",
     "@vue/component-compiler-utils": "^2.6.0",
     "babel-helper-vue-jsx-merge-props": "^2.0.3",
     "babel-plugin-jsx-v-model": "^2.0.3",
@@ -82,16 +83,17 @@
     "commitizen": "^3.0.0",
     "cz-conventional-changelog": "^2.1.0",
     "dat.gui": "^0.7.5",
-    "ethereal": "^1.0.4",
+    "ethereal": "^1.0.7",
     "husky": "^1.0.1",
     "lint-staged": "^8.0.0",
+    "microbundle": "^0.12.0-next.6",
     "noty": "^3.2.0-beta",
     "parcel": "^1.11.0",
     "prettier": "^1.14.3",
     "resize-observer-polyfill": "^1.5.1",
     "rimraf": "^2.6.2",
     "rollup": "^0.67.0",
-    "rollup-plugin-commonjs": "^9.1.8",
+    "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^3.1.0",
     "rollup-plugin-livereload": "^1.0.0",
     "rollup-plugin-node-resolve": "^3.4.0",
@@ -102,7 +104,7 @@
     "semantic-release": "^15.13.3",
     "shelljs": "^0.8.3",
     "stats.js": "^0.17.0",
-    "three": "^0.103.0",
+    "three": "^0.110.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
@@ -129,5 +131,10 @@
     "last 2 chrome versions",
     "last 2 firefox versions"
   ],
-  "dependencies": {}
+  "dependencies": {
+    "fast-sha256": "^1.1.1",
+    "html2canvas": "^1.0.0-rc.5",
+    "lru_map": "^0.3.3",
+    "rollup-plugin-amd": "^4.0.0"
+  }
 }

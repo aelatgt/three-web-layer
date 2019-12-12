@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function createXRButton(renderer, options) {
-    if (options && options.frameOfReferenceType) {
-        renderer.vr.setFrameOfReferenceType(options.frameOfReferenceType);
+    if (options && options.refereceSpaceType) {
+        renderer.vr.setReferenceSpaceType(options.refereceSpaceType);
     }
     function showEnterVR(device) {
         button.style.display = '';
@@ -26,7 +26,7 @@ function createXRButton(renderer, options) {
         };
         renderer.vr.setDevice(device);
     }
-    function showEnterXR(device) {
+    function showEnterXR() {
         var currentSession = null;
         function onSessionStarted(session) {
             session.addEventListener('end', onSessionEnded);
@@ -35,8 +35,7 @@ function createXRButton(renderer, options) {
             currentSession = session;
         }
         function onSessionEnded(event) {
-            currentSession.removeEventListener('end', onSessionEnded);
-            renderer.vr.setSession(null);
+            currentSession.removeEventListener('end', onSessionEnded)(renderer.vr).setSession(null);
             button.textContent = 'ENTER XR';
             currentSession = null;
         }
@@ -54,22 +53,24 @@ function createXRButton(renderer, options) {
         };
         button.onclick = function () {
             if (currentSession === null) {
-                device
-                    .requestSession({ immersive: true, exclusive: true /* DEPRECATED */ })
-                    .then(onSessionStarted);
+                var sessionInit = { optionalFeatures: ['local-floor', 'bounded-floor'] };
+                navigator.xr.requestSession('immersive-vr', sessionInit).then(onSessionStarted);
+                // var sessionInit = { optionalFeatures: [ 'local-floor', 'bounded-floor' ] };
+                // device
+                //   .requestSession({ immersive: true, exclusive: true /* DEPRECATED */ })
+                //   .then(onSessionStarted)
             }
             else {
                 currentSession.end();
             }
         };
-        renderer.vr.setDevice(device);
     }
     function showVRNotFound() {
         button.style.display = '';
         button.style.cursor = 'auto';
         button.style.right = '20px';
         button.style.width = '150px';
-        button.textContent = 'XR DEVICE NOT FOUND';
+        button.textContent = 'XR NOT AVAILABLE';
         button.onmouseenter = null;
         button.onmouseleave = null;
         button.onclick = null;
@@ -94,17 +95,17 @@ function createXRButton(renderer, options) {
         var button = document.createElement('button');
         button.style.display = 'none';
         stylizeElement(button);
-        navigator.xr
-            .requestDevice()
-            .then(function (device) {
-            device
-                .supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
-                .then(function () {
-                showEnterXR(device);
-            })
-                .catch(showVRNotFound);
-        })
-            .catch(showVRNotFound);
+        // ;(navigator as any).xr
+        //   .requestDevice()
+        //   .then(function(device) {
+        //     device
+        //       .supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
+        //       .then(function() {
+        //         showEnterXR(device)
+        //       })
+        //       .catch(showVRNotFound)
+        //   })
+        //   .catch(showVRNotFound)
         return button;
     }
     else if ('getVRDisplays' in navigator) {
