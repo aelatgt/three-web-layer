@@ -4829,8 +4829,9 @@
             // Replace all urls in the css
             const regEx = RegExp(/url\((?!['"]?(?:data):)['"]?([^'"\)]*)['"]?\)/gi);
             while ((found = regEx.exec(css))) {
-                promises.push(this.getDataURL(new URL(found[1], url)).then(url => {
-                    css = css.replace(found[1], url);
+                const resourceURL = found[1];
+                promises.push(this.getDataURL(new URL(resourceURL, url)).then(dataURL => {
+                    css = css.replace(resourceURL, dataURL);
                 }));
             }
             await Promise.all(promises);
