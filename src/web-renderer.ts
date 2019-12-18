@@ -59,7 +59,7 @@ export class WebLayer {
   constructor(public element: Element, public eventCallback: EventCallback) {
     WebRenderer.layers.set(element, this)
     element.setAttribute(WebRenderer.LAYER_ATTRIBUTE, '' + this.id)
-    this.parentLayer = WebRenderer.getLayerForElement(this.element.parentElement)
+    this.parentLayer = WebRenderer.getClosestLayer(this.element.parentElement)
     this.eventCallback('layercreated', { target: element })
     WebLayer.cachedCanvases.limit = WebRenderer.layers.size * WebLayer.DEFAULT_CACHE_SIZE
   }
@@ -81,6 +81,7 @@ export class WebLayer {
 
   cssTransform = new Matrix4()
 
+  private _dynamicAttributes = ''
   private _svgDocument = ''
   private _svgSrc = ''
   private _hashingCanvas = document.createElement('canvas')
@@ -142,13 +143,20 @@ export class WebLayer {
     }
   }
 
-  refresh(forceRefresh = true) {
+  refresh() {
+    const dynamicAttributes = WebRenderer.getDynamicAttributes(this.element)
+    if (this._dynamicAttributes !== dynamicAttributes) {
+      this._dynamicAttributes = dynamicAttributes
+      this.needsRefresh = true
+      for (const c of this.childLayers) c.needsRefresh = true
+    }
     getBounds(this.element, this.bounds, this.parentLayer && this.parentLayer.element)
-    if (this.needsRefresh || forceRefresh) {
+    if (this.needsRefresh) {
       this._refreshParentAndChildLayers()
       WebRenderer.addToSerializeQueue(this)
+      this.needsRefresh = false
     }
-    if (!this.parentLayer) {
+    if (WebRenderer.rootLayers.has(this.element)) {
       WebRenderer.scheduleTasks()
     }
   }
@@ -159,7 +167,7 @@ export class WebLayer {
     const oldChildLayers = childLayers.slice()
 
     const previousParentLayer = this.parentLayer
-    this.parentLayer = WebRenderer.getLayerForElement(this.element.parentElement)
+    this.parentLayer = WebRenderer.getClosestLayer(this.element.parentElement)
     if (previousParentLayer !== this.parentLayer) {
       this.parentLayer && this.parentLayer.childLayers.push(this)
       this.eventCallback('parentchanged', { target: element })
@@ -169,7 +177,7 @@ export class WebLayer {
     traverseChildElements(element, this._tryConvertElementToWebLayer, this)
 
     for (const child of oldChildLayers) {
-      const parentLayer = WebRenderer.getLayerForElement(child.element.parentElement)
+      const parentLayer = WebRenderer.getClosestLayer(child.element.parentElement)
       if (!parentLayer) {
         child.needsRemoval = true
         childLayers.push(child)
@@ -194,7 +202,6 @@ export class WebLayer {
 
   async serialize() {
     if (this.element.nodeName === 'VIDEO') return
-    this.needsRefresh = false
     const [svgPageCSS] = await Promise.all([
       WebRenderer.getEmbeddedPageCSS(),
       WebRenderer.embedExternalResources(this.element)
@@ -220,10 +227,9 @@ export class WebLayer {
         .serializeToString(layerElement)
         .replace(
           layerAttribute,
-          'data-layer="" ' +
-            WebRenderer.RENDERING_ATTRIBUTE +
-            '="" ' +
-            (needsInlineBlock ? 'data-layer-rendering-inline="" ' : '')
+          `data-layer="" ${WebRenderer.RENDERING_ATTRIBUTE}="" ` +
+            `${needsInlineBlock ? 'data-layer-rendering-inline="" ' : ' '} ` +
+            WebRenderer.getDynamicAttributes(layerElement)
         )
       const parentsHTML = this._getParentsHTML(layerElement)
       parentsHTML[0] = parentsHTML[0].replace(
@@ -309,6 +315,7 @@ export class WebLayer {
     }
 
     const pixelRatio =
+      1 ||
       this.pixelRatio ||
       parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) ||
       window.devicePixelRatio
@@ -352,7 +359,9 @@ export class WebLayer {
               this.padding.top}px" `
           : '') +
         attributes +
-        ' data-layer-rendering-parent="" >'
+        'data-layer-rendering-parent="" ' +
+        WebRenderer.getDynamicAttributes(parent) +
+        ' >'
       opens.unshift(open)
       const close = '</' + tag + '>'
       closes.push(close)
@@ -378,11 +387,11 @@ export class WebRenderer {
   static rasterizeQueue = [] as WebLayer[]
   static renderQueue = [] as WebLayer[]
 
-  static overElements = []
-  static focusElement = null
-  static activeElement = null
-  static mousedownElement = null
-  static mouseoverElement = null
+  static hoverTargetElements = new Set<Element>()
+
+  static focusElement = null // i.e., element is ready to receive input
+  static activeElement = null // i.e., button element is being "pressed down"
+  static targetElement = null // i.e., the element whose ID matches the url #hash
 
   static _didInit = false
   static _init() {
@@ -431,7 +440,7 @@ export class WebRenderer {
     addCSSRule(
       sheet,
       `[data-layer-rendering-parent]`,
-      'transform: none !important; left: 0 !important; top: 0 !important;margin: 0 !important;border:0 !important;border-radius:0 !important;height:100% !important;padding:0 !important;position:static !important;text-align:left !important;display:block !important;background:none !important;box-shadow:none !important',
+      'transform: none !important; left: 0 !important; top: 0 !important;margin: 0 !important;border:0 !important;border-radius:0 !important;height:100% !important;padding:0 !important;position:static !important;text-align:left !important;display:block !important;background:rgba(0,0,0,0) !important;box-shadow:none !important',
       i++
     )
     addCSSRule(
@@ -444,16 +453,9 @@ export class WebRenderer {
     let previousHash = ''
     const onHashChange = () => {
       if (previousHash != window.location.hash) {
-        var currentTarget = document.querySelector('.x-target')
-        if (currentTarget) {
-          currentTarget.classList.remove('x-target')
-        }
         if (window.location.hash) {
           try {
-            var newTarget = document.querySelector(window.location.hash)
-            if (newTarget) {
-              newTarget.classList.add('x-target')
-            }
+            this.targetElement = document.querySelector(window.location.hash)
           } catch {}
         }
       }
@@ -475,10 +477,10 @@ export class WebRenderer {
     if (this.renderQueue.indexOf(layer) === -1) this.renderQueue.push(layer)
   }
 
-  static TASK_SERIALIZE_MAX_TIME = 2 // serialization is synchronous
-  static TASK_RASTERIZE_MAX_TIME = 2 // processing of data:svg is async
+  static TASK_SERIALIZE_MAX_TIME = 200 // serialization is synchronous
+  static TASK_RASTERIZE_MAX_TIME = 200 // processing of data:svg is async
   static TASK_RASTERIZE_MAX_SIMULTANEOUS = 2 // since rasterization is async, limit simultaneous rasterizations
-  static TASK_RENDER_MAX_TIME = 3 // rendering to canvas is synchronous
+  static TASK_RENDER_MAX_TIME = 300 // rendering to canvas is synchronous
   static rasterizeTaskCount = 0
   static async scheduleTasks() {
     await microtask
@@ -518,7 +520,7 @@ export class WebRenderer {
   }
 
   static createLayerTree(element: Element, eventCallback: EventCallback) {
-    if (WebRenderer.getLayerForElement(element))
+    if (WebRenderer.getClosestLayer(element))
       throw new Error('A root WebLayer for the given element already exists')
 
     WebRenderer._init()
@@ -530,14 +532,13 @@ export class WebRenderer {
 
     const resizeObserver = new ResizeObserver(records => {
       for (const record of records) {
-        const layer = this.getLayerForElement(record.target)!
+        const layer = this.getClosestLayer(record.target)!
         layer.needsRefresh = true
       }
     })
     resizeObserver.observe(element)
     this.resizeObservers.set(element, resizeObserver)
 
-    element.addEventListener('mousemove', this._onmousemove, { capture: true })
     element.addEventListener('input', this._triggerRefresh, { capture: true })
     element.addEventListener('keydown', this._triggerRefresh, { capture: true })
     element.addEventListener('submit', this._triggerRefresh, { capture: true })
@@ -560,7 +561,6 @@ export class WebRenderer {
       const resizeObserver = this.resizeObservers.get(layer.element)
       resizeObserver.disconnect()
       this.resizeObservers.delete(layer.element)
-      layer.element.removeEventListener('mousemove', this._onmousemove, { capture: true })
       layer.element.removeEventListener('input', this._triggerRefresh, { capture: true })
       layer.element.removeEventListener('change', this._triggerRefresh, { capture: true })
       layer.element.removeEventListener('focus', this._triggerRefresh, { capture: true })
@@ -569,7 +569,7 @@ export class WebRenderer {
     }
   }
 
-  static getLayerForElement(element: Element): WebLayer | undefined {
+  static getClosestLayer(element: Element): WebLayer | undefined {
     const closestLayerElement =
       element && (element.closest(`[${WebRenderer.LAYER_ATTRIBUTE}]`) as HTMLElement)
     return this.layers.get(closestLayerElement)
@@ -654,10 +654,6 @@ export class WebRenderer {
     return Promise.all(promises)
   }
 
-  private static _onmousemove = e => {
-    e.stopPropagation()
-  }
-
   static pauseMutationObservers() {
     const mutationObservers = WebRenderer.mutationObservers.values()
     for (const m of mutationObservers) {
@@ -703,7 +699,7 @@ export class WebRenderer {
           ? (record.target as HTMLElement)
           : record.target.parentElement
       if (!target) continue
-      const layer = WebRenderer.getLayerForElement(target)
+      const layer = WebRenderer.getClosestLayer(target)
       if (!layer) continue
       if (record.type === 'attributes' && record.attributeName === 'class') {
         const oldClasses = record.oldValue ? record.oldValue : ''
@@ -719,7 +715,7 @@ export class WebRenderer {
 
   private static _triggerRefresh = async (e: Event) => {
     await microtask // allow other handlers to run first
-    const layer = WebRenderer.getLayerForElement(e.target as any)!
+    const layer = WebRenderer.getClosestLayer(e.target as any)!
     WebRenderer.updateInputAttributes(e.target as any)
     if (layer) {
       // layer.traverseParentLayers(WebRenderer.setLayerNeedsRasterize) // may be needed to support :focus-within() and future :has() selector support
@@ -735,19 +731,24 @@ export class WebRenderer {
       try {
         const sheet = sheets[i] as CSSStyleSheet
         const rules = sheet.cssRules
+        if (!rules) continue
         const newRules = []
         for (var j = 0; j < rules.length; j++) {
           if (rules[j].cssText.indexOf(':hover') > -1) {
-            newRules.push(rules[j].cssText.replace(new RegExp(':hover', 'g'), '.x-hover'))
+            newRules.push(rules[j].cssText.replace(new RegExp(':hover', 'g'), '[data-layer-hover]'))
           }
           if (rules[j].cssText.indexOf(':active') > -1) {
-            newRules.push(rules[j].cssText.replace(new RegExp(':active', 'g'), '.x-active'))
+            newRules.push(
+              rules[j].cssText.replace(new RegExp(':active', 'g'), '[data-layer-active]')
+            )
           }
           if (rules[j].cssText.indexOf(':focus') > -1) {
-            newRules.push(rules[j].cssText.replace(new RegExp(':focus', 'g'), '.x-focus'))
+            newRules.push(rules[j].cssText.replace(new RegExp(':focus', 'g'), '[data-layer-focus]'))
           }
           if (rules[j].cssText.indexOf(':target') > -1) {
-            newRules.push(rules[j].cssText.replace(new RegExp(':target', 'g'), '.x-target'))
+            newRules.push(
+              rules[j].cssText.replace(new RegExp(':target', 'g'), '[data-layer-target]')
+            )
           }
           var idx = newRules.indexOf(rules[j].cssText)
           if (idx > -1) {
@@ -775,10 +776,10 @@ export class WebRenderer {
     const promises = []
 
     // Add classes for psuedo-classes
-    css = css.replace(new RegExp(':hover', 'g'), '.x-hover')
-    css = css.replace(new RegExp(':active', 'g'), '.x-active')
-    css = css.replace(new RegExp(':focus', 'g'), '.x-focus')
-    css = css.replace(new RegExp(':target', 'g'), '.x-target')
+    css = css.replace(new RegExp(':hover', 'g'), '[data-layer-hover]')
+    css = css.replace(new RegExp(':active', 'g'), '[data-layer-active]')
+    css = css.replace(new RegExp(':focus', 'g'), '[data-layer-focus]')
+    css = css.replace(new RegExp(':target', 'g'), '[data-layer-target]')
 
     // Replace all urls in the css
     const regEx = RegExp(/url\((?!['"]?(?:data):)['"]?([^'"\)]*)['"]?\)/gi)
@@ -834,6 +835,7 @@ export class WebRenderer {
           embedded.set(
             element,
             this.getURL(element.getAttribute('href')).then(xhr => {
+              this._addDynamicPseudoClassRulesToPage()
               var css = textDecoder.decode(xhr.response)
               return this.generateEmbeddedCSS(window.location, css)
             })
@@ -864,385 +866,6 @@ export class WebRenderer {
     }
   }
 
-  // Transforms a point into an elements frame of reference
-  static transformPoint(elementStyles, x, y, offsetX, offsetY): false | [number, number] {
-    // Get the elements tranform matrix
-    var transformcss = elementStyles['transform']
-    if (transformcss.indexOf('matrix(') == 0) {
-      var transform = new Matrix4()
-      var mat = transformcss
-        .substring(7, transformcss.length - 1)
-        .split(', ')
-        .map(parseFloat)
-      transform.elements[0] = mat[0]
-      transform.elements[1] = mat[1]
-      transform.elements[4] = mat[2]
-      transform.elements[5] = mat[3]
-      transform.elements[12] = mat[4]
-      transform.elements[13] = mat[5]
-    } else if (transformcss.indexOf('matrix3d(') == 0) {
-      var transform = new Matrix4()
-      var mat = transformcss
-        .substring(9, transformcss.length - 1)
-        .split(', ')
-        .map(parseFloat)
-      transform.elements = mat
-    } else {
-      return [x, y]
-    }
-    // Get the elements tranform origin
-    var origincss = elementStyles['transform-origin']
-    origincss = origincss
-      .replace(new RegExp('px', 'g'), '')
-      .split(' ')
-      .map(parseFloat)
-
-    // Apply the transform to the origin
-    var ox = offsetX + origincss[0]
-    var oy = offsetY + origincss[1]
-    var oz = 0
-    if (origincss[2]) oz += origincss[2]
-
-    var T1 = new Matrix4().makeTranslation(-ox, -oy, -oz)
-    var T2 = new Matrix4().makeTranslation(ox, oy, oz)
-
-    transform = T2.multiply(transform).multiply(T1)
-
-    // return if matrix determinate is not zero
-    if (transform.determinant() != 0) return [x, y]
-
-    // Inverse the transform so we can go from page space to element space
-    var inverse = new Matrix4().getInverse(transform)
-
-    // Calculate a ray in the direction of the plane
-    var v1 = new Vector3(x, y, 0)
-    var v2 = new Vector3(x, y, -1)
-    v1.applyMatrix4(inverse)
-    v2.applyMatrix4(inverse)
-    var dir = v2.sub(v1).normalize()
-
-    // If ray is parallel to the plane then there is no intersection
-    if (dir.z == 0) {
-      return false
-    }
-
-    // Get the point of intersection on the element plane
-    var result = dir.multiplyScalar(-v1.z / dir.z).add(v1)
-
-    return [result.x, result.y]
-  }
-
-  static getBorderRadii(element, style) {
-    var properties = [
-      'border-top-left-radius',
-      'border-top-right-radius',
-      'border-bottom-right-radius',
-      'border-bottom-left-radius'
-    ]
-    var result
-    // Parse the css results
-    var corners = []
-    for (var i = 0; i < properties.length; i++) {
-      var borderRadiusString = style[properties[i]]
-      var reExp = /(\d*)([a-z%]{1,3})/gi
-      var rec = []
-      while ((result = reExp.exec(borderRadiusString))) {
-        rec.push({
-          value: result[1],
-          unit: result[2]
-        })
-      }
-      if (rec.length == 1) rec.push(rec[0])
-      corners.push(rec)
-    }
-
-    const unitConv = {
-      px: 1,
-      '%': element.offsetWidth / 100
-    }
-
-    // Convert all corners into pixels
-    var pixelCorners = []
-    for (var i = 0; i < corners.length; i++) {
-      var corner = corners[i]
-      var rec = []
-      for (var j = 0; j < corner.length; j++) {
-        rec.push(corner[j].value * unitConv[corner[j].unit])
-      }
-      pixelCorners.push(rec)
-    }
-
-    // Initial corner point scales
-    var c1scale = 1
-    var c2scale = 1
-    var c3scale = 1
-    var c4scale = 1
-
-    // Change scales of top left and top right corners based on offsetWidth
-    var borderTop = pixelCorners[0][0] + pixelCorners[1][0]
-    if (borderTop > element.offsetWidth) {
-      var f = (1 / borderTop) * element.offsetWidth
-      c1scale = Math.min(c1scale, f)
-      c2scale = Math.min(c2scale, f)
-    }
-
-    // Change scales of bottom right and top right corners based on offsetHeight
-    var borderLeft = pixelCorners[1][1] + pixelCorners[2][1]
-    if (borderLeft > element.offsetHeight) {
-      f = (1 / borderLeft) * element.offsetHeight
-      c3scale = Math.min(c3scale, f)
-      c2scale = Math.min(c2scale, f)
-    }
-
-    // Change scales of bottom left and bottom right corners based on offsetWidth
-    var borderBottom = pixelCorners[2][0] + pixelCorners[3][0]
-    if (borderBottom > element.offsetWidth) {
-      f = (1 / borderBottom) * element.offsetWidth
-      c3scale = Math.min(c3scale, f)
-      c4scale = Math.min(c4scale, f)
-    }
-
-    // Change scales of bottom left and top right corners based on offsetHeight
-    var borderRight = pixelCorners[0][1] + pixelCorners[3][1]
-    if (borderRight > element.offsetHeight) {
-      f = (1 / borderRight) * element.offsetHeight
-      c1scale = Math.min(c1scale, f)
-      c4scale = Math.min(c4scale, f)
-    }
-
-    // Scale the corners to fix within the confines of the element
-    pixelCorners[0][0] = pixelCorners[0][0] * c1scale
-    pixelCorners[0][1] = pixelCorners[0][1] * c1scale
-    pixelCorners[1][0] = pixelCorners[1][0] * c2scale
-    pixelCorners[1][1] = pixelCorners[1][1] * c2scale
-    pixelCorners[2][0] = pixelCorners[2][0] * c3scale
-    pixelCorners[2][1] = pixelCorners[2][1] * c3scale
-    pixelCorners[3][0] = pixelCorners[3][0] * c4scale
-    pixelCorners[3][1] = pixelCorners[3][1] * c4scale
-
-    return pixelCorners as number[]
-  }
-
-  // Check that the element is with the confines of rounded corners
-  static checkInBorder(element, style, x, y, left, top) {
-    if (style['border-radius'] == '0px') return true
-    var width = element.offsetWidth
-    var height = element.offsetHeight
-    var corners = this.getBorderRadii(element, style)
-
-    // Check top left corner
-    if (x < corners[0][0] + left && y < corners[0][1] + top) {
-      var x1 = (corners[0][0] + left - x) / corners[0][0]
-      var y1 = (corners[0][1] + top - y) / corners[0][1]
-      if (x1 * x1 + y1 * y1 > 1) {
-        return false
-      }
-    }
-    // Check top right corner
-    if (x > left + width - corners[1][0] && y < corners[1][1] + top) {
-      var x1 = (x - (left + width - corners[1][0])) / corners[1][0]
-      var y1 = (corners[1][1] + top - y) / corners[1][1]
-      if (x1 * x1 + y1 * y1 > 1) {
-        return false
-      }
-    }
-    // Check bottom right corner
-    if (x > left + width - corners[2][0] && y > top + height - corners[2][1]) {
-      var x1 = (x - (left + width - corners[2][0])) / corners[2][0]
-      var y1 = (y - (top + height - corners[2][1])) / corners[2][1]
-      if (x1 * x1 + y1 * y1 > 1) {
-        return false
-      }
-    }
-    // Check bottom left corner
-    if (x < corners[3][0] + left && y > top + height - corners[3][1]) {
-      var x1 = (corners[3][0] + left - x) / corners[3][0]
-      var y1 = (y - (top + height - corners[3][1])) / corners[3][1]
-      if (x1 * x1 + y1 * y1 > 1) {
-        return false
-      }
-    }
-    return true
-  }
-
-  // Check if element it under the current position
-  // x,y - the position to check
-  // offsetx, offsety - the current left and top offsets
-  // offsetz - the current z offset on the current z-index
-  // level - the current z-index
-  // element - element being tested
-  // result - the final result of the hover target
-  static checkElement(
-    x: number,
-    y: number,
-    offsetx: number,
-    offsety: number,
-    offsetz: number,
-    level: number,
-    element: HTMLElement,
-    result: {
-      zIndex: number
-      element: Element
-      level: number
-    }
-  ) {
-    // Return if this element isn't visible
-    if (!element.offsetParent) return
-
-    var style = window.getComputedStyle(element)
-
-    // Calculate absolute position and dimensions
-    var left = element.offsetLeft + offsetx
-    var top = element.offsetTop + offsety
-    var width = element.offsetWidth
-    var height = element.offsetHeight
-
-    var zIndex = style['z-index']
-    if (zIndex != 'auto') {
-      offsetz = 0
-      level = parseInt(zIndex)
-    }
-
-    // If the element isn't static the increment the offsetz
-    // if (style['position'] != 'static' && element != this.element) {
-    //     if (zIndex == 'auto') offsetz += 1
-    // }
-    // If there is a transform then transform point
-    if (
-      (style['display'] == 'block' || style['display'] == 'inline-block') &&
-      style['transform'] != 'none'
-    ) {
-      // Apply css transforms to click point
-      var newcoord = this.transformPoint(style, x, y, left, top)
-      if (!newcoord) return
-      x = newcoord[0]
-      y = newcoord[1]
-      if (zIndex == 'auto') offsetz += 1
-    }
-    // Check if in confines of bounding box
-    if (x > left && x < left + width && y > top && y < top + height) {
-      // Check if in confines of rounded corders
-      if (this.checkInBorder(element, style, x, y, left, top)) {
-        //check if above other elements
-        if (
-          (offsetz >= result.zIndex || level > result.level) &&
-          level >= result.level &&
-          style['pointer-events'] != 'none'
-        ) {
-          result.zIndex = offsetz
-          result.element = element
-          result.level = level
-        }
-      }
-    } else if (style['overflow'] != 'visible') {
-      // If the element has no overflow and the point is outsize then skip it's children
-      return
-    }
-    // Check each of the child elements for intersection of the point
-    var child = element.firstChild as HTMLElement
-    if (child)
-      do {
-        if (child.nodeType == 1) {
-          if (child.offsetParent == element) {
-            this.checkElement(x, y, offsetx + left, offsety + top, offsetz, level, child, result)
-          } else {
-            this.checkElement(x, y, offsetx, offsety, offsetz, level, child, result)
-          }
-        }
-      } while ((child = child.nextSibling as HTMLElement))
-  }
-
-  static elementAt(element, x, y) {
-    element.style.display = 'block'
-    var result = {
-      zIndex: 0,
-      element: null,
-      level: 0
-    }
-    this.checkElement(x, y, 0, 0, 0, 0, element, result)
-    element.style.display = 'none'
-    return result.element
-  }
-
-  static mousemove(layer: WebLayer, x, y, button) {
-    const mouseState = {
-      screenX: x,
-      screenY: y,
-      clientX: x,
-      clientY: y,
-      button: button ? button : 0,
-      bubbles: true,
-      cancelable: true
-    }
-    const mouseStateHover = {
-      clientX: x,
-      clientY: y,
-      button: button ? button : 0,
-      bubbles: false
-    }
-
-    const ele = this.elementAt(layer.element, x, y)
-    // If the element under cusor isn't the same as lasttime then update hoverstates and fire off events
-    if (ele != this.mouseoverElement) {
-      if (ele) {
-        var parents = []
-        var current = ele
-        if (this.mouseoverElement)
-          this.mouseoverElement.dispatchEvent(new MouseEvent('mouseout', mouseState))
-        ele.dispatchEvent(new MouseEvent('mouseover', mouseState))
-        // Update overElements and fire corresponding events
-        do {
-          if (current == element) break
-          if (this.overElements.indexOf(current) == -1) {
-            if (current.classList) current.classList.add('x-hover')
-            current.dispatchEvent(new MouseEvent('mouseenter', mouseStateHover))
-            this.overElements.push(current)
-          }
-          parents.push(current)
-        } while ((current = current.parentNode))
-
-        for (var i = 0; i < this.overElements.length; i++) {
-          var element = this.overElements[i]
-          if (parents.indexOf(element) == -1) {
-            if (element.classList) element.classList.remove('x-hover')
-            element.dispatchEvent(new MouseEvent('mouseleave', mouseStateHover))
-            this.overElements.splice(i, 1)
-            i--
-          }
-        }
-      } else {
-        while ((element = this.overElements.pop())) {
-          if (element.classList) element.classList.remove('x-hover')
-          element.dispatchEvent(new MouseEvent('mouseout', mouseState))
-        }
-      }
-    }
-    if (ele && this.overElements.indexOf(ele) == -1) this.overElements.push(ele)
-    this.mouseoverElement = ele
-    if (ele) ele.dispatchEvent(new MouseEvent('mousemove', mouseState))
-  }
-
-  // Mouse down on the HTML Element
-  static mousedown(layer: WebLayer, x, y, button) {
-    var mouseState = {
-      screenX: x,
-      screenY: y,
-      clientX: x,
-      clientY: y,
-      button: button ? button : 0,
-      bubbles: true,
-      cancelable: true
-    }
-    var ele = this.elementAt(layer.element, x, y)
-    if (ele) {
-      this.activeElement = ele
-      ele.classList.add('x-active')
-      ele.classList.remove('x-hover')
-      ele.dispatchEvent(new MouseEvent('mousedown', mouseState))
-    }
-    this.mousedownElement = ele
-  }
-
   static updateInputAttributes(element: Element) {
     if (element.matches('input')) this._updateInputAttribute(element as HTMLInputElement)
     for (const e of element.getElementsByTagName('input')) this._updateInputAttribute(e)
@@ -1265,13 +888,11 @@ export class WebRenderer {
         cancelable: false
       })
     )
-    ele.classList.add('x-focus')
     this.focusElement = ele
   }
 
   static setBlur() {
     if (this.focusElement) {
-      this.focusElement.classList.remove('x-focus')
       this.focusElement.dispatchEvent(new FocusEvent('blur'))
       this.focusElement.dispatchEvent(
         new CustomEvent('focusout', {
@@ -1279,74 +900,24 @@ export class WebRenderer {
           cancelable: false
         })
       )
-    }
-  }
-
-  static clearHover() {
-    let element
-    while ((element = this.overElements.pop())) {
-      if (element.classList) element.classList.remove('x-hover')
-      element.dispatchEvent(
-        new MouseEvent('mouseout', {
-          bubbles: true,
-          cancelable: true
-        })
-      )
-    }
-    if (this.mouseoverElement)
-      this.mouseoverElement.dispatchEvent(
-        new MouseEvent('mouseleave', {
-          bubbles: true,
-          cancelable: true
-        })
-      )
-    this.mouseoverElement = null
-    const activeElement = document.querySelector('.x-active')
-    if (activeElement) {
-      activeElement.classList.remove('x-active')
-      this.activeElement = null
-    }
-  }
-
-  static mouseup(layer: WebLayer, x, y, button) {
-    const mouseState = {
-      screenX: x,
-      screenY: y,
-      clientX: x,
-      clientY: y,
-      button: button ? button : 0,
-      bubbles: true,
-      cancelable: true
-    }
-    const ele = WebRenderer.elementAt(layer.element, x, y)
-    if (this.activeElement) {
-      this.activeElement.classList.remove('x-active')
-      if (ele) {
-        ele.classList.add('x-hover')
-        if (this.overElements.indexOf(ele) == -1) this.overElements.push(ele)
-      }
-      this.activeElement = null
-    }
-    if (ele) {
-      ele.dispatchEvent(new MouseEvent('mouseup', mouseState))
-      if (ele != this.focusElement) {
-        this.setBlur()
-        this.setFocus(ele)
-      }
-      if (ele == this.mousedownElement) {
-        ele.dispatchEvent(new MouseEvent('click', mouseState))
-        // if (ele.tagName == "INPUT") this.updateCheckedAttributes(ele)
-        // If the element requires some sort of keyboard interaction then notify of an input requirment
-        if (ele.tagName == 'INPUT' || ele.tagName == 'TEXTAREA' || ele.tagName == 'SELECT') {
-          if (layer.eventCallback)
-            layer.eventCallback('inputrequired', {
-              target: ele
-            })
-        }
-      }
-    } else {
-      if (this.focusElement) this.focusElement.dispatchEvent(new FocusEvent('blur'))
       this.focusElement = null
     }
+  }
+
+  static containsHover(element: Element) {
+    for (const t of this.hoverTargetElements) {
+      if (element.contains(t)) return true
+    }
+    return false
+  }
+
+  static getDynamicAttributes(element: Element) {
+    const layer = this.layers.get(element)
+    return (
+      `${this.containsHover(element) ? 'data-layer-hover="" ' : ' '}` +
+      `${this.getClosestLayer(this.focusElement) === layer ? 'data-layer-focus="" ' : ' '}` +
+      `${this.getClosestLayer(this.activeElement) === layer ? 'data-layer-active="" ' : ' '}` +
+      `${this.getClosestLayer(this.targetElement) === layer ? 'data-layer-target="" ' : ' '}`
+    )
   }
 }

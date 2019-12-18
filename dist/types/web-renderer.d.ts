@@ -27,6 +27,7 @@ export declare class WebLayer {
     childLayers: WebLayer[];
     pixelRatio?: number;
     cssTransform: Matrix4;
+    private _dynamicAttributes;
     private _svgDocument;
     private _svgSrc;
     private _hashingCanvas;
@@ -38,7 +39,7 @@ export declare class WebLayer {
     traverseParentLayers<T extends any[]>(each: (layer: WebLayer, ...params: T) => void, ...params: T): void;
     traverseLayers<T extends any[]>(each: (layer: WebLayer, ...params: T) => void, ...params: T): void;
     traverseChildLayers<T extends any[]>(each: (layer: WebLayer, ...params: T) => void, ...params: T): void;
-    refresh(forceRefresh?: boolean): void;
+    refresh(): void;
     private _refreshParentAndChildLayers;
     private _tryConvertElementToWebLayer;
     serialize(): Promise<void>;
@@ -60,11 +61,10 @@ export declare class WebRenderer {
     static serializeQueue: WebLayer[];
     static rasterizeQueue: WebLayer[];
     static renderQueue: WebLayer[];
-    static overElements: any[];
+    static hoverTargetElements: Set<Element>;
     static focusElement: any;
     static activeElement: any;
-    static mousedownElement: any;
-    static mouseoverElement: any;
+    static targetElement: any;
     static _didInit: boolean;
     static _init(): void;
     static addToSerializeQueue(layer: WebLayer): void;
@@ -79,10 +79,9 @@ export declare class WebRenderer {
     static setLayerNeedsUpdate(layer: WebLayer): void;
     static createLayerTree(element: Element, eventCallback: EventCallback): WebLayer;
     static disposeLayer(layer: WebLayer): void;
-    static getLayerForElement(element: Element): WebLayer | undefined;
+    static getClosestLayer(element: Element): WebLayer | undefined;
     static getCSSTransformForElement(element: Element, out?: Matrix4): Matrix4;
     static embedExternalResources(element: Element): Promise<any[]>;
-    private static _onmousemove;
     static pauseMutationObservers(): void;
     static resumeMutationObservers(): void;
     private static startMutationObserver;
@@ -95,22 +94,11 @@ export declare class WebRenderer {
     private static _embeddedPageCSS;
     static getEmbeddedPageCSS(): Promise<string[]>;
     static getDataURL(url: any): Promise<string>;
-    static transformPoint(elementStyles: any, x: any, y: any, offsetX: any, offsetY: any): false | [number, number];
-    static getBorderRadii(element: any, style: any): number[];
-    static checkInBorder(element: any, style: any, x: any, y: any, left: any, top: any): boolean;
-    static checkElement(x: number, y: number, offsetx: number, offsety: number, offsetz: number, level: number, element: HTMLElement, result: {
-        zIndex: number;
-        element: Element;
-        level: number;
-    }): void;
-    static elementAt(element: any, x: any, y: any): any;
-    static mousemove(layer: WebLayer, x: any, y: any, button: any): void;
-    static mousedown(layer: WebLayer, x: any, y: any, button: any): void;
     static updateInputAttributes(element: Element): void;
     static _updateInputAttribute(inputElement: HTMLInputElement): void;
     static setFocus(ele: HTMLElement): void;
     static setBlur(): void;
-    static clearHover(): void;
-    static mouseup(layer: WebLayer, x: any, y: any, button: any): void;
+    static containsHover(element: Element): boolean;
+    static getDynamicAttributes(element: Element): string;
 }
 export {};

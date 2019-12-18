@@ -12,7 +12,7 @@ import * as ethereal from 'ethereal'
 
 // import {CanvasRenderer as XCanvasRenderer} from 'html2canvas/dist/lib/render/canvas/canvas-renderer'
 
-import { WebRenderer } from '../web-renderer'
+import { WebRenderer, WebLayer } from '../web-renderer'
 
 import * as domUtils from '../dom-utils'
 
@@ -55,7 +55,7 @@ export class WebLayer3DBase extends THREE.Object3D {
     WebLayer3D.layersByMesh.set(this.contentMesh, this)
   }
 
-  protected _webLayer = WebRenderer.getLayerForElement(this.element)
+  protected _webLayer = WebRenderer.getClosestLayer(this.element)
 
   textures = new Map<HTMLElement, THREE.Texture>()
 
@@ -114,10 +114,7 @@ export class WebLayer3DBase extends THREE.Object3D {
    * Get the hover state
    */
   get hover() {
-    for (const l of WebLayer3D.hoverLayers) {
-      if (this.element.contains(l.element)) return true
-    }
-    return false
+    return WebRenderer.containsHover(this.element)
   }
 
   /**
@@ -184,7 +181,8 @@ export class WebLayer3DBase extends THREE.Object3D {
   private _lastContentTargetScale = new THREE.Vector3(0.01, 0.01, 0.01)
 
   refresh(forceRefresh = false) {
-    this._webLayer.refresh(forceRefresh)
+    if (forceRefresh) this._webLayer.needsRefresh = true
+    this._webLayer.refresh()
     this.childLayers.length = 0
     for (const c of this._webLayer.childLayers) {
       const child = WebLayer3D.getClosestLayerForElement(c.element)
@@ -474,11 +472,11 @@ export class WebLayer3D extends WebLayer3DBase {
     return false
   }
 
-  static hoverLayers = new Set<WebLayer3DBase>()
+  // static hoverTargets = new Set<Element>()
   private static _updateInteractions(rootLayer: WebLayer3D) {
     rootLayer.updateWorldMatrix(true, true)
-    rootLayer.traverseLayers(WebLayer3D._clearHover)
-    WebLayer3D.hoverLayers.clear()
+    rootLayer.traverseLayers(WebLayer3D._hideCursor)
+    WebRenderer.hoverTargetElements.clear()
     for (const ray of rootLayer._interactionRays) {
       rootLayer._hitIntersections.length = 0
       if (ray instanceof THREE.Ray) rootLayer._raycaster.ray.copy(ray)
@@ -495,7 +493,7 @@ export class WebLayer3D extends WebLayer3DBase {
           layer.worldToLocal(layer.cursor.position)
           layer.cursor.visible = true
           while (layer instanceof WebLayer3DBase) {
-            WebLayer3D.hoverLayers.add(layer)
+            WebRenderer.hoverTargetElements.add(layer.element)
             layer = layer.parent as WebLayer3D
           }
           break
@@ -503,8 +501,8 @@ export class WebLayer3D extends WebLayer3DBase {
       }
     }
     // rootLayer.traverseLayers(WebLayer3D._setHover)
-    WebLayer3D._setHoverClass(rootLayer.element)
-    domUtils.traverseChildElements(rootLayer.element, WebLayer3D._setHoverClass)
+    // WebLayer3D._setHoverClass(rootLayer.element)
+    // domUtils.traverseChildElements(rootLayer.element, WebLayer3D._setHoverClass)
   }
 
   private static async _scheduleRefresh(rootLayer: WebLayer3D) {
@@ -551,7 +549,7 @@ export class WebLayer3D extends WebLayer3DBase {
   //   }
   // }
 
-  private static _clearHover = function(layer: WebLayer3DBase) {
+  private static _hideCursor = function(layer: WebLayer3DBase) {
     layer.cursor.visible = false
   }
 
@@ -563,23 +561,23 @@ export class WebLayer3D extends WebLayer3DBase {
   //       : layer._hover
   // }
 
-  private static _setHoverClass = function(element: Element) {
-    // const hover = WebLayer3D._hoverLayers.has(WebLayer3D.layersByElement.get(element))
-    // if (hover && !element.classList.contains('hover')) element.classList.add('hover')
-    // if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
-    // return true
-    const hoverLayers = WebLayer3D.hoverLayers
-    let hover = false
-    for (const layer of hoverLayers) {
-      if (element.contains(layer.element)) {
-        hover = true
-        break
-      }
-    }
-    if (hover && !element.classList.contains('hover')) element.classList.add('hover')
-    if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
-    return true
-  }
+  // private static _setHoverClass = function(element: Element) {
+  //   // const hover = WebLayer3D._hoverLayers.has(WebLayer3D.layersByElement.get(element))
+  //   // if (hover && !element.classList.contains('hover')) element.classList.add('hover')
+  //   // if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
+  //   // return true
+  //   const hoverLayers = WebRenderer.hoverTargets
+  //   let hover = false
+  //   for (const layer of hoverLayers) {
+  //     if (element.contains(layer.element)) {
+  //       hover = true
+  //       break
+  //     }
+  //   }
+  //   if (hover && !element.classList.contains('hover')) element.classList.add('hover')
+  //   if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
+  //   return true
+  // }
 
   private _interactionRays = [] as Array<THREE.Ray | THREE.Object3D>
   private _raycaster = new THREE.Raycaster()

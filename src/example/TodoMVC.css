@@ -243,7 +243,9 @@ body {
 }
 
 .todo-list .destroy {
-	display: none;
+	/* display: none;
+	 */
+	opacity: 0;
 	position: absolute;
 	top: 0;
 	right: 10px;
@@ -266,7 +268,7 @@ body {
 } */
 
 .todo-list li:hover .destroy, .todo-list li.hover .destroy {
-	display: block;
+	opacity: 1;
 }
 
 .todo-list li .edit {

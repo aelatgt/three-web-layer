@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as ethereal from 'ethereal';
+import { WebLayer } from '../web-renderer';
 import * as domUtils from '../dom-utils';
 export interface WebLayer3DOptions {
     pixelRatio?: number;
@@ -13,7 +14,7 @@ export declare class WebLayer3DBase extends THREE.Object3D {
     element: Element;
     options: WebLayer3DOptions;
     constructor(element: Element, options?: WebLayer3DOptions);
-    protected _webLayer: import("../web-renderer").WebLayer;
+    protected _webLayer: WebLayer;
     textures: Map<HTMLElement, THREE.Texture>;
     get currentTexture(): THREE.Texture;
     content: THREE.Object3D;
@@ -134,11 +135,9 @@ export declare class WebLayer3D extends WebLayer3DBase {
     static computeNaturalDistance(projection: THREE.Matrix4 | THREE.Camera, renderer: THREE.WebGLRenderer): number;
     static UPDATE_DEFAULT: (layer: WebLayer3DBase, deltaTime?: number) => void;
     static shouldApplyTargetLayout(layer: WebLayer3DBase): boolean;
-    static hoverLayers: Set<WebLayer3DBase>;
     private static _updateInteractions;
     private static _scheduleRefresh;
-    private static _clearHover;
-    private static _setHoverClass;
+    private static _hideCursor;
     private _interactionRays;
     private _raycaster;
     private _hitIntersections;

@@ -22,7 +22,7 @@ class WebLayer3DBase extends THREE.Object3D {
         super();
         this.element = element;
         this.options = options;
-        this._webLayer = web_renderer_1.WebRenderer.getLayerForElement(this.element);
+        this._webLayer = web_renderer_1.WebRenderer.getClosestLayer(this.element);
         this.textures = new Map();
         this.content = new THREE.Object3D();
         this.contentMesh = new THREE.Mesh(WebLayer3D.GEOMETRY, new THREE.MeshBasicMaterial({
@@ -110,11 +110,7 @@ class WebLayer3DBase extends THREE.Object3D {
      * Get the hover state
      */
     get hover() {
-        for (const l of WebLayer3D.hoverLayers) {
-            if (this.element.contains(l.element))
-                return true;
-        }
-        return false;
+        return web_renderer_1.WebRenderer.containsHover(this.element);
     }
     /**
      * Get the layer depth (distance from this layer's element and the parent layer's element)
@@ -140,7 +136,9 @@ class WebLayer3DBase extends THREE.Object3D {
             WebLayer3D.layersByElement.get(this._webLayer.parentLayer.element));
     }
     refresh(forceRefresh = false) {
-        this._webLayer.refresh(forceRefresh);
+        if (forceRefresh)
+            this._webLayer.needsRefresh = true;
+        this._webLayer.refresh();
         this.childLayers.length = 0;
         for (const c of this._webLayer.childLayers) {
             const child = WebLayer3D.getClosestLayerForElement(c.element);
@@ -351,6 +349,30 @@ class WebLayer3D extends WebLayer3DBase {
         super(element, options);
         this.element = element;
         this.options = options;
+        // private static _setHover = function(layer: WebLayer3DBase) {
+        //   layer._hover = WebLayer3D._hoverLayers.has(layer)
+        //     ? 1
+        //     : layer.parentLayer && layer.parentLayer._hover > 0
+        //       ? layer.parentLayer._hover + 1
+        //       : layer._hover
+        // }
+        // private static _setHoverClass = function(element: Element) {
+        //   // const hover = WebLayer3D._hoverLayers.has(WebLayer3D.layersByElement.get(element))
+        //   // if (hover && !element.classList.contains('hover')) element.classList.add('hover')
+        //   // if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
+        //   // return true
+        //   const hoverLayers = WebRenderer.hoverTargets
+        //   let hover = false
+        //   for (const layer of hoverLayers) {
+        //     if (element.contains(layer.element)) {
+        //       hover = true
+        //       break
+        //     }
+        //   }
+        //   if (hover && !element.classList.contains('hover')) element.classList.add('hover')
+        //   if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
+        //   return true
+        // }
         this._interactionRays = [];
         this._raycaster = new THREE.Raycaster();
         this._hitIntersections = this._raycaster.intersectObjects([]); // for type inference
@@ -503,10 +525,11 @@ class WebLayer3D extends WebLayer3DBase {
             return true;
         return false;
     }
+    // static hoverTargets = new Set<Element>()
     static _updateInteractions(rootLayer) {
         rootLayer.updateWorldMatrix(true, true);
-        rootLayer.traverseLayers(WebLayer3D._clearHover);
-        WebLayer3D.hoverLayers.clear();
+        rootLayer.traverseLayers(WebLayer3D._hideCursor);
+        web_renderer_1.WebRenderer.hoverTargetElements.clear();
         for (const ray of rootLayer._interactionRays) {
             rootLayer._hitIntersections.length = 0;
             if (ray instanceof THREE.Ray)
@@ -521,7 +544,7 @@ class WebLayer3D extends WebLayer3DBase {
                     layer.worldToLocal(layer.cursor.position);
                     layer.cursor.visible = true;
                     while (layer instanceof WebLayer3DBase) {
-                        WebLayer3D.hoverLayers.add(layer);
+                        web_renderer_1.WebRenderer.hoverTargetElements.add(layer.element);
                         layer = layer.parent;
                     }
                     break;
@@ -529,8 +552,8 @@ class WebLayer3D extends WebLayer3DBase {
             }
         }
         // rootLayer.traverseLayers(WebLayer3D._setHover)
-        WebLayer3D._setHoverClass(rootLayer.element);
-        domUtils.traverseChildElements(rootLayer.element, WebLayer3D._setHoverClass);
+        // WebLayer3D._setHoverClass(rootLayer.element)
+        // domUtils.traverseChildElements(rootLayer.element, WebLayer3D._setHoverClass)
     }
     static async _scheduleRefresh(rootLayer) {
         await microtask;
@@ -635,7 +658,6 @@ WebLayer3D.UPDATE_DEFAULT = function (layer, deltaTime = 1) {
     layer.transitioner.update(deltaTime, false);
     layer.content.transitioner.update(deltaTime, false);
 };
-WebLayer3D.hoverLayers = new Set();
 // private static refreshBoundsQueue = [] as WebLayer3DBase[]
 // private static async _scheduleRefreshBounds(rootLayer: WebLayer3D) {
 //   rootLayer.traverseLayers((layer) => {
@@ -674,34 +696,8 @@ WebLayer3D.hoverLayers = new Set();
 //       performance.measure('rasterize queue', 'rasterize queue start', 'rasterize queue end')
 //   }
 // }
-WebLayer3D._clearHover = function (layer) {
+WebLayer3D._hideCursor = function (layer) {
     layer.cursor.visible = false;
-};
-// private static _setHover = function(layer: WebLayer3DBase) {
-//   layer._hover = WebLayer3D._hoverLayers.has(layer)
-//     ? 1
-//     : layer.parentLayer && layer.parentLayer._hover > 0
-//       ? layer.parentLayer._hover + 1
-//       : layer._hover
-// }
-WebLayer3D._setHoverClass = function (element) {
-    // const hover = WebLayer3D._hoverLayers.has(WebLayer3D.layersByElement.get(element))
-    // if (hover && !element.classList.contains('hover')) element.classList.add('hover')
-    // if (!hover && element.classList.contains('hover')) element.classList.remove('hover')
-    // return true
-    const hoverLayers = WebLayer3D.hoverLayers;
-    let hover = false;
-    for (const layer of hoverLayers) {
-        if (element.contains(layer.element)) {
-            hover = true;
-            break;
-        }
-    }
-    if (hover && !element.classList.contains('hover'))
-        element.classList.add('hover');
-    if (!hover && element.classList.contains('hover'))
-        element.classList.remove('hover');
-    return true;
 };
 function arraySubtract(a, b) {
     const result = [];

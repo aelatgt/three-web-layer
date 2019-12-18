@@ -43,7 +43,7 @@ const TodoItem = vue_1.default.extend({
         return <li key={todo.id} v-show={parent.filteredTodos.includes(todo)}>
       <div data-layer class={context.data.class}>
         <div class="view">
-          <input id={"toggle-" + todo.id} class="toggle" type="checkbox" v-model={todo.completed}/>
+          <input id={"toggle-" + todo.id} class="toggle" type="checkbox" onChange={event => todo.completed = event.target.checked}/>
           <label data-layer data-layer-states="completed" for={"toggle-" + todo.id}>{todo.completed ?
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135" style="padding-right:10px"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="3"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>
             : <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#ededed" stroke-width="3"/></svg>}</label>
@@ -51,7 +51,7 @@ const TodoItem = vue_1.default.extend({
         </div> 
         <div data-layer data-layer-states="completed">                       
           <div class="title" onclick={() => parent.editTodo(todo)}>{todo.title}</div>
-          <input class="edit" type="text" spellcheck="false" v-model={todo.title} v-todo-focus="todo == editedTodo" onblur={() => parent.doneEdit(todo)} onkeyup={(event) => {
+          <input class="edit" type="text" spellcheck="false" vModel={todo.title} v-todo-focus="todo == editedTodo" onblur={() => parent.doneEdit(todo)} onkeyup={(event) => {
             if (event.key === 'Enter')
                 parent.doneEdit(todo);
             if (event.key === 'Escape')
@@ -164,7 +164,7 @@ const TodoMVC = vue_1.default.extend({
         <header class="header">
             <h1 data-layer>todos</h1>
             <div data-layer>
-              <input class="new-todo" spellcheck="false" autofocus autocomplete="off" placeholder="What needs to be done?" v-model={this.newTodo} onkeyup={(e) => {
+              <input class="new-todo" spellcheck="false" autofocus autocomplete="off" placeholder="What needs to be done?" vModel={this.newTodo} onkeyup={(e) => {
             if (e.key === 'Enter') {
                 this.addTodo();
                 e.target.blur();
@@ -173,7 +173,7 @@ const TodoMVC = vue_1.default.extend({
             </div>
         </header>
         <section class="main" v-show={this.todos.length}>
-            <input id="toggle-all" class="toggle-all" type="checkbox" v-model={this.allDone}/>
+            <input id="toggle-all" class="toggle-all" type="checkbox" vModel={this.allDone}/>
             <label for="toggle-all"><div data-layer>❯</div></label>
             <ul class="todo-list">{this.todos.map(todo => {
             const classes = [];
