@@ -75,24 +75,26 @@
     "@types/dat.gui": "^0.7.2",
     "@types/node": "^10.11.0",
     "@types/webpack-env": "^1.13.8",
+    "@vue/babel-helper-vue-jsx-merge-props": "^1.0.0",
     "@vue/babel-preset-jsx": "^1.1.2",
     "@vue/component-compiler-utils": "^2.6.0",
-    "babel-helper-vue-jsx-merge-props": "^2.0.3",
-    "babel-plugin-jsx-v-model": "^2.0.3",
-    "babel-plugin-transform-vue-jsx": "^3.7.0",
     "commitizen": "^3.0.0",
     "cz-conventional-changelog": "^2.1.0",
     "dat.gui": "^0.7.5",
     "ethereal": "^1.0.7",
+    "fast-sha256": "^1.1.1",
+    "html2canvas": "^1.0.0-rc.5",
     "husky": "^1.0.1",
     "lint-staged": "^8.0.0",
+    "lru_map": "^0.3.3",
     "microbundle": "^0.12.0-next.6",
     "noty": "^3.2.0-beta",
     "parcel": "^1.11.0",
     "prettier": "^1.14.3",
     "resize-observer-polyfill": "^1.5.1",
     "rimraf": "^2.6.2",
-    "rollup": "^0.67.0",
+    "rollup": "^1.27.13",
+    "rollup-plugin-amd": "^4.0.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^3.1.0",
     "rollup-plugin-livereload": "^1.0.0",
@@ -113,11 +115,7 @@
     "typescript": "^3.7.2",
     "vue": "^2.6.8",
     "vue-hot-reload-api": "^2.3.3",
-    "vue-template-compiler": "^2.6.8",
-    "fast-sha256": "^1.1.1",
-    "html2canvas": "^1.0.0-rc.5",
-    "lru_map": "^0.3.3",
-    "rollup-plugin-amd": "^4.0.0"
+    "vue-template-compiler": "^2.6.8"
   },
   "peerDependencies": {
     "three": "> 0.103",
@@ -126,8 +124,7 @@
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-commit": "lint-staged",
-      "pre-push": "npm run build"
+      "pre-commit": "lint-staged"
     }
   },
   "browserslist": [
