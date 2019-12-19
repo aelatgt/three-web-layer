@@ -4288,17 +4288,18 @@ class WebLayer {
         this.element = element;
         this.eventCallback = eventCallback;
         this.id = WebLayer._nextID++;
-        this.cachedBounds = new Map();
-        this.cachedMargin = new Map();
         this.needsRefresh = true;
         this.needsRemoval = false;
         this.svg = new Image();
         this.bounds = new Bounds();
+        this._previousBounds = new Bounds();
         this.padding = new Edges();
         this.margin = new Edges();
         this.border = new Edges();
         this.childLayers = [];
         this.cssTransform = new Matrix4();
+        this.cachedBounds = new Map();
+        this.cachedMargin = new Map();
         this._dynamicAttributes = '';
         this._svgDocument = '';
         this._svgSrc = '';
@@ -4353,15 +4354,19 @@ class WebLayer {
             child.traverseLayers(each, ...params);
         }
     }
+    static _setNeedsRefresh(layer) {
+        layer.needsRefresh = true;
+    }
     refresh() {
         const dynamicAttributes = WebRenderer.getDynamicAttributes(this.element);
-        if (this._dynamicAttributes !== dynamicAttributes) {
-            this._dynamicAttributes = dynamicAttributes;
-            this.needsRefresh = true;
-            for (const c of this.childLayers)
-                c.needsRefresh = true;
-        }
         getBounds(this.element, this.bounds, this.parentLayer && this.parentLayer.element);
+        if (this._dynamicAttributes !== dynamicAttributes ||
+            this.bounds.width !== this._previousBounds.width ||
+            this.bounds.height !== this._previousBounds.height) {
+            this._dynamicAttributes = dynamicAttributes;
+            this.traverseLayers(WebLayer._setNeedsRefresh);
+        }
+        this._previousBounds.copy(this.bounds);
         if (this.needsRefresh) {
             this._refreshParentAndChildLayers();
             WebRenderer.addToSerializeQueue(this);

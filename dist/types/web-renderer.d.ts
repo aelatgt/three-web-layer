@@ -14,12 +14,11 @@ export declare class WebLayer {
     private static _nextID;
     id: number;
     constructor(element: Element, eventCallback: EventCallback);
-    cachedBounds: Map<string, Bounds>;
-    cachedMargin: Map<string, Edges>;
     needsRefresh: boolean;
     needsRemoval: boolean;
     svg: HTMLImageElement;
     bounds: Bounds;
+    private _previousBounds;
     private padding;
     private margin;
     private border;
@@ -27,6 +26,8 @@ export declare class WebLayer {
     childLayers: WebLayer[];
     pixelRatio?: number;
     cssTransform: Matrix4;
+    cachedBounds: Map<string, Bounds>;
+    cachedMargin: Map<string, Edges>;
     private _dynamicAttributes;
     private _svgDocument;
     private _svgSrc;
@@ -39,6 +40,7 @@ export declare class WebLayer {
     traverseParentLayers<T extends any[]>(each: (layer: WebLayer, ...params: T) => void, ...params: T): void;
     traverseLayers<T extends any[]>(each: (layer: WebLayer, ...params: T) => void, ...params: T): void;
     traverseChildLayers<T extends any[]>(each: (layer: WebLayer, ...params: T) => void, ...params: T): void;
+    private static _setNeedsRefresh;
     refresh(): void;
     private _refreshParentAndChildLayers;
     private _tryConvertElementToWebLayer;
