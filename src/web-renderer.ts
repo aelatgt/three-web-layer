@@ -64,14 +64,13 @@ export class WebLayer {
     WebLayer.cachedCanvases.limit = WebRenderer.layers.size * WebLayer.DEFAULT_CACHE_SIZE
   }
 
-  cachedBounds: Map<string, Bounds> = new Map()
-  cachedMargin: Map<string, Edges> = new Map()
-
   needsRefresh = true
   needsRemoval = false
 
   svg: HTMLImageElement = new Image()
   bounds = new Bounds()
+  private _previousBounds = new Bounds()
+
   private padding = new Edges()
   private margin = new Edges()
   private border = new Edges()
@@ -80,6 +79,9 @@ export class WebLayer {
   pixelRatio?: number
 
   cssTransform = new Matrix4()
+
+  cachedBounds: Map<string, Bounds> = new Map()
+  cachedMargin: Map<string, Edges> = new Map()
 
   private _dynamicAttributes = ''
   private _svgDocument = ''
@@ -143,14 +145,22 @@ export class WebLayer {
     }
   }
 
+  private static _setNeedsRefresh(layer: WebLayer) {
+    layer.needsRefresh = true
+  }
+
   refresh() {
     const dynamicAttributes = WebRenderer.getDynamicAttributes(this.element)
-    if (this._dynamicAttributes !== dynamicAttributes) {
-      this._dynamicAttributes = dynamicAttributes
-      this.needsRefresh = true
-      for (const c of this.childLayers) c.needsRefresh = true
-    }
     getBounds(this.element, this.bounds, this.parentLayer && this.parentLayer.element)
+    if (
+      this._dynamicAttributes !== dynamicAttributes ||
+      this.bounds.width !== this._previousBounds.width ||
+      this.bounds.height !== this._previousBounds.height
+    ) {
+      this._dynamicAttributes = dynamicAttributes
+      this.traverseLayers(WebLayer._setNeedsRefresh)
+    }
+    this._previousBounds.copy(this.bounds)
     if (this.needsRefresh) {
       this._refreshParentAndChildLayers()
       WebRenderer.addToSerializeQueue(this)
@@ -202,6 +212,7 @@ export class WebLayer {
 
   async serialize() {
     if (this.element.nodeName === 'VIDEO') return
+
     const [svgPageCSS] = await Promise.all([
       WebRenderer.getEmbeddedPageCSS(),
       WebRenderer.embedExternalResources(this.element)
