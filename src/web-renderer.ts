@@ -450,7 +450,7 @@ export class WebRenderer {
     addCSSRule(
       sheet,
       `[data-layer-rendering-parent]`,
-      'transform: none !important; left: 0 !important; top: 0 !important;margin: 0 !important;border:0 !important;border-radius:0 !important;height:100% !important;padding:0 !important;position:static !important;text-align:left !important;display:block !important;background:rgba(0,0,0,0) !important;box-shadow:none !important',
+      'transform: none !important; left: 0 !important; top: 0 !important; margin: 0 !important; border:0 !important; border-radius:0 !important; height:100% !important; padding:0 !important; position:static !important; text-align:left !important; display:block !important; background: rgba(0,0,0,0) none !important; box-shadow:none !important',
       i++
     )
     addCSSRule(
