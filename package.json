@@ -1,6 +1,6 @@
 {
   "name": "three-web-layer",
-  "version": "2.0.11",
+  "version": "2.0.12",
   "description": "Use web content in three.js scenes!",
   "main": "dist/three-web-layer.umd.js",
   "amdName": "WebLayer3D",
@@ -38,8 +38,7 @@
     "build.example": "parcel build src/example/index.html --no-content-hash -d docs --public-url /three-web-layer/",
     "build": "npm run build.library && npm run build.example",
     "start": "npm run prebuild && parcel src/example/index.html --https -d docs --host 0.0.0.0",
-    "commit": "git-cz",
-    "semantic-release": "semantic-release"
+    "commit": "git-cz"
   },
   "lint-staged": {
     "{src,test}/**/*.ts": [

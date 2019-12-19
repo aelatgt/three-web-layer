@@ -4579,7 +4579,7 @@ class WebRenderer {
         addCSSRule(sheet, `[${WebRenderer.RENDERING_ATTRIBUTE}] [${WebRenderer.LAYER_ATTRIBUTE}], [${WebRenderer.RENDERING_ATTRIBUTE}] [${WebRenderer.LAYER_ATTRIBUTE}] *`, 'visibility: hidden !important;', i++);
         addCSSRule(sheet, `[${WebRenderer.RENDERING_ATTRIBUTE}]`, 'position: relative; top: 0 !important; left: 0 !important; float: none; box-sizing:border-box; width:var(--x-width); height:var(--x-height);', i++);
         addCSSRule(sheet, `[data-layer-rendering-inline]`, 'top: var(--x-inline-top) !important; width:auto !important', i++);
-        addCSSRule(sheet, `[data-layer-rendering-parent]`, 'transform: none !important; left: 0 !important; top: 0 !important;margin: 0 !important;border:0 !important;border-radius:0 !important;height:100% !important;padding:0 !important;position:static !important;text-align:left !important;display:block !important;background:rgba(0,0,0,0) !important;box-shadow:none !important', i++);
+        addCSSRule(sheet, `[data-layer-rendering-parent]`, 'transform: none !important; left: 0 !important; top: 0 !important; margin: 0 !important; border:0 !important; border-radius:0 !important; height:100% !important; padding:0 !important; position:static !important; text-align:left !important; display:block !important; background: rgba(0,0,0,0) none !important; box-shadow:none !important', i++);
         addCSSRule(sheet, `[data-layer-rendering-parent]::before, [data-layer-rendering-parent]::after`, 'content:none !important; box-shadow:none !important;', i++);
         let previousHash = '';
         const onHashChange = () => {
