@@ -4506,9 +4506,9 @@ class WebLayer {
             this.canvas = WebLayer.cachedCanvases.get(newHash);
             return;
         }
-        const pixelRatio = 1 ||
-            this.pixelRatio ||
-            parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) ;
+        const pixelRatio = this.pixelRatio ||
+            parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) ||
+            window.devicePixelRatio;
         const newCanvas = WebLayer.cachedCanvases.size === WebLayer.cachedCanvases.limit
             ? WebLayer.cachedCanvases.shift()[1]
             : document.createElement('canvas');
