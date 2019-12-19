@@ -15,7 +15,7 @@ export declare class WebLayer3DBase extends THREE.Object3D {
     options: WebLayer3DOptions;
     constructor(element: Element, options?: WebLayer3DOptions);
     protected _webLayer: WebLayer;
-    textures: Map<HTMLElement, THREE.Texture>;
+    textures: Map<HTMLCanvasElement | HTMLVideoElement, THREE.Texture>;
     get currentTexture(): THREE.Texture;
     content: THREE.Object3D;
     contentMesh: THREE.Mesh;
@@ -26,7 +26,6 @@ export declare class WebLayer3DBase extends THREE.Object3D {
     contentOpacity: ethereal.Transitionable<0>;
     get needsRefresh(): boolean;
     set needsRefresh(value: boolean);
-    get textureSource(): HTMLImageElement | HTMLVideoElement | HTMLCanvasElement;
     /**
      * Get the hover state
      */

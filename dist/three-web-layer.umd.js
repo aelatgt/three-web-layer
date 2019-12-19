@@ -5104,13 +5104,26 @@
             WebLayer3D.layersByMesh.set(this.contentMesh, this);
         }
         get currentTexture() {
-            let t = this.textures.get(this._webLayer.canvas);
+            if (this._webLayer.element.tagName === 'VIDEO') {
+                const video = this._webLayer.element;
+                let t = this.textures.get(video);
+                if (!t) {
+                    t = new THREE.VideoTexture(video);
+                    t.wrapS = THREE.ClampToEdgeWrapping;
+                    t.wrapT = THREE.ClampToEdgeWrapping;
+                    t.minFilter = THREE.LinearFilter;
+                    this.textures.set(video, t);
+                }
+                return t;
+            }
+            const canvas = this._webLayer.canvas;
+            let t = this.textures.get(canvas);
             if (!t) {
-                t = new THREE.Texture();
+                t = new THREE.Texture(canvas);
                 t.wrapS = THREE.ClampToEdgeWrapping;
                 t.wrapT = THREE.ClampToEdgeWrapping;
                 t.minFilter = THREE.LinearFilter;
-                this.textures.set(this._webLayer.canvas, t);
+                this.textures.set(canvas, t);
             }
             return t;
         }
@@ -5119,9 +5132,6 @@
         }
         set needsRefresh(value) {
             this._webLayer.needsRefresh = value;
-        }
-        get textureSource() {
-            return this._webLayer.canvas;
         }
         /**
          * Get the hover state
@@ -5402,15 +5412,16 @@
                         this.options.onLayerCreate(layer);
                 }
                 else if (event === 'layerpainted') {
-                    const layer = WebLayer3D.getClosestLayerForElement(target);
-                    const source = layer.textureSource;
-                    if (!source)
-                        throw new Error('missing texture source');
-                    layer.currentTexture.image = source;
-                    layer.currentTexture.needsUpdate = true;
+                    const layer = WebRenderer.layers.get(target);
+                    const canvas = layer.canvas;
+                    if (!canvas)
+                        throw new Error('missing canvas');
+                    const texture = WebLayer3D.layersByElement.get(layer.element).currentTexture;
+                    texture.image = canvas;
+                    texture.needsUpdate = true;
                 }
                 else if (event === 'parentchanged') {
-                    const layer = WebLayer3D.getClosestLayerForElement(target);
+                    const layer = WebLayer3D.layersByElement.get(target);
                     layer.transitioner.parentTarget = layer.parentLayer;
                 }
             });
