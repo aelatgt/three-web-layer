@@ -595,6 +595,9 @@ class WebRenderer {
             xhr.onload = () => {
                 resolve(xhr);
             };
+            xhr.onerror = () => {
+                resolve(xhr);
+            };
             xhr.send();
         });
     }
@@ -615,6 +618,8 @@ class WebRenderer {
                 }
                 else {
                     embedded.set(element, this.getURL(element.getAttribute('href')).then(xhr => {
+                        if (!xhr.response)
+                            return '';
                         this._addDynamicPseudoClassRulesToPage();
                         var css = textDecoder.decode(xhr.response);
                         return this.generateEmbeddedCSS(window.location, css);
