@@ -326,7 +326,6 @@ export class WebLayer {
     }
 
     const pixelRatio =
-      1 ||
       this.pixelRatio ||
       parseFloat(this.element.getAttribute(WebRenderer.PIXEL_RATIO_ATTRIBUTE)) ||
       window.devicePixelRatio
