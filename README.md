@@ -7,7 +7,7 @@ The goal of this project is to leverage the power of the 2D web for layout and d
 
 ## DEMOS
 
-- [TodoMVC running in WebGL! Built with Vuejs, JSX, and WebLayer3D](http://argonjs.github.io/three-web-layer/)
+- [TodoMVC running in WebGL! Built with Vuejs, JSX, and WebLayer3D](https://www.aelatgt.org/three-web-layer/)
 - [A simple demo running on Glitch!](https://three-web-layer.glitch.me)
 
 ## Installation
